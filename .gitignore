@@ -1,0 +1,18 @@
+# Obsidian workspace state — local to your machine, don't sync
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Trash
+.trash/
+
+# Editor swap files
+*.swp
+*.swo
+*~
