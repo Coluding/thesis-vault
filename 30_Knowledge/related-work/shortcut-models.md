@@ -46,6 +46,24 @@ stub out.
     `diffusion_output_shortcut_velocity.yaml`,
     `diffusion_output_dynamicrafter_shortcut_test.yaml`.
 
+## Step-size schedule (verified 2026-05-25 from `docs/paper/shortcut_models.pdf`)
+
+- Finest discretization **`M = 128`** steps → **`log2(128)+1 = 8` step
+  sizes `d ∈ {1/128, 1/64, …, 1/2, 1}`**, `d` normalised to the `[0,1]`
+  trajectory (lines 254–256).
+- **Max step size `d = 1`**: a single step over the whole trajectory =
+  one-step generation. **Min `d = 1/128`**: where the flow-matching loss
+  grounds the model (empirical-velocity target; line 292).
+- **Evaluated at 128 / 4 / 1 denoising steps** (line 401); headline up to
+  **128× fewer steps** (line 58). Self-consistency: one `2d` step = average
+  of two consecutive `d` steps (line 187).
+- **Implication for our codebase** (`step_level` is timesteps out of
+  `T = 1000`, so `step_level = d·T`): the paper's range is `step_level ≈ 8`
+  (finest, 128 steps) → `1000` (`d = 1`, 1 step). Our
+  `diffusion_avid_shortcut_metaworld.yaml` trains `shortcut_step_level_max
+  = 4`, i.e. *below* the paper's finest step → see
+  [[../../20_Tickets/risk-shortcut-eval-steplevel-out-of-distribution]].
+
 ## How the thesis differs from Shortcut Models
 
 The thesis's D3 contribution is **not** to introduce the shortcut idea
@@ -70,8 +88,10 @@ than a one-paragraph extension.
   from the PDF, then derive in `30_Knowledge/theory/shortcut-loss-derivation.md`_.
 - Whether Shortcut Models use a `g(d)` gain like our composition rule
   `f_base + g(d) · Δ_φ`. _needs verification_.
-- Reported few-step regime (1, 2, 4, 8 steps?) and how the thesis's
-  numbers should align for an apples-to-apples comparison.
+- ~~Reported few-step regime~~ — **resolved 2026-05-25**: paper evals at
+  128 / 4 / 1 steps, step sizes `d ∈ {1/128…1}` (see "Step-size schedule"
+  above). For apples-to-apples we'd train `step_level` up to `~1000`
+  (`d=1`); current configs cap at 4 → see the risk ticket.
 - Relationship to [[consistency-models]] — is Shortcut Models a strict
   generalisation, a different objective, or an orthogonal cut?
 

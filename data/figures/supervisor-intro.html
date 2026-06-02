@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adapter world models: supervisor intro</title>
+<style>
+  :root{
+    --frozen:#64748b; --frozenBg:#f1f5f9;
+    --train:#2563eb;  --trainBg:#dbeafe;
+    --data:#16a34a;   --dataBg:#dcfce7;
+    --cond:#d97706;   --condBg:#fef3c7;
+    --mask:#7c3aed;   --maskBg:#f5f3ff;
+    --out:#dc2626;    --outBg:#fee2e2;
+    --ink:#1f2937; --muted:#4b5563; --line:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:var(--ink);background:#f8fafc}
+  #deck{height:100vh;background:#fff}
+  .slide{display:none;width:100vw;height:100vh;overflow:auto;background:#fff;
+         padding:6vh max(32px, calc((100vw - 1000px) / 2))}
+  .slide.active{display:flex;flex-direction:column;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h1{font-size:38px;margin:0 0 8px;line-height:1.2}
+  h2{font-size:30px;margin:0 0 18px;line-height:1.25}
+  .kicker{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--train);font-weight:700;margin-bottom:12px}
+  .sub{color:var(--muted);font-size:17px;margin:0 0 20px}
+  ul{margin:8px 0 0;padding-left:24px} li{margin:12px 0;line-height:1.55;font-size:19px}
+  li small{color:var(--muted)}
+  code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:.9em}
+  .eq{background:#f8fafc;border-left:3px solid var(--mask);padding:10px 14px;margin:14px 0;border-radius:0 6px 6px 0;font-size:16px}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;border:1.5px solid;font-size:12.5px;font-weight:600;margin:2px 4px 2px 0;white-space:nowrap}
+  .t-frozen{background:var(--frozenBg);border-color:var(--frozen);color:#0f172a}
+  .t-train{background:var(--trainBg);border-color:var(--train);color:#0c1e3d}
+  .t-data{background:var(--dataBg);border-color:var(--data);color:#052e16}
+  .t-cond{background:var(--condBg);border-color:var(--cond);color:#451a03}
+  .t-mask{background:var(--maskBg);border-color:var(--mask);color:#2e1065}
+  .t-out{background:var(--outBg);border-color:var(--out);color:#450a0a}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+  .card.bad{border-color:#fca5a5;background:#fef2f2}
+  .card.good{border-color:#86efac;background:#f0fdf4}
+  .viz{display:flex;gap:30px;margin-top:14px;flex-wrap:wrap}
+  .vizcol{flex:1 1 320px}
+  .vizcol h4{margin:0 0 4px;font-size:16px}
+  .vizcol .cap{color:var(--muted);font-size:13px;margin:0 0 10px;line-height:1.45}
+  .chans{display:flex;gap:14px}
+  .chan{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .chan .lab{font-size:12px;color:var(--muted)}
+  .cells{display:grid;grid-template-columns:repeat(4,17px);grid-auto-rows:17px;gap:2px;
+         padding:3px;border:1px solid #cbd5e1;border-radius:5px;background:#fff}
+  .cell{width:17px;height:17px;border-radius:2px}
+  .badge{font-size:11px;color:var(--train);font-weight:700;background:var(--trainBg);
+         border:1px solid var(--train);border-radius:4px;padding:0 5px;margin-left:3px}
+  .fig{display:inline-block;margin-top:14px;padding:11px 18px;border-radius:9px;background:var(--train);color:#fff;
+       text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 4px 14px rgba(37,99,235,.3)}
+  .fig:hover{background:#1d4ed8}
+  .fig.alt{background:var(--mask);box-shadow:0 4px 14px rgba(124,58,237,.3)} .fig.alt:hover{background:#6d28d9}
+  .figrow{display:flex;gap:12px;flex-wrap:wrap}
+  table{border-collapse:collapse;width:100%;margin-top:10px;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left} th{background:#f8fafc}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+  .center{justify-content:center}
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;
+       background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px;box-shadow:0 4px 16px rgba(15,23,42,.1)}
+  .nav button{border:none;background:var(--trainBg);color:var(--train);font-weight:700;border-radius:999px;
+              width:30px;height:30px;cursor:pointer;font-size:16px}
+  .nav button:hover{background:#bfdbfe}
+  #counter{font-size:13px;color:var(--muted);min-width:54px;text-align:center}
+  .legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <section class="slide active center">
+    <div class="kicker">Master's thesis · intro</div>
+    <h1>Plug and play adapters that turn frozen generative models into action conditioned world models</h1>
+    <p class="sub">How we add action control, and fast multimodal prediction, to a large pretrained
+      video diffusion model <em>without ever retraining it</em>.</p>
+    <div class="legend">
+      <span class="tag t-frozen">Frozen base</span>
+      <span class="tag t-train">Trainable adapter</span>
+      <span class="tag t-data">Data / latent</span>
+      <span class="tag t-cond">Conditioning</span>
+      <span class="tag t-mask">Fusion / mask</span>
+      <span class="tag t-out">Output</span>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The setup</div>
+    <h2>One frozen prior plus one small trainable correction</h2>
+    <ul>
+      <li>Large pretrained <b>video diffusion models</b> are excellent generative priors, but they have
+        <b>no action input</b> and can't be used directly as world models.</li>
+      <li>Retraining a billion parameter video model is out of scope. So we <b>freeze the base</b> and learn a
+        small <b>adapter</b> that adds the missing behaviour.</li>
+      <li>Everything in this talk is one composition rule:</li>
+    </ul>
+    <div class="eq"><b>f</b>(x<sub>t</sub>, t, a<sub>t</sub>, d) =
+      <span class="tag t-frozen">f<sub>base</sub>(x<sub>t</sub>, t)</span> +
+      g(d) · <span class="tag t-train">Δ<sub>φ</sub>(x<sub>t</sub>, t, a<sub>t</sub>, d)</span></div>
+    <p class="sub" style="margin:6px 0 0">a<sub>t</sub> = action · d = generation step size · the base stays frozen, only Δ<sub>φ</sub> is trained.</p>
+    <p class="note">Base model: DynamiCrafter (video). Domain: MetaWorld robot manipulation.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The framework: what kind of adapter?</div>
+    <h2>Three ways to attach the correction</h2>
+    <div class="cols">
+      <div class="card">
+        <h3><span class="tag t-train">HyperAlign</span></h3>
+        <p>A <b>hypernetwork</b> generates per layer LoRA weights that are injected <em>inside</em> the
+          frozen UNet's attention layers.</p>
+      </div>
+      <div class="card">
+        <h3><span class="tag t-train">UniCon</span></h3>
+        <p>A <b>hidden state</b> adapter: a trainable decoder replica reads the frozen base's internal
+          feature maps.</p>
+      </div>
+      <div class="card good" style="grid-column:1/3">
+        <h3><span class="tag t-train">Output adapter</span> (AVID style)</h3>
+        <p>A trainable network reads only the frozen base's <b>final output</b> and emits a residual
+          correction. The lightest coupling, and the cheapest to train, as the next slides show.</p>
+      </div>
+    </div>
+    <div class="figrow">
+      <a class="fig" href="hyperalign.html" target="_blank">⤷ HyperAlign architecture</a>
+      <a class="fig" href="avid.html" target="_blank">⤷ Output (AVID) architecture</a>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Why the choice matters</div>
+    <h2>The hidden cost: gradient flow through the frozen base</h2>
+    <ul>
+      <li><b>"Frozen" saves weight updates, not backprop.</b> The deciding question is:
+        <em>is the frozen base in the gradient graph?</em></li>
+    </ul>
+    <div class="cols">
+      <div class="card bad">
+        <h3><span class="tag t-train">HyperAlign / LoRA</span></h3>
+        <p>Inject weights <b>inside</b> the base, so the gradient must backprop through the
+          <b>entire</b> frozen UNet. Needs gradient checkpointing, and runs the base <b>2 to 3 times</b> per step.</p>
+      </div>
+      <div class="card bad">
+        <h3><span class="tag t-train">UniCon</span></h3>
+        <p>Detaches the base, but its trainable <b>decoder replica</b> is heavy and coupled to interior
+          features: a large backward graph by construction.</p>
+      </div>
+    </div>
+    <p class="note">Backprop cost is set by <em>where</em> the adapter attaches and how big its own graph is,
+      <b>not</b> by trainable parameter count. Two adapters with equal parameters can differ by an order of
+      magnitude in training memory and compute.</p>
+    <a class="fig" href="gradient-flow.html" target="_blank">⤷ See the gradient flow (forward vs backward)</a>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The output adapter</div>
+    <h2>Reads the base output as a constant, so backward stays cheap</h2>
+    <ul>
+      <li>The frozen base runs <b>once, detached</b> (<code>torch.no_grad</code>). Its output is just
+        <em>data</em> fed into the adapter.</li>
+      <li>Backward touches <b>only the adapter</b>. The frozen base is never in the gradient graph.</li>
+      <li>You control the adapter's size; the base is fully decoupled. This is why the output adapter is our
+        <b>lightweight, flexible substrate</b>, and the foundation for both directions later.</li>
+    </ul>
+    <div class="eq"><span class="tag t-frozen">base</span> (no grad) → constant input →
+      <span class="tag t-train">adapter</span> → <span class="tag t-out">δ</span> &nbsp;|&nbsp; gradient stops at the base boundary</div>
+    <a class="fig" href="avid.html" target="_blank">⤷ Output adapter architecture</a>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Output adapter: variants</div>
+    <h2>What the adapter emits: direct vs affine</h2>
+    <div class="cols">
+      <div class="card">
+        <h3><span class="tag t-out">direct</span></h3>
+        <p>Emit the correction itself: <code>δ</code>, added to the base prediction.
+          final = base + δ.</p>
+      </div>
+      <div class="card">
+        <h3><span class="tag t-out">affine</span></h3>
+        <p>Emit a <b>(scale, shift)</b> that modulates the base prediction:
+          <code>δ = base·scale + shift</code> → final = base·(1+scale) + shift.</p>
+      </div>
+    </div>
+    <div class="viz">
+      <div class="vizcol">
+        <h4><span class="tag t-out">direct</span> &nbsp;a delta for every element</h4>
+        <p class="cap">One delta value at <b>every (channel, pixel)</b>: full resolution, same shape as the latent.</p>
+        <div class="chans" id="vizDirect"></div>
+      </div>
+      <div class="vizcol">
+        <h4><span class="tag t-out">affine</span> &nbsp;one (scale, shift) per channel</h4>
+        <p class="cap">A single <b>(scale, shift)</b> per channel, <b>identical across all pixels</b> in that channel.</p>
+        <div class="chans" id="vizAffine"></div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:14px">Affine is a strict superset of direct (force <code>scale = 0</code> and you
+      recover direct). The extra multiplicative term can gate the base prediction per channel. We
+      compare whether that earns its keep.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">How the correction meets the base</div>
+    <h2>Composition options</h2>
+    <table>
+      <tr><th>Mode</th><th>Formula</th><th>Idea</th></tr>
+      <tr><td><code>add</code></td><td>base + Δ</td><td>plain additive residual (the core rule)</td></tr>
+      <tr><td><code>gated_residual</code></td><td>base + σ(g)·Δ</td><td>learned gate on the contribution</td></tr>
+      <tr><td><code>mask_mix</code> (AVID)</td><td>σ(g)·base + (1−σ(g))·Δ</td><td>adapter <em>competes</em> with the base, blended by a mask</td></tr>
+      <tr><td><code>replace</code></td><td>Δ</td><td>adapter takes over the prediction</td></tr>
+    </table>
+    <p class="note">The mask in <code>mask_mix</code> is what later generalises into the multimodal fusion mask.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">What we condition the adapter on</div>
+    <h2>Two targets: action, and step size (shortcut)</h2>
+    <div class="cols">
+      <div class="card">
+        <h3><span class="tag t-cond">Action conditioning</span></h3>
+        <p>Feed the action a<sub>t</sub> so the adapter predicts the <em>action conditioned</em> next
+          frame. This is the world model behaviour.</p>
+      </div>
+      <div class="card">
+        <h3><span class="tag t-cond">Shortcut (step size d)</span></h3>
+        <p>Condition on the generation step size so the model can take <b>big jumps</b>: few step rollout
+          instead of roughly 50 denoising steps.</p>
+      </div>
+    </div>
+    <ul>
+      <li><b>Action conditioning works today.</b> The AVID style output adapter is our running baseline.</li>
+      <li><b>Shortcut training is in progress</b> on the output adapter.</li>
+    </ul>
+    <a class="fig alt" href="shortcut-explainer.html" target="_blank">⤷ What is shortcut modelling?</a>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Direction 1: the goal</div>
+    <h2>An action conditioned <em>and</em> shortcut output adapter</h2>
+    <ul>
+      <li>Combine both targets in one adapter: it predicts <b>action conditioned</b> transitions and does so in
+        <b>few steps</b>.</li>
+      <li>Result: a world model fast enough to roll out trajectories for <b>planning and control</b>.</li>
+    </ul>
+    <div class="eq">action conditioning (world model) &nbsp;+&nbsp; shortcut (few step) &nbsp;=&nbsp;
+      <b>fast action conditioned rollout</b></div>
+    <h3 style="margin:18px 0 6px;font-size:16px">Evaluation</h3>
+    <div class="legend">
+      <span class="tag t-out">prediction quality</span>
+      <span class="tag t-out">inference speed</span>
+      <span class="tag t-out">control (ideally)</span>
+    </div>
+    <p class="note">Trained on MetaWorld interaction data.</p>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Direction 2: building on the output adapter</div>
+    <h2>A multimodal output adapter for coupled sensory prediction</h2>
+    <ul>
+      <li>The output adapter is the <b>most lightweight</b> family, so it's the natural substrate to
+        <b>scale out</b>, not just speed up.</li>
+      <li>A world model should predict more than pixels: <b>proprioception, depth, touch, force</b>.</li>
+      <li>Idea: <b>one adapter per sensory modality</b>. Each emits <b>(i)</b> a correction to the video
+        prediction and <b>(ii)</b> its <em>own</em> sensory signal, fused by a <b>learned mask</b>.</li>
+    </ul>
+    <a class="fig alt" href="multimodal-output-adapter.html" target="_blank">⤷ Multimodal output adapter architecture</a>
+    <p class="note">Independent per modality timesteps mean one trained model answers many queries: policy,
+      forward and inverse dynamics, video only prediction, by choosing which streams start from noise.</p>
+  </section>
+
+  <section class="slide center">
+    <div class="kicker">In one picture</div>
+    <h2>One lightweight substrate, two directions</h2>
+    <ul>
+      <li><b>Output adapter:</b> frozen base plus a cheap, decoupled correction (no backprop through the base).</li>
+      <li><b>Direction 1:</b> action conditioned <em>plus</em> shortcut → a <b>fast</b> world model for control.</li>
+      <li><b>Direction 2:</b> one adapter per modality → <b>multimodal</b> coupled prediction.</li>
+    </ul>
+    <div class="figrow" style="margin-top:18px">
+      <a class="fig" href="avid.html" target="_blank">Output adapter</a>
+      <a class="fig alt" href="shortcut-explainer.html" target="_blank">Shortcut</a>
+      <a class="fig alt" href="multimodal-output-adapter.html" target="_blank">Multimodal adapter</a>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous">‹</button>
+  <span id="counter">1 / 11</span>
+  <button id="next" aria-label="Next">›</button>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  const counter = document.getElementById('counter');
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    counter.textContent = (i+1)+' / '+slides.length;
+    document.getElementById('deck').scrollTop = 0;
+  }
+  document.getElementById('next').onclick = ()=>show(i+1);
+  document.getElementById('prev').onclick = ()=>show(i-1);
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ') {e.preventDefault();show(i+1);}
+    if(e.key==='ArrowLeft' ||e.key==='PageUp')   {e.preventDefault();show(i-1);}
+    if(e.key==='Home'){show(0);} if(e.key==='End'){show(slides.length-1);}
+  });
+  show(0);
+</script>
+
+<script>
+  // slide 6: direct vs affine output granularity
+  (function(){
+    function build(id, mode){
+      const host = document.getElementById(id);
+      if(!host) return;
+      const channels = 3, n = 4;
+      for(let c=0;c<channels;c++){
+        const chan = document.createElement('div'); chan.className='chan';
+        const grid = document.createElement('div'); grid.className='cells';
+        const uniform = 0.30 + c*0.24;                 // one shade for the whole channel
+        for(let i=0;i<n*n;i++){
+          const cell = document.createElement('div'); cell.className='cell';
+          const op = (mode==='direct')
+            ? 0.14 + (((i*5 + c*3) % 13) / 13) * 0.78   // varies per element
+            : uniform;                                   // identical for every pixel
+          cell.style.background = 'rgba(37,99,235,'+op.toFixed(2)+')';
+          grid.appendChild(cell);
+        }
+        chan.appendChild(grid);
+        const lab = document.createElement('div'); lab.className='lab';
+        lab.innerHTML = (mode==='affine')
+          ? 'C'+(c+1)+'<span class="badge">s,b</span>'
+          : 'C'+(c+1);
+        chan.appendChild(lab);
+        host.appendChild(chan);
+      }
+    }
+    build('vizDirect','direct');
+    build('vizAffine','affine');
+  })();
+</script>
+</body>
+</html>

@@ -1,13 +1,13 @@
 ---
 type: bug
 scope: training
-status: open
+status: done
 priority: high
 created: 2026-05-15
-updated: 2026-05-15
-resolution:
-resolution_note:
-closed_at:
+updated: 2026-05-22
+resolution: shipped
+resolution_note: User-confirmed resolved on 2026-05-22.
+closed_at: 2026-05-22
 related: []
 ---
 

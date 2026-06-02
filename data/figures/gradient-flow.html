@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Gradient flow: why backward is heavy for HyperAlign / UniCon, light for the output adapter</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;max-width:1100px;
+         margin:24px auto;padding:0 20px;color:#1f2937}
+    h1{font-size:21px;margin-bottom:4px}
+    h2{font-size:17px;margin:30px 0 2px}
+    .subtitle{color:#4b5563;margin-bottom:10px;font-size:14px}
+    .lead{color:#4b5563;font-size:13.5px;line-height:1.6;margin:4px 0 4px}
+    .diagram{margin:6px 0}
+    .legend{font-size:12px;color:#374151;display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+    .legend span{display:inline-block;padding:3px 10px;border-radius:4px;border:1.5px solid}
+    .caption{color:#4b5563;font-size:12.8px;margin:2px 0 6px;line-height:1.55}
+    code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:.92em}
+    .panel{border:1px solid #e5e7eb;border-radius:10px;padding:6px 18px 16px;margin:18px 0;background:#fff}
+    .verdict{font-size:13px;background:#fef2f2;border-left:3px solid #dc2626;padding:8px 12px;border-radius:0 4px 4px 0;margin:6px 0 0}
+    .verdict.good{background:#f0fdf4;border-left-color:#16a34a}
+    table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}
+    th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left} th{background:#f8fafc}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({startOnLoad:true,theme:'default',
+      flowchart:{htmlLabels:true,curve:'basis',padding:10,nodeSpacing:36,rankSpacing:38}});
+  </script>
+</head>
+<body>
+
+<h1>Where does the gradient have to flow?</h1>
+<div class="subtitle">
+  The training cost of an adapter is set by <b>how much of the network sits in the backward graph</b>.
+  Solid = forward pass. <b style="color:#b91c1c">Red dashed = gradient (backward)</b>. The red-shaded box is
+  everything autograd must traverse and keep activations for.
+</div>
+
+<div class="legend">
+  <span style="background:#f1f5f9;border-color:#64748b">Frozen (no weight update)</span>
+  <span style="background:#dbeafe;border-color:#2563eb">Trainable</span>
+  <span style="background:#dcfce7;border-color:#16a34a">Data / constant</span>
+  <span style="background:#f5f3ff;border-color:#7c3aed">detach / no_grad boundary</span>
+  <span style="background:#fee2e2;border-color:#dc2626">In the gradient graph (backward cost)</span>
+</div>
+
+<p class="lead">
+  "Frozen" only switches off <em>weight</em> updates. Autograd still has to build the graph and retain the
+  activations of every layer <b>between the loss and the trainable parameters</b>. So the deciding question is
+  not "how many trainable parameters?" but <b>"is the frozen base inside that span?"</b>
+</p>
+
+<!-- ============ 1. HYPERALIGN ============ -->
+<div class="panel">
+<h2>1 · HyperAlign (and LoRA) — trainable weights live <em>inside</em> the base</h2>
+<p class="caption">
+  The hypernetwork's factors are injected into attention layers <em>deep inside</em> the frozen U-Net. The only
+  path from the loss back to those factors runs <b>through every layer of the base</b>. The whole base is in the
+  gradient graph — and the base is run 2–3× per step (a frozen reference pass, the adapted pass with grad, plus
+  HyperAlign's no-grad encoder pass).
+</p>
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  IN(["x<sub>t</sub>, t, c"]):::data
+  HYP["<b>Hypernetwork</b><br/><small>trainable · generates LoRA factors</small>"]:::train
+  subgraph G1 ["⟵ in the gradient graph: the ENTIRE frozen base"]
+    direction TB
+    L1["U-Net block 1 &nbsp;<small>+ injected LoRA</small>"]:::frozen
+    L2["U-Net block 2 &nbsp;<small>+ injected LoRA</small>"]:::frozen
+    LD["⋯ every block ⋯"]:::frozen
+    LN["U-Net block L &nbsp;<small>+ injected LoRA</small>"]:::frozen
+  end
+  OUT(["v<sub>adapted</sub>"]):::data
+  LOSS["Loss"]:::loss
+
+  IN --> HYP
+  HYP -->|"writes interior weights"| L1
+  L1 --> L2
+  L2 --> LD
+  LD --> LN
+  LN --> OUT
+  OUT --> LOSS
+  LOSS -.->|"∂L"| LN
+  LN -.-> LD
+  LD -.-> L2
+  L2 -.-> L1
+  L1 -.->|"only now reaches the factors"| HYP
+
+  style G1 fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+  classDef data fill:#dcfce7,stroke:#16a34a,color:#052e16
+  classDef frozen fill:#f1f5f9,stroke:#64748b,color:#0f172a
+  classDef train fill:#dbeafe,stroke:#2563eb,color:#0c1e3d
+  classDef loss fill:#fee2e2,stroke:#dc2626,color:#450a0a
+  linkStyle 7,8,9,10,11 stroke:#dc2626,stroke-width:2.5px,color:#b91c1c
+</pre>
+</div>
+<div class="verdict"><b>Backward cost:</b> the full base U-Net (forced, not a choice) + 2–3 base passes. Heaviest.</div>
+</div>
+
+<!-- ============ 2. UNICON ============ -->
+<div class="panel">
+<h2>2 · UniCon — base detached, but a heavy trainable <em>replica</em></h2>
+<p class="caption">
+  UniCon does not touch the base's weights. It runs the base once and <b><code>.detach()</code>s</b> the captured
+  features, so the frozen base is <em>out</em> of the graph. But the adapter is a full trainable copy of the
+  decoder — so a large network is still in the backward graph. The cost is the <em>replica</em> (a design choice),
+  not a forced traversal of the base.
+</p>
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  IN2(["x<sub>t</sub>, t, c"]):::data
+  BASE2["<b>Frozen U-Net</b><br/><small>run once · features .detach()-ed</small>"]:::frozen
+  CUT2{{".detach() boundary"}}:::cut
+  FEAT2(["captured features<br/><small>constants</small>"]):::data
+  subgraph G2 ["⟵ in the gradient graph: the trainable decoder replica (heavy)"]
+    direction TB
+    R1["replica block 1"]:::train
+    R2["replica block 2 &nbsp;<small>+ zero-init connectors</small>"]:::train
+    RH["out head"]:::train
+  end
+  OUT2(["prediction"]):::data
+  LOSS2["Loss"]:::loss
+
+  IN2 --> BASE2
+  BASE2 --> CUT2
+  CUT2 --> FEAT2
+  FEAT2 --> R1
+  R1 --> R2
+  R2 --> RH
+  RH --> OUT2
+  OUT2 --> LOSS2
+  LOSS2 -.-> RH
+  RH -.-> R2
+  R2 -.-> R1
+  R1 -.->|"gradient dies at .detach()"| CUT2
+
+  style G2 fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+  classDef data fill:#dcfce7,stroke:#16a34a,color:#052e16
+  classDef frozen fill:#f1f5f9,stroke:#64748b,color:#0f172a
+  classDef train fill:#dbeafe,stroke:#2563eb,color:#0c1e3d
+  classDef loss fill:#fee2e2,stroke:#dc2626,color:#450a0a
+  classDef cut fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  linkStyle 8,9,10,11 stroke:#dc2626,stroke-width:2.5px,color:#b91c1c
+</pre>
+</div>
+<div class="verdict"><b>Backward cost:</b> the decoder replica only — the frozen base is grey (out of the graph). Medium, and tunable by replica size.</div>
+</div>
+
+<!-- ============ 3. OUTPUT ADAPTER ============ -->
+<div class="panel">
+<h2>3 · Output adapter (AVID) — base is a <em>constant input</em></h2>
+<p class="caption">
+  The base runs entirely under <code>torch.no_grad</code>; its output is handed to the adapter as plain data. The
+  gradient never enters the base — backward touches <b>only the adapter</b>, whose size you choose. This is the
+  most literal reading of the rule <code>f = base + Δ</code>: base output in, residual out.
+</p>
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+  IN3(["x<sub>t</sub>, t, c"]):::data
+  BASE3["<b>Frozen U-Net</b><br/><small>run once under torch.no_grad</small>"]:::frozen
+  CUT3{{"no_grad / detached output"}}:::cut
+  REF3(["base output<br/><small>constant input</small>"]):::data
+  subgraph G3 ["⟵ in the gradient graph: ONLY the adapter"]
+    direction TB
+    AD3["<b>Output adapter</b><br/><small>reads base output as data</small>"]:::train
+  end
+  DELTA3(["δ"]):::data
+  COMP3["base output + δ"]:::comp
+  LOSS3["Loss"]:::loss
+
+  IN3 --> BASE3
+  BASE3 --> CUT3
+  CUT3 --> REF3
+  REF3 --> AD3
+  IN3 --> AD3
+  AD3 --> DELTA3
+  DELTA3 --> COMP3
+  BASE3 --> COMP3
+  COMP3 --> LOSS3
+  LOSS3 -.-> COMP3
+  COMP3 -.-> DELTA3
+  DELTA3 -.-> AD3
+  AD3 -.->|"gradient dies at no_grad"| CUT3
+
+  style G3 fill:#fee2e2,stroke:#dc2626,stroke-width:2px
+  classDef data fill:#dcfce7,stroke:#16a34a,color:#052e16
+  classDef frozen fill:#f1f5f9,stroke:#64748b,color:#0f172a
+  classDef train fill:#dbeafe,stroke:#2563eb,color:#0c1e3d
+  classDef loss fill:#fee2e2,stroke:#dc2626,color:#450a0a
+  classDef cut fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  classDef comp fill:#fef3c7,stroke:#d97706,color:#451a03
+  linkStyle 9,10,11,12 stroke:#dc2626,stroke-width:2.5px,color:#b91c1c
+</pre>
+</div>
+<div class="verdict good"><b>Backward cost:</b> the adapter alone — base fully out of the graph, run once, no-grad. Lightest, and the size is fully under our control.</div>
+</div>
+
+<table>
+  <tr><th>Family</th><th>Trainable params live…</th><th>Frozen base in gradient graph?</th><th>Base forward passes</th><th>Backward cost</th></tr>
+  <tr><td>HyperAlign / LoRA</td><td><b>inside</b> the base weights</td><td style="color:#b91c1c"><b>Yes — forced</b></td><td>2–3</td><td>full base U-Net</td></tr>
+  <tr><td>UniCon (hidden-state)</td><td>a separate trainable <b>replica</b> reading detached features</td><td style="color:#16a34a"><b>No</b></td><td>1</td><td>the replica (design knob)</td></tr>
+  <tr><td><b>Output adapter (AVID)</b></td><td>a module reading the <b>detached base output</b></td><td style="color:#16a34a"><b>No</b></td><td>1</td><td>the adapter only (design knob)</td></tr>
+</table>
+
+<div class="caption" style="margin-top:12px">
+  Takeaway: parameter <em>count</em> does not determine training cost — <em>attachment point</em> does.
+  <code>.detach()</code> / <code>no_grad</code> at the base boundary is what keeps the frozen base out of the
+  backward graph; interior weight injection (LoRA / HyperAlign) forces it in.
+</div>
+
+</body>
+</html>

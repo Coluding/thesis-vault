@@ -12,6 +12,9 @@ status: living
 > vendored PDFs under `docs/paper/`. Each per-paper note starts as a stub
 > ("title, venue, why it matters here") and gets fleshed out via Discovery
 > mode when the related-work chapter or methods chapter needs it.
+>
+> **2026-05-25:** ninth note added — [[unified-world-models]] (full read,
+> not a stub) — anchoring the multimodal-extension design.
 
 ## How this maps to the thesis
 
@@ -43,6 +46,12 @@ their own related-work cluster. The columns:
 | [[consistency-models]] | D3 | theory, baseline | Standalone few-step generative models trained with consistency. We borrow the loss form but apply it on a frozen base via the adapter. |
 | [[self-distillation]] | D3 | theory | Self-distillation as a route to few-step sampling. Methodological cousin of consistency / shortcut. |
 | [[dpm-solver]] | D3 / D4 | baseline | Solver-side few-step inference for diffusion. Honest non-trained baseline against which our shortcut adapter must compete at matched step budgets. |
+
+### World models / multimodal coupling (added since the seed eight)
+
+| Paper | D | Relevance | One-line |
+|---|---|---|---|
+| [[unified-world-models]] | D2 / D-multimodal | framework, theory, baseline | One diffusion transformer over `(o, a, o')` with **independent per-modality timesteps** under a **shared denoising objective**; noising↔masking gives free policy / dynamics / video-prediction inference. Anchors the timestep scheme for the multimodal extension ([[../../50_Decisions/open/multimodal-adapter-broadening]]); its PAD baseline (shared-`t`, channel-concat) is the shape of our weakest planned variant. _Added 2026-05-25, full read._ |
 
 ## Adjacency clusters (visual)
 

@@ -1,7 +1,7 @@
 ---
 type: paper
 status: living
-last_updated: 2026-05-15
+last_updated: 2026-05-19
 title: "HyperAlign — Hypernetwork-Generated LoRA Adapters for Diffusion"
 authors: []
 venue:
@@ -70,6 +70,108 @@ the stub out.
   configs which lift HyperAlign into the shortcut regime.
 - Unified framework spanning all four adapter families, not just
   hypernetwork → LoRA (D1).
+
+## Conditioning bandwidth: weight-modulation is the only path
+
+**Analysed estimate** (not a measured result). Source: code inspection of
+`src/generative_flow_adapters/adapters/hypernetworks/hyperalign.py` at
+commit `7680e82` (HEAD as of 2026-05-19), conversation with user 2026-05-19.
+
+### The observation
+
+In our HyperAlign replication, the action conditioning reaches the
+adapted prediction **through exactly one channel**: the per-sample LoRA
+factors installed onto the targeted attention projections. There is no
+direct activation-path injection of the action embedding into the
+adapted forward pass.
+
+Concretely, in `HyperAlignAdapter.forward` (hyperalign.py:251-291):
+
+1. The reference pass at line 269 calls
+   `base_model(x_t, t, cond=_resolve_base_condition(cond))`.
+   `_resolve_base_condition` (lines 538-543) **strips `cond["embedding"]`**
+   before forwarding.
+2. The hypernet pass (`build_hyper_input`, lines 146-179) is the **only**
+   place the action embedding is consumed — it builds memory/query tokens
+   for the transformer decoder which emits the LoRA factors.
+3. The adapted pass at line 279 again calls
+   `base_model(x_t, t, cond=_resolve_base_condition(cond))` with the
+   embedding stripped. The only thing that differs from the reference
+   pass is the dynamic LoRA modulation installed at lines 272-277 via
+   `handle.wrapped.set_dynamic_hyper_factors(...)`.
+
+This is **deliberate**, as documented in two comments in the file
+(hyperalign.py:434-438 and the docstring of `_prepare_hyperalign_runtime`
+at lines 630-636): the frozen base UNet was never trained to interpret
+the adapter's condition embedding, so it is stripped from the base call
+and the conditioning signal is routed through the hypernetwork instead.
+
+### Information flow (simplified)
+
+```
+action embedding ──► hypernet decoder ──► (down, up) LoRA factors ──► attention proj weights
+                                                                            │
+                                                          x_t, t ───────────┴───► adapted output
+```
+
+### Two caveats — `context` and action-conditioned bases
+
+- **`context` (text/image cross-attention) is not stripped.** Only the
+  adapter-specific `embedding` key is removed. CLIP context and concat
+  conditioning still flow directly into both base passes. The
+  "weight-modulation-only" property therefore applies specifically to
+  whatever we packed into the adapter's `embedding` — in practice the
+  action signal.
+- **`action_conditioned=True` bases are an exception.** At
+  hyperalign.py:657-674, if the base UNet was itself trained with an
+  action head, `cond["act"]` is still routed through `module.action_embed`.
+  In that case the action enters via two paths (native head + LoRA
+  modulation). For the pure HyperAlign use case (frozen non-action
+  base), only via the LoRA path.
+
+### Is this a bottleneck? — analysed estimate
+
+**Most likely not a hard bottleneck for action conditioning, but
+expressivity-limited for spatially/temporally heterogeneous action
+effects.** Reasoning:
+
+- **Shannon capacity is not the issue.** With our typical setup
+  (`rank=8`, ~30 target attention projections, `aux_down_dim=aux_up_dim=16`)
+  the hypernetwork emits roughly `8 × 30 × (16+16) ≈ 8k` learned numbers
+  per sample. That is more than enough bandwidth for any action vector
+  we plan to use.
+- **Expressivity is the real question.** A static rank-`r` perturbation
+  on Q/K/V/O can re-route attention based on `x_t` (since attention
+  itself is `x_t`-dependent), but the perturbation is constant across
+  the forward — it cannot be read differently at different layers or
+  spatial positions in an `x_t`-dependent way.
+- **Inductive prior cushions this.** A well-trained video base already
+  models plausible dynamics; the LoRA only needs to *nudge* an existing
+  competent prior, not teach new capabilities. For discrete or
+  simple-continuous actions on a domain the base understands, this
+  should be sufficient.
+- **Where it would bite:** when the action's effect on the prediction
+  is locally heterogeneous in a way that depends on `x_t` (e.g.
+  "this gripper action only matters at the contact point on frame 7").
+  A constant low-rank weight delta is a poor representation for that.
+
+### Diagnostic + validating experiment
+
+If the adapter learns coarse global shifts but fails on fine local
+control during D2 (action-conditioned MetaWorld) runs, this is the
+suspect. Cheapest test to settle it:
+
+- **A:** HyperAlign as-is (baseline).
+- **B:** HyperAlign + a small parallel `output` residual adapter (gives
+  the action a direct activation-path pathway alongside the
+  weight-modulation pathway).
+
+If B lifts noticeably over A on action-following accuracy or local
+prediction MSE, the LoRA bandwidth was the bottleneck. If they are a
+wash, the weight-modulation path was sufficient. Note: existing
+`condition_injection_mode=cross_attention` only conditions the
+hypernet queries, **not** the base forward — it does not test this
+hypothesis.
 
 ## Open questions for the chapter
 

@@ -1,0 +1,109 @@
+/* weekly-deck theme — light academic, self-contained, no external deps.
+   Inlined into the generated HTML by build_deck.py. Edit freely. */
+
+:root {
+  --bg: #f7f8fa;
+  --slide-bg: #ffffff;
+  --ink: #1a2230;
+  --muted: #5b6678;
+  --accent: #2f4b7c;          /* deep indigo */
+  --accent-2: #2a9d8f;        /* teal, for highlights */
+  --line: #e3e7ee;
+  --code-bg: #f0f2f6;
+  --shadow: 0 10px 40px rgba(20, 30, 50, 0.08);
+  --serif: Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  height: 100%;
+}
+
+.deck { height: 100vh; width: 100vw; overflow: hidden; position: relative; }
+
+/* progress bar */
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: var(--line); z-index: 50; }
+.progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .25s ease; }
+
+/* slides */
+.slide {
+  display: none;
+  position: absolute; inset: 0;
+  padding: 6vh 8vw 9vh;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: var(--slide-bg);
+  overflow: auto;
+}
+.slide.active { display: flex; animation: fade .35s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.slide h1 { font-size: 2.4rem; line-height: 1.15; margin: 0 0 .6em; color: var(--accent); font-weight: 700; }
+.slide h2 { font-size: 1.5rem; margin: 1em 0 .4em; color: var(--ink); }
+.slide h3 { font-size: 1.15rem; margin: .8em 0 .3em; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.slide p { font-size: 1.2rem; line-height: 1.55; margin: .4em 0; max-width: 60ch; }
+.slide ul, .slide ol { font-size: 1.2rem; line-height: 1.6; padding-left: 1.3em; max-width: 64ch; }
+.slide li { margin: .28em 0; }
+.slide ul ul, .slide ol ol { font-size: .95em; color: var(--muted); }
+.slide a { color: var(--accent-2); text-decoration: none; border-bottom: 1px solid currentColor; }
+.slide strong { color: var(--accent); }
+.slide code { font-family: var(--mono); background: var(--code-bg); padding: .08em .35em; border-radius: 4px; font-size: .9em; }
+.slide pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 1em 1.2em; overflow: auto; font-size: 1rem; }
+.slide pre code { background: none; padding: 0; }
+
+/* title slide */
+.title-slide { justify-content: center; align-items: flex-start; padding-left: 9vw; background: linear-gradient(135deg, #ffffff 0%, #eef1f7 100%); }
+.title-slide .kicker { color: var(--accent-2); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .95rem; margin-bottom: 1.2em; }
+.title-slide h1 { font-size: 3.2rem; max-width: 20ch; margin-bottom: .3em; }
+.title-slide .subtitle { font-size: 1.5rem; color: var(--muted); max-width: 50ch; line-height: 1.4; }
+.title-slide .meta { margin-top: 2.4em; font-size: 1.05rem; color: var(--muted); }
+.title-slide .meta strong { color: var(--ink); }
+
+/* section divider (slide with only an h1) */
+.section-divider { justify-content: center; align-items: center; text-align: center; background: var(--accent); }
+.section-divider h1 { color: #fff; font-size: 3rem; border: none; }
+
+/* callout / blockquote */
+.callout { border-left: 4px solid var(--accent-2); background: #f0f7f6; padding: .8em 1.2em; border-radius: 0 8px 8px 0; margin: .8em 0; font-size: 1.12rem; color: var(--ink); max-width: 64ch; }
+
+/* metric cards */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.2em; margin: 1em 0; }
+.metric-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 1.1em 1.2em; box-shadow: var(--shadow); }
+.metric-value { font-size: 2.2rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.metric-label { font-size: 1rem; color: var(--ink); margin-top: .35em; }
+.metric-source { font-size: .8rem; color: var(--muted); margin-top: .5em; font-family: var(--mono); }
+
+/* columns */
+.columns { display: flex; gap: 2.5em; align-items: flex-start; }
+.columns .col { flex: 1; min-width: 0; }
+
+/* figures */
+.slide figure { margin: 1em 0; }
+.slide figure img { max-width: 100%; max-height: 55vh; border-radius: 10px; border: 1px solid var(--line); }
+.slide figure figcaption { font-size: .9rem; color: var(--muted); margin-top: .5em; }
+
+/* speaker notes — hidden on screen, shown when printing */
+.notes { display: none; }
+
+/* nav + footer */
+.nav { position: fixed; bottom: 1.2vh; right: 2vw; display: flex; align-items: center; gap: .6em; z-index: 50; }
+.nav button { font-size: 1.4rem; line-height: 1; width: 2em; height: 2em; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--accent); cursor: pointer; box-shadow: var(--shadow); }
+.nav button:hover { background: var(--accent); color: #fff; }
+.nav #counter { font-size: .95rem; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 4em; text-align: center; }
+.deck-footer { position: fixed; bottom: 1.6vh; left: 2vw; font-size: .85rem; color: var(--muted); z-index: 50; }
+
+/* print → one slide per page, all visible, no chrome */
+@media print {
+  html, body, .deck { height: auto; overflow: visible; }
+  .slide { display: flex !important; position: relative; inset: auto; page-break-after: always; min-height: 100vh; box-shadow: none; }
+  .nav, .progress, .deck-footer { display: none !important; }
+  .notes { display: block; margin-top: 2em; padding-top: 1em; border-top: 1px dashed var(--line); color: var(--muted); font-size: .9rem; }
+  .notes::before { content: "Speaker notes: "; font-weight: 700; }
+}

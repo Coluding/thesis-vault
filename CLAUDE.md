@@ -50,6 +50,12 @@ The vault does not get pre-loaded. It fills up through conversation. When
 the user asks for a synthesis artifact and the vault has gaps, you fill the
 gaps by grilling them (see Part 4 — Discovery Mode).
 
+**Two outward-facing layers sit on top of the internal vault** (see Part 13):
+`60_Updates/` is the curated chronological progress log that feeds the weekly
+meeting decks; `70_Thesis/` is the rough thesis draft + its source map. They
+*link into* the internal layers (`10_now/`, `30_Knowledge/`, `50_Decisions/`)
+rather than duplicating them.
+
 ---
 
 ## Part 2 — The three modes you operate in
@@ -112,6 +118,7 @@ show the result.
 | Notes an experiment finished / a result landed | Edit `10_Now/product-state.md` + create `30_Knowledge/experiments/{slug}.md` | Show diff after |
 | Captures a fleeting idea | Append to `00_Inbox/{today}.md` with timestamp | Brief mention |
 | Drops a paper finding | Create or edit `30_Knowledge/related-work/{paper-slug}.md` | None |
+| Notes weekly-meeting-worthy progress / finding / blocker | Log via `/log-update` → `60_Updates/entries/` + index | None — say "Logged update: [path]" |
 | Says "close ticket X" / "X is done" | Move file to `20_Tickets/done/`, fill resolution fields | **Ask before destructive close** |
 | Unclear where it belongs | Append to `00_Inbox/{today}.md` | None — inbox is the safety valve |
 
@@ -136,6 +143,7 @@ show the result.
    **(b) Estimates require shown reasoning.** When the question is inherently a judgement call (which adapter family will scale, expected FID after ablation, advisor-likely-objection), an estimate with shown work is allowed — *unsourced estimates are not*. Required form: list the inputs, cite sources, state the reasoning, label the output as "analysed estimate" so it isn't summarised as a measured number downstream.
 
 8. **Never invent experimental numbers, training curves, or evaluation metrics.** This is a domain-specific extension of rule 7. When discussing model quality, FID, MSE, action-following accuracy, prediction error, training loss, or sample diversity, those are facts about the system that must come from actual runs in `30_Knowledge/experiments/{slug}.md` with logged outputs (wandb run id, ckpt path, eval script invocation). Hypothetical "the adapter should reach ~0.1 MSE" is fine *as an analysed estimate with shown reasoning*; "the adapter reaches 0.087 MSE" without a citation to a real run is a fabrication that will poison the thesis.
+9. **Whenever you read a blog that is based on a aper, make sure to also fetch the paper, add it to the inbox and process it as well** 
 
 ### End-of-session ritual (mandatory in Mode A)
 
@@ -150,7 +158,10 @@ or after 30+ minutes of activity with a natural break:
    - Knowledge notes created
    - Inbox entries added
    - Open questions / parking-lot items
-3. Ask: "OK to commit the vault?" — if yes, run `90_Meta/scripts/snapshot.sh`.
+3. **Offer to distil meeting-worthy items into a `60_Updates/` entry** via
+   `/log-update` (the session log is raw/internal; an update is
+   curated/outward-facing for the weekly meeting). Don't auto-create — ask.
+4. Ask: "OK to commit the vault?" — if yes, run `90_Meta/scripts/snapshot.sh`.
 
 ---
 
@@ -272,7 +283,32 @@ Gap-detection-heavy path. Sequence:
 4. After grilling, draft the artifact.
 5. Show the draft, ask for one round of revision feedback, save the final
    to a sensible location (typically
-   `30_Knowledge/writing/draft-{topic}.md`).
+   `30_Knowledge/writing/draft-{topic}.md`). **For actual thesis prose**
+   (not a standalone writeup), the destination is `70_Thesis/draft/{file}.md`
+   via the `/thesis-write` skill, which also reads recent `60_Updates/`.
+
+### "Make the weekly deck" / "prep slides for the meeting"
+
+Invoke the `/weekly-deck` skill. Read pattern:
+
+- `60_Updates/index.md` + `entries/` since the last deck
+- `10_now/product-state.md`, recent `30_Knowledge/experiments/*` (sourced numbers)
+- `50_Decisions/open/*` (blockers), high-priority open tickets (next steps)
+
+Output: a self-contained HTML deck in `60_Updates/presentations/{date}.html`.
+**No unsourced numbers on a slide** (hard rule 8).
+
+### "Write / extend the thesis section {X}" / "write about the newest changes"
+
+Invoke the `/thesis-write` skill. Read pattern:
+
+- `70_Thesis/outline.md` + `index.md` (what the section needs + its sources)
+- the target `70_Thesis/draft/{file}.md`
+- recent `60_Updates/entries/` (the "what's new" source)
+- the section's linked `30_Knowledge/*` / `50_Decisions/decided/*` / experiments
+
+Gap-check first; grill if the sources don't support the section. Respect
+deliverable separation and the no-unsourced-numbers rule.
 
 ---
 
@@ -294,6 +330,8 @@ You have access to the whole vault. **Use it sparingly.**
 - A relevant MOC when entering Synthesis mode
 - A past session log someone points to
 - A specific experiment or paper note when working on that topic
+- `60_Updates/index.md` when building a deck; `70_Thesis/index.md` +
+  `outline.md` when writing thesis prose
 
 **Never read proactively:**
 
@@ -301,6 +339,8 @@ You have access to the whole vault. **Use it sparingly.**
 - Inbox (except as listed in Mode C queries)
 - Archive
 - All session logs unless asked
+- All `60_Updates/entries/` or `70_Thesis/draft/` files — read the index
+  first, then only the entries/sections you need
 
 **Find tickets by frontmatter, not by reading them all:**
 
@@ -338,6 +378,21 @@ One file per day. Append timestamped entries.
 ### Session logs — `30_Knowledge/sessions/{YYYY-MM-DD}-{topic-slug}.md`
 
 One per session. Auto-generated at end-of-session ritual.
+
+### Project updates — `60_Updates/entries/{YYYY-MM-DD}-{slug}.md`
+
+- One **topic** per entry (not per day). Reverse-chronological pointer added
+  to `60_Updates/index.md`.
+- Generated decks: `60_Updates/presentations/{YYYY-MM-DD}.html` with the
+  slide source kept alongside as `{YYYY-MM-DD}.slides.md`.
+- **Categories (closed set):** `progress`, `finding`, `added`, `blocker`,
+  `decision`.
+
+### Thesis draft — `70_Thesis/draft/{NN}-{section}.md`
+
+- Numbered Markdown sections (`00-abstract`, `10-introduction`, …,
+  `70-conclusion`). `70_Thesis/index.md` (chapter→source map) and
+  `70_Thesis/outline.md` (per-section status) are the entry points.
 
 ---
 
@@ -439,6 +494,30 @@ tickets_created: []
 ---
 ```
 
+### Project-update entry frontmatter
+
+```yaml
+---
+date: 2026-05-25
+category: finding       # progress | finding | added | blocker | decision
+deliverable: D2         # D1 | D2 | D3 | D4 | exploratory
+meeting:                # target meeting date, if known
+sources: []             # [[links]] to runs / tickets / decisions / notes
+---
+```
+
+### Thesis-section frontmatter
+
+```yaml
+---
+section: method         # abstract | introduction | related-work | method | experiments | results | discussion | conclusion
+status: stub            # stub | drafting | draft-complete | revised
+deliverable: D1         # D1 | D2 | D3 | D4 | all | "—"
+last_updated: 2026-05-25
+sources: []             # [[links]] to the vault notes this section draws from
+---
+```
+
 ---
 
 ## Part 9 — Code repo awareness
@@ -505,3 +584,32 @@ A short list of recurring traps in this work specifically. Watch for them.
 - **Don't conflate "shortcut" in the shortcut-models sense with general consistency-model self-distillation.** They are related but the loss derivations and parameterisations differ — see `30_Knowledge/related-work/shortcut-models.md` vs `consistency-models.md` vs `self-distillation.md`.
 - **Don't promote `_not yet run_` experiments to results.** The frontier between planned and observed is a hard line. Crossing it silently is the worst single failure mode for a thesis vault.
 - **Don't forget the vendored code boundary.** `src/external_deps/` and `backbones/dynamicrafter/` contain vendored third-party code. Changes there should be flagged in architecture.md so the thesis can describe the boundary cleanly.
+
+---
+
+## Part 13 — Skills and the outward-facing layers
+
+Three project skills live in `.claude/skills/` (committed to the vault):
+
+| Skill | Invoke when the user says… | What it does |
+|---|---|---|
+| `/log-update` | "log an update", "record this for the meeting", "we found/added X", "I'm blocked on Y" | Writes one curated entry to `60_Updates/entries/` + registers it in the index. Outward-facing distillation, not a raw log. |
+| `/weekly-deck` | "make the weekly deck", "prep slides for the meeting" | Reads recent updates + product-state + sourced experiments + open decisions; writes a slide-spec and runs `build_deck.py` to emit a self-contained HTML deck in `60_Updates/presentations/`. |
+| `/thesis-write` | "write/extend the thesis section X", "write about the newest changes" | Drafts/extends `70_Thesis/draft/{file}.md` from `70_Thesis/outline.md` + linked sources + recent `60_Updates/`. |
+
+**The two layers and how they relate to the internal vault:**
+
+- `60_Updates/` is the **curated, chronological, outward-facing** layer for
+  the weekly meeting. It distils — never duplicates — `10_now/product-state.md`
+  (living snapshot), `30_Knowledge/sessions/` (raw logs),
+  `30_Knowledge/experiments/` (runs) and `50_Decisions/`.
+- `70_Thesis/` is the **assembly** layer: the rough Markdown draft plus
+  `index.md` (chapter→source map) and `outline.md` (per-section status). It
+  links into `30_Knowledge/writing/`, `related-work/`, `theory/`,
+  `experiments/`, and `50_Decisions/decided/` rather than copying them.
+
+**Both layers inherit the hard rules.** No unsourced numbers on a slide or in
+the draft (rules 7–8); no promoting planned runs to results (Part 12); respect
+deliverable separation (D1–D4). The deck builder (`build_deck.py`,
+`theme.css`) is skill-owned tooling — edit it freely (it is not under
+`90_Meta/`, so hard rule 4 does not apply).

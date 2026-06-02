@@ -90,7 +90,7 @@ through `adapters/factory.py:build_adapter()`.
 
 | Family | Factory key | Subfolder | Concrete adapters |
 |---|---|---|---|
-| Output | `output` | `adapters/output/` | `affine`, `dynamicrafter`, `shortcut_direction` |
+| Output | `output` | `adapters/output/` | unified `dynamicrafter` (default; `backbone`/`output_format` knobs) + legacy `affine`, `shortcut_direction` |
 | Hidden State | `hidden_state` | `adapters/hidden_states/` | `residual`, `unicon`, `replace_decoder`, `full_skip_controlnet` |
 | Hypernetwork | `hyper` | `adapters/hypernetworks/` | `hyperalign`, `hyper_lora_simple` |
 | LoRA | `lora` | `adapters/low_rank/` | `LoRAAdapter` (with `PAPER_HYPERALIGN_TARGET_MODULES`) |
@@ -98,6 +98,59 @@ through `adapters/factory.py:build_adapter()`.
 This is the **D1 deliverable surface** — the taxonomy from the proposal
 mapped 1-to-1 onto the codebase. See [[positioning]] for how these tie to
 the four thesis deliverables.
+
+### Unified output adapter (merged 2026-05-29)
+
+`adapter.type: output` now resolves to **one** unified adapter, built by
+`factory._build_output`, with the *form* chosen by `extra` — there is no longer
+a separate `output_v2` class to remember (the key still works as a legacy
+alias; `affine`/`shortcut_direction` and the hidden-state architectures remain
+explicit legacy keys). The default form is the DynamiCrafter UNet, so existing
+`architecture: dynamicrafter` configs are unchanged.
+
+Knobs (all in `adapter.extra`):
+
+- `backbone`: `unet` **(default — the DynamiCrafter 3D UNet)**,
+  `transformer` (DiT-style over patchified latents), or `mlp` (lightweight FiLM
+  head ≈ the original `affine`). `unet` → `DynamicCrafterOutputAdapter`;
+  `transformer`/`mlp` → `OutputHeadAdapter`.
+- `output_format`: `direct` **(default)** (emit the delta `C`) vs `affine`
+  (emit `2C` → `delta = base*scale + shift`, realised as `base*(1+scale)+shift`
+  under `add`). Both return `output_kind="delta"`, so the affine-vs-direct
+  comparison is apples-to-apples (and dense affine is a strict superset of
+  direct — see [[../30_Knowledge/tech/affine-output-granularity]]).
+- `affine_granularity`: `dense` (per-element scale/shift maps) vs `channel`
+  (pooled per-channel FiLM) — [[../30_Knowledge/tech/affine-output-granularity]].
+- `gate_kind`: `none` | `channel` | `dense` — emit a gate for the gated
+  composition modes (head backbones only; the `unet` affine path doesn't emit a
+  gate yet).
+- `gate_kind`: `none` | `channel` | `dense` — when set, the head emits a gate
+  alongside the contribution so the composition layer can blend it (see below).
+
+**Composition / blending (mixing layer, `AdaptedModel._compose`).** Gating is a
+separate abstraction from the adapter recipe — the adapter emits a full-size
+contribution `Δ` (+ optional gate); mixing owns all interaction with `base`.
+Four modes, two of them gated:
+
+| mode | formula | `Δ` is | identity at init |
+|---|---|---|---|
+| `add` | `base + Δ` | contribution | needs `Δ→0` |
+| `gated_residual` *(added 2026-05-29)* | `base + σ(gate)·Δ` | contribution | automatic |
+| `mask_mix` (AVID) | `base·σ(gate) + Δ·(1−σ(gate))` | standalone prediction | needs gate_bias |
+| `replace` | `Δ` | standalone prediction | needs `Δ→base` |
+
+`gated_residual` is the recipe-agnostic gate for *contributions* (works for
+direct or affine Δ, matches the thesis core `f = base + g·Δ`); `mask_mix`
+treats Δ as a competing prediction. See [[../30_Knowledge/tech/mask-mix-gate]].
+
+Shared format/gate math lives in `adapters/output/format.py`; the new backbones
+in `adapters/output/output_head.py`. All backbones zero-init their final
+projection (identity residual at init). Configs:
+`configs/diffusion_output_v2_{affine,direct}_metaworld.yaml`. Theory:
+[[../30_Knowledge/theory/unicon-output-adapters-detached-backward]] (this is a
+new size point on the same detached-output family). Decision/experiment:
+[[../50_Decisions/open/output-format-affine-vs-direct]],
+[[../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
 
 ## Backbone providers
 

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Multimodal compositional output adapter</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 20px;
+      color: #1f2937;
+    }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .subtitle { color: #4b5563; margin-bottom: 18px; font-size: 14px; }
+    .diagram { margin: 8px 0; }
+    .legend { font-size: 12px; color: #374151; display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+    .legend span { display: inline-block; padding: 3px 10px; border-radius: 4px; border: 1.5px solid; }
+    .caption { color: #4b5563; font-size: 13px; margin-top: 12px; line-height: 1.6; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 0.92em; }
+    .zoom-panel {
+      margin: 24px 0 12px;
+      padding: 14px 18px 18px;
+      background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      position: relative;
+    }
+    .zoom-panel::before {
+      content: "🔍";
+      position: absolute;
+      top: -14px;
+      left: 18px;
+      background: #f1f5f9;
+      padding: 0 6px;
+      font-size: 18px;
+    }
+    .zoom-panel h3 { font-size: 15px; margin: 0 0 6px; color: #1f2937; }
+    .zoom-panel .zoom-caption { font-size: 12.5px; color: #4b5563; line-height: 1.55; margin: 0 0 10px; }
+    .eq { background:#f8fafc; border-left:3px solid #7c3aed; padding:8px 12px; margin:10px 0; font-size:13px; border-radius:0 4px 4px 0; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      flowchart: { htmlLabels: true, curve: 'basis', padding: 12, nodeSpacing: 40, rankSpacing: 50 }
+    });
+  </script>
+</head>
+<body>
+
+<h1>Multimodal compositional output adapter</h1>
+<div class="subtitle">
+  Frozen video base + one trainable output adapter <em>per sensory modality</em>. Each adapter emits
+  <b>(i)</b> a correction to the video (pixel) noise prediction and <b>(ii)</b> a prediction of its own
+  modality's noise. A learned mask aggregates the video corrections; each modality keeps its own output.
+</div>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TD
+
+    %% === Inputs ===
+    A(["<b>a<sub>t</sub></b><br/><small>action conditioning</small>"]):::cond
+    XV(["<b>x<sup>vid</sup><sub>t</sub></b>, t<sub>vid</sub><br/><small>noisy video latent</small>"]):::data
+    XP(["<b>x<sup>prop</sup><sub>t</sub></b>, t<sub>prop</sub><br/><small>noisy proprio</small>"]):::data
+    XD(["<b>x<sup>depth</sup><sub>t</sub></b>, t<sub>depth</sub><br/><small>noisy depth</small>"]):::data
+
+    %% === Frozen base: video noise prediction ===
+    Base["<b>Frozen video base</b><br/><small>3D U-Net (DynamiCrafter)</small>"]:::frozen
+    EPRE(["<b>ε<sub>pre</sub></b><br/><small>base video noise pred</small>"]):::data
+    XV --> Base
+    Base --> EPRE
+
+    %% === One adapter per modality (+ action) ===
+    subgraph Adapters ["<b>Trainable adapters</b> — one per modality, shared substrate, swappable only in the fusion block"]
+      direction TB
+      ADA["<b>Action adapter</b><br/><small>in: x<sup>vid</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj</sub> (video corr.)</small>"]:::trainableInner
+      ADP["<b>Proprio adapter</b><br/><small>in: x<sup>prop</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,1</sub> (video corr.) + ε<sub>1</sub> (own noise)</small>"]:::trainableInner
+      ADD["<b>Depth adapter</b><br/><small>in: x<sup>depth</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,2</sub> (video corr.) + ε<sub>2</sub> (own noise)</small>"]:::trainableInner
+      ADN["<small>⋯ one per modality (tactile, force/torque, …)</small>"]:::ellipsis
+    end
+
+    A --> ADA
+    A --> ADP
+    A --> ADD
+    XP --> ADP
+    XD --> ADD
+    EPRE -. "ε<sub>pre</sub> as input<br/>(condition_on_base_outputs)" .-> Adapters
+
+    %% === Per-modality video corrections ===
+    EADJ(["ε<sub>adj</sub>"]):::data
+    EA1(["ε<sub>adj,1</sub>"]):::data
+    EA2(["ε<sub>adj,2</sub>"]):::data
+    ADA --> EADJ
+    ADP --> EA1
+    ADD --> EA2
+
+    %% === Learned mask fusion ===
+    MASK["<b>Learned mask</b> &nbsp;m ∈ ℝ<sup>n+2</sup><br/><small>weights over {base, action, modality₁…ₙ}</small><br/><small>softmax / per-channel gate</small>"]:::inject
+    EPRE --> MASK
+    EADJ --> MASK
+    EA1 --> MASK
+    EA2 --> MASK
+
+    %% === Video output (aggregated) ===
+    EVID["<b>ε<sup>vid</sup><sub>t</sub> = m<sub>base</sub>⊙ε<sub>pre</sub> + m<sub>act</sub>⊙ε<sub>adj</sub> + Σ<sub>i</sub> m<sub>i</sub>⊙ε<sub>adj,i</sub></b><br/><small>fused video noise prediction</small>"]:::loss
+    MASK --> EVID
+
+    %% === Per-modality outputs (own sensory noise) ===
+    E1(["<b>ε<sub>1</sub></b><br/><small>proprio noise pred</small>"]):::loss
+    E2(["<b>ε<sub>2</sub></b><br/><small>depth noise pred</small>"]):::loss
+    ADP --> E1
+    ADD --> E2
+
+    %% === Per-modality denoising loss at independent timesteps ===
+    LOSS["<b>Σ<sub>m</sub> w<sub>m</sub> · L<sub>denoise</sub>(ε̂<sub>m</sub>, ε<sub>m</sub>; t<sub>m</sub>)</b><br/><small>one weighted loss, independent timestep per modality (UWM scheme)</small>"]:::lossSum
+    EVID --> LOSS
+    E1 --> LOSS
+    E2 --> LOSS
+
+    %% === Styles ===
+    classDef frozen fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,color:#0f172a
+    classDef trainableInner fill:#dbeafe,stroke:#2563eb,stroke-width:1px,color:#0c1e3d
+    classDef data fill:#dcfce7,stroke:#16a34a,stroke-width:1px,color:#052e16
+    classDef cond fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+    classDef inject fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+    classDef loss fill:#fee2e2,stroke:#dc2626,stroke-width:1.5px,color:#450a0a
+    classDef lossSum fill:#fde68a,stroke:#b45309,stroke-width:1.5px,color:#451a03
+    classDef ellipsis fill:none,stroke:none,color:#94a3b8,font-weight:bold
+</pre>
+</div>
+
+<div class="eq">
+  <b>Video noise:</b>&nbsp; ε<sup>vid</sup><sub>t</sub> = m<sub>base</sub>⊙ε<sub>pre</sub> + m<sub>act</sub>⊙ε<sub>adj</sub> + Σ<sub>i=1..n</sub> m<sub>i</sub>⊙ε<sub>adj,i</sub>
+  &nbsp;&nbsp;·&nbsp;&nbsp;<b>Modality <em>i</em> noise:</b>&nbsp; ε̂<sub>i</sub> = ε<sub>i</sub>
+  &nbsp;&nbsp;·&nbsp;&nbsp;mask m ∈ ℝ<sup>n+2</sup> over { base, action, modality₁ … modalityₙ }
+</div>
+
+<div class="zoom-panel">
+  <h3>Zoom: what each modality adapter emits</h3>
+  <p class="zoom-caption">
+    Every modality adapter is dual-headed. One head produces a <em>correction to the video noise</em>
+    (ε<sub>adj,i</sub>) — "given what this sensor tells me, here's how the pixel prediction should change."
+    The other head produces <em>that modality's own noise prediction</em> (ε<sub>i</sub>) — proprioception,
+    depth, tactile, etc. The video corrections from all adapters (plus the action adapter and the frozen
+    base) are blended by the learned mask <code>m</code> into a single video prediction; each modality's
+    own head is supervised directly. The action adapter is the degenerate case with only the video-correction
+    head — it is exactly today's single-modality AVID-style output adapter, recovered as <em>n = 0</em>.
+  </p>
+<pre class="mermaid">
+flowchart LR
+    IN["<b>modality-i adapter</b><br/><small>3D U-Net / output head</small>"]:::trainableInner
+    H1["<b>video-correction head</b>"]:::headNode
+    H2["<b>own-modality head</b>"]:::headNode
+    O1(["ε<sub>adj,i</sub><br/><small>→ into learned mask</small>"]):::data
+    O2(["ε<sub>i</sub><br/><small>→ direct denoising loss</small>"]):::loss
+    IN --> H1 --> O1
+    IN --> H2 --> O2
+    classDef trainableInner fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#0c1e3d
+    classDef headNode fill:#dbeafe,stroke:#2563eb,stroke-width:1px,color:#0c1e3d
+    classDef data fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#052e16
+    classDef loss fill:#fee2e2,stroke:#dc2626,stroke-width:1.5px,color:#450a0a
+</pre>
+</div>
+
+<div class="legend">
+  <span style="background:#f1f5f9;border-color:#64748b">Frozen base</span>
+  <span style="background:#dbeafe;border-color:#2563eb">Trainable adapter</span>
+  <span style="background:#dcfce7;border-color:#16a34a">Data / latent</span>
+  <span style="background:#fef3c7;border-color:#d97706">Conditioning (action)</span>
+  <span style="background:#f5f3ff;border-color:#7c3aed">Learned mask / fusion</span>
+  <span style="background:#fee2e2;border-color:#dc2626">Per-stream prediction</span>
+  <span style="background:#fde68a;border-color:#b45309">Aggregated loss</span>
+</div>
+
+<div class="caption">
+  <em>n</em> = number of extra sensory modalities · <em>m ∈ ℝ<sup>n+2</sup></em> = learned fusion mask over
+  { base, action, modality₁…ₙ } · <em>w<sub>m</sub></em> = per-modality loss weight.
+  Generalises the single-modality AVID-style output adapter
+  (<code>avid.html</code>): set <em>n = 0</em> and the mask reduces to the AVID gate
+  <em>ε<sub>t</sub> = m⊙ε<sub>adj</sub> + (1−m)⊙ε<sub>pre</sub></em>.
+  Each modality is noised at an <em>independent</em> timestep <em>t<sub>m</sub></em> (UWM scheme), which
+  makes conditional / marginal queries — policy <em>a|x</em>, forward / inverse dynamics, video-only
+  prediction — fall out of the one trained model by choosing which streams start from noise.
+  The frozen base only ever sees the video stream; the sensory streams are produced entirely by the
+  trainable adapters.
+</div>
+
+</body>
+</html>
