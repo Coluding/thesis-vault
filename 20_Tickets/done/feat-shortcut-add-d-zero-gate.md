@@ -1,16 +1,29 @@
 ---
 type: feat
 scope: shortcut
-status: open
+status: done
 priority: high
 created: 2026-05-21
-updated: 2026-05-21
-resolution:
-resolution_note:
-closed_at:
+updated: 2026-06-02
+resolution: wont-do-deferred
+resolution_note: |
+  Not implementing now. Decided 2026-06-02 to rely on the data anchor
+  through the standard diffusion/flow loss (`shortcut_anchor_prob: 0.75`)
+  as the primary collapse defense — it rules out both named collapse
+  modes at convergence, making the architectural g(d→0) gate largely
+  redundant. The gate's only residual value (exact d→0 guarantee +
+  early-transient smoothing) overlaps with
+  [[feat-training-shortcut-anchor-step-warmup]]. Kept as a deferred,
+  not-rejected option — see decision
+  [[../50_Decisions/open/shortcut-collapse-mitigation-anchor-vs-gate]]
+  for the revisit triggers. NOTE: the touch point named below
+  (ShortcutDirectionOutputAdapter) is now DEPRECATED; if revived, the
+  gate must target the live dynamicrafter/unicon step_level branch.
+closed_at: 2026-06-02
 related:
-  - risk-shortcut-self-consistency-collapse.md
-  - bug-training-shortcut-target-timestep.md
+  - "[[done/risk-shortcut-self-consistency-collapse]]"
+  - "[[feat-training-shortcut-anchor-step-warmup]]"
+  - "[[../50_Decisions/open/shortcut-collapse-mitigation-anchor-vs-gate]]"
 ---
 
 # Add architectural `g(d)` zero-asymptote gate to the shortcut adapter

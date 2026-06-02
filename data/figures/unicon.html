@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>UniCon hidden-state adapter</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;max-width:1200px;
+         margin:24px auto;padding:0 20px;color:#1f2937}
+    h1{font-size:20px;margin-bottom:4px}
+    .subtitle{color:#4b5563;margin-bottom:18px;font-size:14px}
+    .diagram{margin:8px 0}
+    .legend{font-size:12px;color:#374151;display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+    .legend span{display:inline-block;padding:3px 10px;border-radius:4px;border:1.5px solid}
+    .caption{color:#4b5563;font-size:13px;margin-top:12px;line-height:1.6}
+    code{background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:.92em}
+    .zoom-panel{margin:24px 0 12px;padding:14px 18px 18px;background:linear-gradient(to bottom,#f8fafc,#f1f5f9);
+                border:1.5px dashed #94a3b8;border-radius:8px;position:relative}
+    .zoom-panel::before{content:"🔍";position:absolute;top:-14px;left:18px;background:#f1f5f9;padding:0 6px;font-size:18px}
+    .zoom-panel h3{font-size:15px;margin:0 0 6px;color:#1f2937}
+    .zoom-panel .zoom-caption{font-size:12.5px;color:#4b5563;line-height:1.55;margin:0 0 10px}
+    table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}
+    th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left} th{background:#f8fafc}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({startOnLoad:true,theme:'default',
+      flowchart:{htmlLabels:true,curve:'basis',padding:12,nodeSpacing:40,rankSpacing:46}});
+  </script>
+</head>
+<body>
+
+<h1>UniCon — hidden-state adapter</h1>
+<div class="subtitle">
+  Freeze the whole base; capture its internal activations (<b>detached</b>) via forward hooks; retrain a
+  <b>copy of the decoder</b> whose every hidden state is conditioned on those captured features through
+  <b>zero-init connectors</b>. Shown: the decoder-focused variant (<code>UniConHiddenStateAdapter</code>).
+</div>
+
+<div class="diagram">
+<pre class="mermaid">
+flowchart TB
+
+    XT(["x<sub>t</sub>, t, <b>c</b>"]):::data
+
+    subgraph BASE ["<b>Frozen base U-Net</b> &nbsp;<small>run once · torch.no_grad · DynamiCrafter</small>"]
+      direction LR
+      ENC["<b>Encoder</b><br/><small>input_blocks</small>"]:::frozenInner
+      MID["<b>Middle</b>"]:::frozenInner
+      DEC["<b>Decoder</b><br/><small>output_blocks</small>"]:::frozenInner
+      ENC --> MID --> DEC
+    end
+
+    CAP["<b>Captured base activations</b> &nbsp;<small>(detached · constants)</small><br/><small>encoder skips &nbsp;·&nbsp; middle &nbsp;·&nbsp; decoder feats</small>"]:::capture
+    VBASE(["<b>v<sub>base</sub></b><br/><small>base prediction</small>"]):::data
+
+    subgraph REPL ["<b>Trainable decoder replica</b> &nbsp;<small>deep-copy of decoder + out</small>"]
+      direction TB
+      CONN["<b>zero-init connectors</b><br/><small>fuse the captured feats into each decoder hidden state</small>"]:::connector
+      DECO["<b>decoder blocks</b> <small>(trainable copy)</small><br/><small>+ captured encoder skips concatenated</small>"]:::trainableInner
+      OUTH["<b>out_head</b> <small>(trainable copy)</small>"]:::trainableInner
+      CONN --> DECO --> OUTH
+    end
+
+    DELTA(["<b>Δ<sub>φ</sub></b><br/><small>adapter prediction (+ optional gate)</small>"]):::data
+    C(["<b>c</b><br/><small>action / step-level</small>"]):::cond
+    VOUT["<b>v<sub>out</sub> = compose(v<sub>base</sub>, Δ<sub>φ</sub>)</b><br/><small>add / replace / mask_mix</small>"]:::loss
+
+    XT --> BASE
+    BASE -. "<b>forward hooks · .detach()</b> · no grad" .-> CAP
+    BASE --> VBASE
+    CAP --> CONN
+    C -. "zero-init MLP → emb" .-> REPL
+    OUTH --> DELTA
+    VBASE --> VOUT
+    DELTA --> VOUT
+
+    classDef frozenInner fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,color:#0f172a
+    classDef trainableInner fill:#dbeafe,stroke:#2563eb,stroke-width:1px,color:#0c1e3d
+    classDef data fill:#dcfce7,stroke:#16a34a,stroke-width:1px,color:#052e16
+    classDef capture fill:#dcfce7,stroke:#7c3aed,stroke-width:2.5px,color:#052e16
+    classDef cond fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+    classDef connector fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+    classDef loss fill:#fee2e2,stroke:#dc2626,stroke-width:1.5px,color:#450a0a
+    style BASE fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px
+    style REPL fill:#eff6ff,stroke:#2563eb,stroke-width:1.5px
+</pre>
+</div>
+
+<div class="zoom-panel">
+  <h3>Zoom: the zero-init connector (<code>zeroft</code>, the default)</h3>
+  <p class="zoom-caption">
+    Each connector fuses a <em>captured base activation</em> (the <b>source</b>) into the replica's current
+    hidden state (the <b>target</b>) through both an additive and a multiplicative path, <b>both zero-init</b>.
+    At training step 0 the connector is the identity (<code>out = target</code>), so the adapter starts as an
+    exact pass-through over the frozen base's activations and only departs from it as the connectors learn.
+    The alternative <code>zeroconv</code> is the additive-only (ControlNet-style) connector.
+  </p>
+<pre class="mermaid">
+flowchart LR
+    SRC(["source<br/><small>captured base activation (detached)</small>"]):::data
+    TGT(["target<br/><small>replica hidden state</small>"]):::trainableInner
+    ADD["add(·)<br/><small>zero-init</small>"]:::connector
+    SCALE["scale(·)<br/><small>zero-init</small>"]:::connector
+    OUT["<b>out = target + add(source) + target · scale(source)</b>"]:::loss
+    SRC --> ADD --> OUT
+    SRC --> SCALE --> OUT
+    TGT --> OUT
+    classDef data fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#052e16
+    classDef trainableInner fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#0c1e3d
+    classDef connector fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+    classDef loss fill:#fee2e2,stroke:#dc2626,stroke-width:1.5px,color:#450a0a
+</pre>
+</div>
+
+<div class="legend">
+  <span style="background:#f1f5f9;border-color:#64748b">Frozen base</span>
+  <span style="background:#dbeafe;border-color:#2563eb">Trainable replica</span>
+  <span style="background:#dcfce7;border-color:#16a34a">Captured / detached data</span>
+  <span style="background:#fef3c7;border-color:#d97706">Conditioning</span>
+  <span style="background:#f5f3ff;border-color:#7c3aed">Zero-init connector</span>
+  <span style="background:#fee2e2;border-color:#dc2626">Composition / output</span>
+</div>
+
+<div class="caption">
+  The base runs <b>once, detached</b>; its encoder skips, middle, and decoder activations are captured by forward
+  hooks and enter the adapter as <b>constants</b>. So gradient flows <b>only through the replica decoder and the
+  connectors</b> — the frozen base is never in the backward graph (the heavy part is the replica, a design
+  choice, not a forced base traversal). The adapter returns the shared <code>OutputAdapterResult</code>
+  (prediction + optional per-pixel gate from a copied <code>out_mask</code> head), composed by
+  <code>AdaptedModel</code> exactly like the AVID and HyperAlign families.
+  <br><br>
+  <b>Three variants in the hidden-state family</b> (same capture path, different replica size):
+</div>
+
+<table>
+  <tr><th>Variant</th><th>Trainable replica</th><th>Connectors</th><th>Role</th></tr>
+  <tr><td><b>UniCon</b> (shown, 3d)</td><td>decoder + out head</td><td>zero-init (middle / skip / decoder)</td><td>the canonical design</td></tr>
+  <tr><td>ReplaceDecoder (3e)</td><td>decoder + out head</td><td>none — skips routed unmodified</td><td>ablation of the connectors</td></tr>
+  <tr><td>FullSkipControlNet (3c)</td><td><b>full</b> U-Net (encoder + middle + decoder)</td><td>zero-init at every depth</td><td>upper-bound capacity</td></tr>
+</table>
+
+<div class="caption" style="margin-top:12px">
+  Encoder is <em>not</em> replicated in the UniCon / ReplaceDecoder variants — the decoder copy is driven by the
+  frozen encoder's captured skips. See the companion <code>gradient-flow.html</code> for why this keeps backward
+  cheap, and <code>avid.html</code> / <code>hyperalign.html</code> for the neighbouring adapter families.
+</div>
+
+</body>
+</html>

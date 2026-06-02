@@ -77,17 +77,16 @@ flowchart TD
     subgraph Adapters ["<b>Trainable adapters</b> — one per modality, shared substrate, swappable only in the fusion block"]
       direction TB
       ADA["<b>Action adapter</b><br/><small>in: x<sup>vid</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj</sub> (video corr.)</small>"]:::trainableInner
-      ADP["<b>Proprio adapter</b><br/><small>in: x<sup>prop</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,1</sub> (video corr.) + ε<sub>1</sub> (own noise)</small>"]:::trainableInner
-      ADD["<b>Depth adapter</b><br/><small>in: x<sup>depth</sup><sub>t</sub>, a<sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,2</sub> (video corr.) + ε<sub>2</sub> (own noise)</small>"]:::trainableInner
+      ADP["<b>Proprio adapter</b><br/><small>in: x<sup>vid</sup><sub>t</sub>, x<sup>prop</sup><sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,1</sub> (video corr.) + ε<sub>1</sub> (own noise)</small>"]:::trainableInner
+      ADD["<b>Depth adapter</b><br/><small>in: x<sup>vid</sup><sub>t</sub>, x<sup>depth</sup><sub>t</sub>, ε<sub>pre</sub></small><br/><small>out: ε<sub>adj,2</sub> (video corr.) + ε<sub>2</sub> (own noise)</small>"]:::trainableInner
       ADN["<small>⋯ one per modality (tactile, force/torque, …)</small>"]:::ellipsis
     end
 
+    XV -. "x<sup>vid</sup><sub>t</sub> → every adapter" .-> Adapters
+    EPRE -. "ε<sub>pre</sub> → every adapter<br/>(condition_on_base_outputs)" .-> Adapters
     A --> ADA
-    A --> ADP
-    A --> ADD
     XP --> ADP
     XD --> ADD
-    EPRE -. "ε<sub>pre</sub> as input<br/>(condition_on_base_outputs)" .-> Adapters
 
     %% === Per-modality video corrections ===
     EADJ(["ε<sub>adj</sub>"]):::data
@@ -184,6 +183,9 @@ flowchart LR
   Each modality is noised at an <em>independent</em> timestep <em>t<sub>m</sub></em> (UWM scheme), which
   makes conditional / marginal queries — policy <em>a|x</em>, forward / inverse dynamics, video-only
   prediction — fall out of the one trained model by choosing which streams start from noise.
+  <b>Actions feed only the action adapter</b> (itself just one modality in the mask <em>m</em>); every
+  adapter also reads the noisy video latent <em>x<sup>vid</sup></em>, so each forms its <em>own</em> belief
+  about the video correction <em>ε<sub>adj,i</sub></em>.
   The frozen base only ever sees the video stream; the sensory streams are produced entirely by the
   trainable adapters.
 </div>

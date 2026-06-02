@@ -1,18 +1,28 @@
 ---
 type: feat
 scope: training
-status: open
+status: done
 priority: high
 created: 2026-05-21
-updated: 2026-05-21
-resolution:
-resolution_note:
-closed_at:
+updated: 2026-06-02
+resolution: folded-into-decision
+resolution_note: |
+  Folded into the collapse-mitigation decision on 2026-06-02 —
+  [[../50_Decisions/open/shortcut-collapse-mitigation-anchor-vs-gate]]
+  is now the single home for the anchor + warmup + gate plan. The
+  warmup is the CHOSEN transient fix (step warmup over smooth decay)
+  but is NOT yet implemented in code (`shortcut_anchor_warmup_steps`
+  absent from src/ and configs as of 2026-06-02). The full
+  implementation sketch (config knob, trainer gating, 5000 default,
+  logging, test, deferred follow-ups) is preserved in the decision.
+  Implement when the shortcut runs are stood up.
+closed_at: 2026-06-02
 related:
+  - "[[../50_Decisions/open/shortcut-collapse-mitigation-anchor-vs-gate]]"
   - "[[../50_Decisions/decided/shortcut-anchor-schedule]]"
   - "[[../50_Decisions/decided/avid-adapter-init]]"
-  - "[[risk-shortcut-self-consistency-collapse]]"
-  - "[[feat-shortcut-add-d-zero-gate]]"
+  - "[[done/risk-shortcut-self-consistency-collapse]]"
+  - "[[done/feat-shortcut-add-d-zero-gate]]"
 ---
 
 # Implement step warmup for the shortcut d=1 anchor in the training loop

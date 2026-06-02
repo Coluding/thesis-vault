@@ -54,6 +54,18 @@
   .cell{width:17px;height:17px;border-radius:2px}
   .badge{font-size:11px;color:var(--train);font-weight:700;background:var(--trainBg);
          border:1px solid var(--train);border-radius:4px;padding:0 5px;margin-left:3px}
+  .latent{font-size:14.5px;color:var(--ink);margin:12px 0 2px}
+  .dof{font-size:13px;color:var(--ink);margin:8px 0 0}
+  .mix{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .mixrow{display:flex;align-items:center;gap:10px;font-size:15px}
+  .mixrow .mname{width:140px;font-weight:600}
+  .tile{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+        font-size:12px;font-weight:700;border:1.5px solid;flex:none}
+  .tile.base{background:var(--frozenBg);border-color:var(--frozen);color:#0f172a}
+  .tile.delta{background:var(--trainBg);border-color:var(--train);color:#0c1e3d}
+  .tile.out{background:var(--outBg);border-color:var(--out);color:#450a0a}
+  .mul{font-size:12px;color:var(--muted);min-width:46px}
+  .op{font-size:18px;color:var(--muted);font-weight:700}
   .fig{display:inline-block;margin-top:14px;padding:11px 18px;border-radius:9px;background:var(--train);color:#fff;
        text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 4px 14px rgba(37,99,235,.3)}
   .fig:hover{background:#1d4ed8}
@@ -129,6 +141,7 @@
     </div>
     <div class="figrow">
       <a class="fig" href="hyperalign.html" target="_blank">⤷ HyperAlign architecture</a>
+      <a class="fig" href="unicon.html" target="_blank">⤷ UniCon architecture</a>
       <a class="fig" href="avid.html" target="_blank">⤷ Output (AVID) architecture</a>
     </div>
   </section>
@@ -188,16 +201,19 @@
           <code>δ = base·scale + shift</code> → final = base·(1+scale) + shift.</p>
       </div>
     </div>
+    <p class="latent">Latent <code>x</code> = <b>B×C×T×H×W</b> <small>(batch × channels × frames × height × width)</small></p>
     <div class="viz">
       <div class="vizcol">
         <h4><span class="tag t-out">direct</span> &nbsp;a delta for every element</h4>
-        <p class="cap">One delta value at <b>every (channel, pixel)</b>: full resolution, same shape as the latent.</p>
+        <p class="cap">Predicts the correction <code>δ</code> itself, one value at <b>every (channel, pixel)</b>.</p>
         <div class="chans" id="vizDirect"></div>
+        <p class="dof"><code>δ</code> : <b>B×C×T×H×W</b> &nbsp;→&nbsp; <b>C·T·H·W</b> values per sample</p>
       </div>
       <div class="vizcol">
         <h4><span class="tag t-out">affine</span> &nbsp;one (scale, shift) per channel</h4>
-        <p class="cap">A single <b>(scale, shift)</b> per channel, <b>identical across all pixels</b> in that channel.</p>
+        <p class="cap">Predicts a <b>(scale, shift)</b> that rescales &amp; offsets the base, <b>identical across all pixels</b>.</p>
         <div class="chans" id="vizAffine"></div>
+        <p class="dof"><code>(scale, shift)</code> : <b>B×C×1×1×1</b> each &nbsp;→&nbsp; <b>2·C</b> values per sample</p>
       </div>
     </div>
     <p class="sub" style="margin-top:14px">Affine is a strict superset of direct (force <code>scale = 0</code> and you
@@ -215,7 +231,38 @@
       <tr><td><code>mask_mix</code> (AVID)</td><td>σ(g)·base + (1−σ(g))·Δ</td><td>adapter <em>competes</em> with the base, blended by a mask</td></tr>
       <tr><td><code>replace</code></td><td>Δ</td><td>adapter takes over the prediction</td></tr>
     </table>
-    <p class="note">The mask in <code>mask_mix</code> is what later generalises into the multimodal fusion mask.</p>
+    <div class="mix">
+      <div class="mixrow">
+        <div class="mname"><code>add</code></div>
+        <div class="tile base">base</div><div class="mul">×1</div>
+        <div class="op">+</div>
+        <div class="tile delta">Δ</div><div class="mul">×1</div>
+        <div class="op">=</div><div class="tile out">out</div>
+      </div>
+      <div class="mixrow">
+        <div class="mname"><code>gated_residual</code></div>
+        <div class="tile base">base</div><div class="mul">×1</div>
+        <div class="op">+</div>
+        <div class="tile delta" style="opacity:.55">Δ</div><div class="mul">×σ(g)</div>
+        <div class="op">=</div><div class="tile out">out</div>
+      </div>
+      <div class="mixrow">
+        <div class="mname"><code>mask_mix</code> (AVID)</div>
+        <div class="tile base" style="opacity:.5">base</div><div class="mul">×σ(g)</div>
+        <div class="op">+</div>
+        <div class="tile delta" style="opacity:.5">Δ</div><div class="mul">×(1−σ(g))</div>
+        <div class="op">=</div><div class="tile out">out</div>
+      </div>
+      <div class="mixrow">
+        <div class="mname"><code>replace</code></div>
+        <div class="tile base" style="opacity:.15">base</div><div class="mul">×0</div>
+        <div class="op">+</div>
+        <div class="tile delta">Δ</div><div class="mul">×1</div>
+        <div class="op">=</div><div class="tile out">out</div>
+      </div>
+    </div>
+    <p class="note">Opacity shows how much each stream feeds the output · <code>g</code> = learned gate.
+      The mask in <code>mask_mix</code> is what later generalises into the multimodal fusion mask.</p>
   </section>
 
   <section class="slide">

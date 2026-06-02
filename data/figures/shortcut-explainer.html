@@ -259,6 +259,28 @@
   </p>
 </div>
 
+<h3>The composed shortcut prediction</h3>
+
+<p>
+  In the framework the adapter does not replace the base; it emits a <em>correction</em> that is composed with the
+  base's own prediction. Writing <span class="math">s<sub>pred</sub> = s<sub>base</sub>(x<sub>t</sub>, t)</span> for that
+  base prediction, the full shortcut prediction is:
+</p>
+
+<p class="bigmath">
+  s(x<sub>t</sub>, t, d) &nbsp;=&nbsp; s<sub>base</sub>(x<sub>t</sub>, t) &nbsp;+&nbsp; compose<span style="font-style:normal">(</span> s<sub>pred</sub>, &nbsp; adapter(x<sub>t</sub>, t, d, s<sub>pred</sub>) <span style="font-style:normal">)</span>
+</p>
+
+<p class="caption">
+  <span class="math">s<sub>base</sub>(x<sub>t</sub>, t)</span> — the frozen base's local prediction (the tangent above), reused as the
+  input <span class="math">s<sub>pred</sub></span> handed to the adapter.
+  <span class="math">adapter(x<sub>t</sub>, t, d, s<sub>pred</sub>)</span> — the trainable, step-size-conditioned correction; because
+  it sees the base prediction it only has to learn the <span class="math accent">d</span>-dependent departure from it.
+  <span class="math">compose(·, ·)</span> — the framework's composition operator (<code>add</code> / <code>mask_mix</code>), the same
+  one used across all adapter families.
+  The blue <span class="math">v<sub>shortcut</sub></span> chord in the figure above is exactly this composed result.
+</p>
+
 <!-- ============================================================== -->
 <h2>4. Why we think this might work</h2>
 
