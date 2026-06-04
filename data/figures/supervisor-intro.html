@@ -66,6 +66,19 @@
   .tile.out{background:var(--outBg);border-color:var(--out);color:#450a0a}
   .mul{font-size:12px;color:var(--muted);min-width:46px}
   .op{font-size:18px;color:var(--muted);font-weight:700}
+  .idea{display:flex;align-items:center;gap:16px;margin:18px 0 10px;flex-wrap:wrap}
+  .ibox{border-radius:12px;border:2px solid;padding:14px 18px;display:flex;flex-direction:column;gap:3px;min-width:150px}
+  .ibox b{font-size:16px} .ibox small{font-size:12px;color:var(--muted)}
+  .frozenbox{background:var(--frozenBg);border-color:var(--frozen)}
+  .adapterbox{background:var(--trainBg);border-color:var(--train);text-align:center;align-items:center}
+  .outbox{background:var(--outBg);border-color:var(--out)}
+  .iarrow{font-size:26px;color:var(--muted);display:flex;flex-direction:column;align-items:center;line-height:1.1}
+  .iarrow small{font-size:11px}
+  .adapterwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .condchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:300px}
+  .condchips span{background:var(--condBg);border:1.5px solid var(--cond);color:#451a03;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
+  .conddown{font-size:13px;color:var(--cond);font-weight:600;display:flex;align-items:center;gap:5px}
+  .conddown::before{content:"↓";font-size:18px}
   .fig{display:inline-block;margin-top:14px;padding:11px 18px;border-radius:9px;background:var(--train);color:#fff;
        text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 4px 14px rgba(37,99,235,.3)}
   .fig:hover{background:#1d4ed8}
@@ -110,8 +123,19 @@
         <b>no action input</b> and can't be used directly as world models.</li>
       <li>Retraining a billion parameter video model is out of scope. So we <b>freeze the base</b> and learn a
         small <b>adapter</b> that adds the missing behaviour.</li>
-      <li>Everything in this talk is one composition rule:</li>
+      <li>Everything in here is based on this composition rule:</li>
     </ul>
+    <div class="idea">
+      <div class="ibox frozenbox">🔒 <b>Frozen base model</b><small>pretrained · untouched · no backprop into it</small></div>
+      <div class="iarrow">→<small>base pred</small></div>
+      <div class="adapterwrap">
+        <div class="condchips"><span>actions</span><span>sensory</span><span>step-size</span><span>text prompt</span><span>…</span></div>
+        <div class="conddown">condition on anything</div>
+        <div class="ibox adapterbox">🔧 <b>Adapter</b><small>small · trainable</small></div>
+      </div>
+      <div class="iarrow">→</div>
+      <div class="ibox outbox"><b>Adapted prediction</b><small>same base, now conditioned</small></div>
+    </div>
     <div class="eq"><b>f</b>(x<sub>t</sub>, t, a<sub>t</sub>, d) =
       <span class="tag t-frozen">f<sub>base</sub>(x<sub>t</sub>, t)</span> +
       g(d) · <span class="tag t-train">Δ<sub>φ</sub>(x<sub>t</sub>, t, a<sub>t</sub>, d)</span></div>

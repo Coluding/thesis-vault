@@ -45,6 +45,7 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-06-04 | added | T1 | [[entries/2026-06-04-training-run-io]] |
 | 2026-06-01 | finding | D1 | [[entries/2026-06-01-flash-attention-sdpa-bf16]] |
 | 2026-06-01 | finding | D1 | [[entries/2026-06-01-mask-mix-gate-composition-surface]] |
 | 2026-06-01 | finding | D3 | [[entries/2026-06-01-shortcut-steplevel-ood-mitigated]] |

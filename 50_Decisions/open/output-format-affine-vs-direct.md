@@ -3,7 +3,7 @@ type: decision
 status: open
 created: 2026-05-29
 decided_at:
-updated: 2026-05-29
+updated: 2026-06-03
 target_date:
 scope: architecture
 related:
@@ -18,9 +18,41 @@ related:
 
 ## Status
 
-**Open — captured 2026-05-29.** Framework support is built (`output_v2`
-family); the empirical question is unresolved and is what this decision
-tracks. Nothing here is a result yet — see the ticket for the run.
+**Open — captured 2026-05-29; design refined 2026-06-03.** Framework support
+is built (`output_v2` family); the empirical question is unresolved and is what
+this decision tracks. Nothing here is a result yet — see the ticket for the run.
+
+**Design refinement (2026-06-03): affine is now channel-wise only.** The
+`affine_granularity` knob was removed from the code. Reasoning below (and in
+[[../../30_Knowledge/tech/affine-output-granularity]]): a *dense* per-element
+`(scale, shift)` makes `shift` full-rank, so `base + shift` can already
+represent any residual — dense affine is just `direct` plus an
+expressivity-redundant multiplicative term, which **collapses the format
+distinction**. The "capacity-matched dense affine vs direct" framing was
+therefore degenerate. The meaningful comparison is a difference in **inductive
+bias**, not capacity:
+
+- **direct** — a free, full-resolution residual delta.
+- **affine (channel)** — a cheap, structured per-channel FiLM on the frozen
+  base; cannot collapse into a free residual.
+
+Same trunk in both arms; only the readout structure differs.
+
+**Config consolidation (2026-06-04, decision [a]).** In the cleanup to a focused
+config set, the standalone transformer-backbone arms
+(`diffusion_output_v2_{affine,direct}_metaworld.yaml`) were **deleted**. The
+affine idea moved into the AVID/unet **shortcut** output adapter, so the live
+comparison is now:
+
+- **direct** = `diffusion_avid_shortcut_metaworld.yaml` (AVID/unet, `avid_mask_mix`).
+- **affine** = `diffusion_avid_shortcut_affine_metaworld.yaml` (AVID/unet, `affine` + `add`).
+
+This is **no longer the clean single-axis test** described above — the two arms
+differ in output format *and* composition (`add` vs `avid_mask_mix`), both under
+shortcut. We accepted this (option [a]): treat it as the practical
+affine-under-shortcut comparison and report the confound. A clean single-axis
+run would need an added `direct`+`add` shortcut sibling. See the ticket
+[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
 
 ## Context
 
@@ -36,28 +68,36 @@ full UNet).
 
 ## Question
 
-Holding the backbone fixed, does the **affine `(scale, shift)` output format**
-predict the action-conditioned dynamics better than emitting the **residual
-delta directly**? And does the answer depend on backbone capacity
-(mlp / transformer / unet) or on affine granularity (dense vs per-channel)?
+Holding the backbone fixed, does the **per-channel affine `(scale, shift)`
+output format** predict the action-conditioned dynamics better than emitting the
+**residual delta directly**? And does the answer depend on backbone capacity
+(mlp / transformer / unet)? (The affine-granularity sub-question is closed:
+affine is channel-only — see Status.)
 
 ## What was built (to enable the comparison, not to pre-judge it)
 
 - `adapters/output/format.py` — shared format math. `direct` → delta is the
   raw `C`-channel output; `affine` → raw `2C` split into `(scale, shift)`,
-  `delta = base*scale + shift`. Both return `output_kind="delta"` so the
-  comparison is residual-vs-residual (fair). `affine_granularity ∈ {dense,
-  channel}`.
+  each **pooled to one value per channel**, `delta = base*scale + shift`. Both
+  return `output_kind="delta"` so the comparison is residual-vs-residual.
 - `adapters/output/output_head.py` — `OutputHeadAdapter` with `mlp` and
   `transformer` (DiT-style, patchified latents) backbones.
-- `DynamicCrafterOutputAdapter` — gained `output_format`/`affine_granularity`
-  (the `unet` backbone; `affine` doubles UNet `out_channels` to `2C`).
-- Factory `output_v2` architecture; configs
-  `diffusion_output_v2_{affine,direct}_metaworld.yaml`.
+- `DynamicCrafterOutputAdapter` — gained `output_format` (the `unet` backbone;
+  `affine` doubles UNet `out_channels` to `2C`).
+- Factory `output_v2` architecture (still reachable as a backbone via
+  `OutputHeadAdapter`). The factory raises if a config requests
+  `affine_granularity` other than `channel`.
 - All backbones zero-init the final projection → identity residual at init.
 
-Verified against commit 57244cc (tests in `tests/test_output_format_heads.py`,
-16/16 pass).
+Verified against commit 57244cc (tests in `tests/test_output_format_heads.py`).
+**Update 2026-06-03:** `affine_granularity` removed; affine is channel-only;
+tests updated (20/20 pass).
+**Update 2026-06-04:** the `output_v2_{affine,direct}` configs were deleted in
+the config cleanup; the affine arm now lives in
+`diffusion_avid_shortcut_affine_metaworld.yaml` (AVID/unet, affine + `add`,
+under shortcut) against `diffusion_avid_shortcut_metaworld.yaml` (direct,
+`avid_mask_mix`). The transformer/mlp `OutputHeadAdapter` backbones remain in
+code but have no live config. See the Status note on the resulting confound.
 
 ## Options on the table
 
@@ -76,9 +116,11 @@ Verified against commit 57244cc (tests in `tests/test_output_format_heads.py`,
   strong base beats asking a tiny head to synthesise the delta from scratch.
 - Affine may help **early-training stability** because `scale,shift → 0`
   is the exact identity, whereas a direct head must learn to output ~0.
-- Dense affine ≈ direct in capacity, so any gap there is genuinely the format;
-  per-channel affine is a much smaller hypothesis class and may underfit on
-  spatially-structured corrections.
+- Per-channel affine is a **much smaller hypothesis class** than a dense delta:
+  it can only rescale/shift each base channel globally, so it should win when
+  the base's errors are a per-channel miscalibration and lose when they are
+  **spatially-structured** corrections that a free dense delta can express and a
+  per-channel FiLM cannot. The ablation measures which regime MetaWorld is in.
 
 These are reasoning, not measurements — resolve via the ticket.
 

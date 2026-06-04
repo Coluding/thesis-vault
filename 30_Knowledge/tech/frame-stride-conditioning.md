@@ -1,7 +1,7 @@
 ---
 type: tech-note
 status: living
-last_updated: 2026-05-28
+last_updated: 2026-06-04
 deliverable: D2, D3
 ---
 
@@ -140,20 +140,29 @@ thesis framework" ([[structural-encoder]], lines 110-112). The current code
 is consistent with that framing: `fs` is a base-model input, not a
 framework conditioning key.
 
-## Resolved 2026-05-28 — anchor at AVID convention, no per-sample variation
+## Resolved 2026-06-04 — load-time stride k + action SUM, constant `fs=1`
 
-Per [[../../50_Decisions/decided/per-sample-frame-stride-sampling]] (Option
-A): the MetaWorld translator will write `fps=frame_stride=10`
-unconditionally and read frames contiguously. This parks the base's fps
-channel at its pretrained `default_fs=10` anchor and sidesteps the
-`fps_condition_type` semantic ambiguity entirely — the base sees its
-trained anchor whether it interprets the channel as `fs` or `fps`. The
-constant-`fs` issue this note flagged below is therefore by design for the
-baseline; `Δ_φ` continues to *not* see `fs`. See the decided note for the
-full reasoning, the shelved sub-resolutions (SUM action aggregation,
-per-sample uniform draw, mapped `fs(k)`), and the revisit triggers. The
-fix is tracked at
-[[../../20_Tickets/bug-data-metaworld-fs-anchor-default]].
+**Current resolution:** [[../../50_Decisions/decided/metaworld-frame-stride-load-time]].
+The data is subsampled at a fixed **stride k** (default 4) so a 16-frame clip
+covers k× more wall-clock — because 16 *contiguous* frames are only ~5% of a
+300-frame episode and show no action effect. Dropped delta-actions are
+**SUM-aggregated** per kept frame; the base is fed a **constant `fs=1`** via an
+explicit `fs` key, decoupled from the real slice stride (recorded as
+`frame_stride`). `Δ_φ` still does **not** see `fs`. Implemented in
+`translators/metaworld.py` (`fs_value`, `_read_summed_actions`), `dataset.py`
+(span uses `window_width*stride`), `batch_preprocessor.py` (`_extract_fs` prefers
+`fs`), and the `--frame-stride` default (1→4) in the metaworld training scripts.
+
+> **Superseded resolution (2026-05-28):** the earlier plan was Option A of
+> [[../../50_Decisions/decided/per-sample-frame-stride-sampling]] — write
+> `fps=frame_stride=10` and read contiguously to anchor the base at
+> `default_fs=10`. That parked the fps channel at its pretrained anchor but left
+> the 16-frame window too short. The successor keeps `fs` base-only (the part
+> that survives) but reads strided and **keeps `fs=1`, not the anchor 10** — so
+> the anchor-fix ticket [[../../20_Tickets/bug-data-metaworld-fs-anchor-default]]
+> is **superseded, not applied**. The `fps_condition_type` semantic ambiguity is
+> sidestepped differently now: `fs` is a constant we don't rely on, so its exact
+> interpretation no longer matters for the baseline.
 
 ## Related
 

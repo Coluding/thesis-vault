@@ -1,27 +1,42 @@
 ---
 type: tech-note
 status: living
-last_updated: 2026-05-29
+last_updated: 2026-06-03
 sources:
   - "code: src/generative_flow_adapters/adapters/output/format.py"
   - "code: src/generative_flow_adapters/adapters/output/output_head.py"
   - "code: src/generative_flow_adapters/adapters/output/affine.py"
-  - "config: configs/diffusion_output_v2_affine_metaworld.yaml"
+  - "config: configs/diffusion_avid_shortcut_affine_metaworld.yaml"  # output_v2 configs removed 2026-06-04
 relevance: D1 / D2  # output-adapter design surface + the format ablation
 ---
 
-# Affine output granularity — `dense` vs `channel`
+# Affine output granularity — why affine is channel-wise only
 
-> **`affine_granularity` controls the *shape* of the `(scale, shift)` that the
-> affine output format applies to the base prediction — i.e. how finely the
-> modulation can vary across the latent.** Both granularities produce a delta
-> of the form `delta = base*scale + shift` (composed as `base*(1+scale)+shift`
-> under `add`); they differ only in whether `scale`/`shift` are full-resolution
-> per-element maps (`dense`) or one value per channel broadcast over space and
-> time (`channel`). The knob is **inert for `output_format: direct`** — it only
-> shapes the affine arm. This is the exact analogue, on the output-format axis,
-> of the `mask_mix_gate_kind: channel | spatial` choice in
-> [[mask-mix-gate]].
+> **DECISION (2026-06-03): the affine output format is channel-wise only; the
+> `affine_granularity` knob and the `dense` option were removed from the code.**
+> This note now records *why* — the `dense` analysis below is the rationale, not
+> a live option. The affine format always pools `(scale, shift)` to **one value
+> per channel** (broadcast over space and time), producing
+> `delta = base*scale + shift` (composed as `base*(1+scale)+shift` under `add`)
+> — a cheap per-channel FiLM. The factory now raises if a config requests
+> `affine_granularity` ≠ `channel`. See
+> [[../../50_Decisions/open/output-format-affine-vs-direct]].
+>
+> **The argument for dropping `dense`** (detailed in "Dense affine is a strict
+> superset of `direct`" below): a dense per-element `shift` is full-rank, so
+> `base + shift` already represents *any* residual. Dense affine is therefore
+> just `direct` plus an expressivity-redundant multiplicative term — it does not
+> test a different *format*, only adds capacity/redundancy. The meaningful
+> contrast is `direct` (free dense residual) vs `affine` (cheap per-channel
+> FiLM) — a difference in **inductive bias**, which is the comparison the
+> ablation now runs. (The original "capacity-matched dense affine = fair format
+> test" framing was the bug; the gate's `mask_mix_gate_kind: channel | spatial`
+> in [[mask-mix-gate]] is the closest live analogue of a dense/channel knob, but
+> that one survives because a gate is not a residual and does not subsume
+> `direct`.)
+>
+> Everything below documents the two granularities as originally built, kept for
+> the derivation. Treat `dense` as historical.
 
 The latent is `[B, C, T, H, W]` (batch, channels, frames, height, width).
 

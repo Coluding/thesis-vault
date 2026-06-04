@@ -79,6 +79,11 @@ $$
 along the one-step trajectory is exactly `(v_1 - v_0) / s`; squaring
 and dropping the constant factor recovers (S).
 
+--> This should decrease the curvature since (v1-v0)/s is the approximate derivative $D / D t$  if s is small enough. We just ignore the scaler s since it does not matter during optimization. 
+
+  ==L_heun-smooth = ‖v₀ − sg(v₁)‖² isn't an arbitrary "make consecutive velocities agree" penalty. It's the discrete material derivative: (v₁ − v₀)/s ≈ Df/Dt, squared . And Df/Dt is  exactly the curvature term in the global-error bound from above.==
+
+
 ### Equivalence to "deviation from Heun average"
 
 Penalizing the deviation of `v_0` from the Heun-averaged velocity is
@@ -91,6 +96,41 @@ $$
 Either form is fine; (S) is preferred because it is the most direct
 discrete material-derivative penalty and its scaling is interpretable
 (`L_smooth / s²` ≈ squared material derivative).
+
+### Design decision (2026-06-03): normalise by `s²` when `s` is sampled
+
+We promote the `/s²` form from "interpretation" to the actual loss:
+
+$$
+L_{\text{heun-smooth}}(\theta) \;:=\; \frac{\big\| v_0 - \operatorname{sg}(v_1) \big\|^2}{s^2} \;\approx\; \Big\| \tfrac{D f_\theta}{D t} \Big\|^2.
+$$
+
+This refines the "we just ignore the scalar `s`" margin note above: **`s` is
+ignorable only when it is fixed** (then it is a constant absorbed into
+`λ_hs`). Once `s` is *sampled* per example, `/s²` varies sample-to-sample and
+is no longer absorbable — it reweights examples, which is the behaviour we
+want. Reasoning (grilling session, 2026-06-03):
+
+- **`s` is not a model input in this regularizer.** `f_θ(x,t,c)` is the same
+  instantaneous-velocity field regardless of which `s` is sampled (§3 — `s`
+  sets the *interval*, not the *task*). So the curvature `Df/Dt` is a fixed
+  local property and does **not** grow with `s`. The raw `‖v₀−v₁‖² ≈ s²‖Df/Dt‖²`
+  growth is a **measurement-window artifact**, not "large steps designed to
+  bend more." Dividing by `s²` removes exactly that artifact.
+- **`ShortcutStepSchedule.sample()` draws each dyadic rung with equal
+  probability** (`step_schedule.py:142`, `mode="log2"`). Under raw `‖v₀−v₁‖²`
+  the expected loss is dominated by the top rung by a factor `~(high/low)²`,
+  starving the finer scales. `/s²` makes every rung report the same geometric
+  quantity, so all scales contribute comparably.
+- **`λ_hs` decouples from the `low/high` range.** With raw, retuning `high`
+  silently rescales the penalty; with `/s²` it does not. Main practical win.
+
+**Honest cost (recorded, not yet resolved):** `/s²` de-emphasizes the coarse
+steps that dominate *deployment* integration error (per-step local error is
+`½s²·Df/Dt`, which raw self-weights toward). If D3 later commits to a specific
+deploy step count `N`, bias the `s` *sampling* toward that `s` rather than
+reverting to raw — keep the estimand (`Df/Dt`) scale-clean, move the sampling
+weight instead. See the open `s`-sampling question in §4.
 
 ### Why stop-grad on `v_1`
 
@@ -143,14 +183,94 @@ The step size `s` over which smoothness is enforced is a design knob:
 | Regime | `s` | Cost | Signal characteristic |
 |---|---|---|---|
 | **Fixed-fine** | `s = 1` (one timestep) | Cheapest — both calls at adjacent timesteps; minimal numerical cost difference vs. standard loss | Always-on, low-magnitude — encodes "be locally smooth at the schedule resolution". Useful as a default baseline regularizer. |
-| **Sampled from `ShortcutStepSchedule`** | `s ∼ schedule.sample()` | Same as `distillation` per call | Multi-scale smoothness — large `s` rungs carry stronger signal because the field gets more time to vary. Aligned with eval-time step sizes. |
+| **Sampled from `ShortcutStepSchedule`** | `s ∼ schedule.sample()` | Same as `distillation` per call | Multi-scale smoothness — see corrected justification below. Aligned with eval-time step sizes. |
 | **Fixed-coarse** | `s = T / N_eval` for a target eval step count | Same as above | Pre-trains smoothness at exactly the step size you intend to deploy. Bias-toward-deployment but no multi-scale defense. |
 
+### Why multi-scale `s` (corrected justification, 2026-06-03)
+
+> The earlier rationale — *"large `s` rungs carry stronger signal because the
+> field gets more time to vary"* — is **stale under the `/s²` loss** (§2). Once
+> we divide out the window, every rung reports an estimate of the *same*
+> `‖Df/Dt‖²`, so large `s` carries *equal*, not stronger, signal. The reason to
+> keep multi-scale is **arc-coverage**, not signal-strength.
+
+`(v₁−v₀)/s` is the *average* curvature accumulated over the arc `[t−s, t]`
+(mean-value theorem), **not** the pointwise curvature at `x_t`:
+
+- **small `s`** supervises local smoothness — "is the field flat *right here*";
+- **large `s`** supervises arc-averaged smoothness — "is the field flat
+  *averaged over the long arc a coarse sampler jumps across*."
+
+Deployment takes finite jumps, so we want smoothness over finite arcs of the
+lengths we deploy at; multi-scale sampling covers the spectrum, with the fine
+rungs pinning local smoothness as a floor.
+
+**Why this does *not* argue for the raw (un-`/s²`) loss.** Larger steps do
+incur larger integration error (`½s²κ`), but the loss's job is to estimate and
+kill the *curvature* `κ` that causes it, not to *measure* the error. Drive
+`κ → 0` and the large-`s` error vanishes for free (`½s²κ → 0`). So the
+deployment-relevant error is best reduced by estimating `κ` *scale-cleanly*
+(`/s²`), not by up-weighting large `s` — up-weighting only adds gradient
+variance to the same curvature direction.
+
+**Cap the top rung.** At large `s`, `x_{t−s}` is a far, Euler-*predicted*
+endpoint that may drift off the data manifold; `v₁` there is a noisier, biased
+`κ` proxy ("comparing velocities at non-comparable locations"). Bound `high` so
+the secant stays a trustworthy curvature estimate — this is a reason to **cap
+the range**, not to reweight scales.
+
 Default recommendation: **sampled from the existing
-`ShortcutStepSchedule`** so the regularizer scales naturally with what
-inference is going to ask. Coincidentally lets the same eval grid
-(`log_step_size_grid`) measure regularized vs. unregularized runs on
-identical step counts.
+`ShortcutStepSchedule`** (with a capped `high`) so the regularizer covers the
+arc lengths inference will ask for. Coincidentally lets the same eval grid
+(`log_step_size_grid`) measure regularized vs. unregularised runs on identical
+step counts.
+
+### Loss weighting `w(t, s)` (design decision, 2026-06-03)
+
+The full per-sample term is an importance weight **on top of** the scale-clean
+core:
+
+$$
+L_{\text{heun-smooth}} \;=\; w(t,s)\cdot\frac{\big\| v_0 - \operatorname{sg}(v_1)\big\|^2}{s^2}, \qquad w(t,s)\equiv 1 \text{ by default.}
+$$
+
+- **`/s²` stays in the core, `w` is separate.** `/s²` is *what we measure*
+  (the curvature; §2) and is not optional. `w` is *how much we care about this
+  `(t,s)` sample*. Folding `/s²` into `w` would tangle the curvature estimand
+  with the importance weight and destabilise the meaning of `λ_hs`. Keep them
+  distinct.
+- **`t`-shaping — high at noise, taper toward data.** Convention reminder
+  (§Convention): `t=0` data, `t=T` noise, sampling runs `T→0`. The chosen shape
+  is **high weight near `t→T` (noise / start of sampling), decaying toward
+  `t→0` (data / end)**. Rationale = the (a) mild-trim stance: smooth hardest
+  where curvature is *affordable* (noise/mid region, which is also where a
+  coarse sampler takes its big jumps, so the few-step payoff is largest) and
+  back off where curvature is *irreducible and fidelity-critical* (near data,
+  where smoothing would erase the mode structure and where `x_{t−s}` is most
+  likely to overshoot onto the wrong mode). A flat `w` spends its harm budget
+  in the worst place.
+  - **Parameterise the decay on log-SNR, not raw `t`.** A monotone
+    log-decay (high→low) keyed to **log-SNR** is invariant to the noise
+    schedule; raw-`t` weighting silently changes meaning when the schedule
+    changes. Same shape the user described ("inverse-logarithmic decay"), made
+    portable.
+- **`s`-dependence of `w` — default flat; reserve for a *soft cap*.** Since
+  `/s²` already handles scale, `w` does not need an `s`-term for normalisation.
+  Its one honest use is a soft version of the `high` cap (§ above): taper `w`
+  down at large `s`, where `x_{t−s}` drifts off-manifold and the secant becomes
+  an unreliable curvature proxy. Default `w` flat in `s`; the `t`-axis carries
+  the shaping.
+- **Implementation: a weight, not a resampling.** The shaping is applied as
+  the multiplicative `w(t,s)` on the per-sample loss, *not* by biasing the
+  `t`/`s` sampling distributions. (Resolves the earlier "sampling-side vs
+  weight-side" sub-question in favour of weight-side — it keeps the eval-grid
+  alignment intact and the loss explicit.)
+
+**Honest hedge.** High-at-noise is a *bet* that few-step error is dominated by
+smooth-region jumps. If the data-end curvature turns out to dominate the
+coarse-step error, some near-data smoothing (with its fidelity cost) becomes
+necessary. The `w(t,s)` profile is therefore an **ablation axis**, not a fixed
+truth. _needs verification_ on the DynamiCrafter base / MetaWorld.
 
 ## 5. Interaction with the rest of the loss
 
@@ -164,10 +284,28 @@ where `L_base` is the standard diffusion/flow loss, `L_shortcut-direction`
 is the `distillation` self-consistency term (or zero if shortcut training
 is off), and the new `λ_hs L_heun-smooth` is the smoothness penalty.
 
-- **`L_base` and `L_heun-smooth` are compatible.** The base loss
-  supervises pointwise velocity from data; the smoothness term
-  supervises pairwise velocity along the predicted trajectory. They
-  can both be on at any nonzero weight.
+- **`L_base` and `L_heun-smooth` are in genuine (but, at small `λ_hs`,
+  mild) tension — not freely compatible (corrected 2026-06-03).** `Df/Dt = 0`
+  everywhere means straight constant-speed trajectories (a *straight* / rectified
+  transport). The true marginal-preserving field that `L_base` pins `f_θ` to has
+  *irreducible* curvature (multimodal data ⇒ bending trajectories). So the two
+  terms pull against each other at every `s`: `L_base` wants the data-coupling
+  velocities, `L_heun-smooth` wants to straighten. This is a **fidelity ↔
+  few-step-accuracy tradeoff**, dialled by `λ_hs`, *not* a free lunch.
+  - **Design stance (2026-06-03): (a) mild trim, not straightening.** `λ_hs`
+    is kept small so the term shaves only *excess, adapter-induced* wiggle that
+    the data coupling does not require, buying few-step accuracy at a small
+    fidelity cost. The "result" of the term is the **Pareto curve** (sample
+    quality vs. step count), reported as such.
+  - **What we are *not* doing: (b) aggressive straightening.** A large `λ_hs`
+    would change the coupling and pull endpoints off the true marginals; doing
+    that *correctly* needs a reflow/rectification step (regenerate (noise,data)
+    pairs from the current model, retrain `L_base` on them) — a heavier,
+    different method that would bloat D3's scope. Out of scope here.
+  - Note the two tensions are on **different axes** and need **different
+    counters**: the `s`-axis measurement-window growth is countered by `/s²`
+    (§2); this `L_base` fidelity tension is countered only by small `λ_hs`.
+    Neither counter substitutes for the other.
 - **`L_shortcut-direction` and `L_heun-smooth` are compatible but
   redundantly constrain at small `s`.** The anchor branch of
   `distillation` already gives `L_base` at the smallest step;

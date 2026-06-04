@@ -4,7 +4,7 @@ scope: training
 status: open
 priority: high
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-02
 resolution:
 resolution_note:
 closed_at:
@@ -12,11 +12,61 @@ related:
   - "[[../50_Decisions/decided/deprecate-twostep-shortcut-mode]]"
   - "[[../30_Knowledge/theory/heun-smoothness-regularizer]]"
   - "[[../30_Knowledge/theory/heun-shortcut-target]]"
-  - "[[bug-training-shortcut-twostep-no-stepsize-variation]]"
-  - "[[bug-training-shortcut-target-timestep]]"
+  - "[[done/bug-training-shortcut-twostep-no-stepsize-variation]]"
+  - "[[done/bug-training-shortcut-target-timestep]]"
 ---
 
 # Delete `two_step` shortcut mode; add Heun-smoothness regularizer as a separate loss
+
+## Progress — 2026-06-02 (code landed; docs remaining)
+
+**Patch 1 (add Heun regularizer) — DONE.**
+- `losses/consistency.py:heun_smoothness_loss` + registered as
+  `heun_smoothness` in `LossRegistry`.
+- `Trainer._compute_heun_smoothness` + gated application in `training_step`
+  (`heun_smoothness_weight > 0`, default 0 ⇒ no behaviour change).
+- `config.py:TrainingConfig.heun_smoothness_weight: float = 0.0`.
+- `tests/test_consistency_losses.py` (new): loss contract (shape, grad routes
+  through `current_v` only, zero case, registry), trainer gating, frozen-base
+  preservation, Heun-only adapter-training, unit-jump fallback. All pass.
+- **Finding:** with the unit-jump fallback (no schedule), the regularizer is
+  numerically ~0 (one timestep out of 1000 ⇒ `v0 ≈ v1`). It only bites with a
+  real `shortcut_step_schedule` (larger interval). The ticket's smoke
+  criterion "(a) loss decreases" was unsound for a frozen near-linear dummy
+  base on random data — replaced with "Heun term alone trains the adapter"
+  (zero the base loss, assert adapter params move), which is robust.
+- **Deferred (as ticket allows):** flow-matching path raises a clear
+  `NotImplementedError` (patch 1.5).
+
+**Patch 2 (config migration) — was already DONE** before this session (all
+three live configs use `distillation`).
+
+**Patch 3 (delete two_step) — DONE.**
+- Removed `compute_two_step_target_v` (shortcut_targets.py), the `two_step`
+  dispatch branch + `_resolve_step_level` (trainer.py), and the import.
+- Fixed the stale `shortcut_target_method` default `"linear"` → `"distillation"`
+  in `config.py`. This also repaired latent breakage: the dummy shortcut
+  config sets `shortcut_direction_weight: 1.0` with no method, so under the
+  old `"linear"` default it hit the unknown-method `ValueError`. Now runs.
+- Validation message + docstrings updated; selecting `two_step` raises
+  `ValueError` (regression test added).
+- Config comments cleaned. Residual `two_step` string hits in src/configs are
+  deliberate deprecation breadcrumbs (comments + the error message), not code.
+
+**Remaining (not yet done):**
+1. Surface `heun_smoothness_weight` in ≥1 example config + a `docs/` mention
+   (acceptance criterion 4).
+2. Documentation updates listed below (knowledge notes collapse to one mode;
+   `figures/shortcut-explainer.html` + `figures/shortcut-training.html` still
+   reference `two_step` / a non-existent `_compute_two_step_shortcut_target`).
+3. Optional: run the heavy dynamicrafter shortcut configs ≥100 steps under
+   `distillation` (criterion 2) — the dummy config is verified; the
+   distillation path itself was untouched by the deletion.
+
+**Flagged out-of-scope bug found:** `diffusion_hyperalign_shortcut_metaworld.yaml`
+sets `shortcut_step_level_key: distillation` (line ~104) — almost certainly a
+copy-paste typo for `step_level`. Left untouched (behaviour change, separate
+ticket).
 
 Implementation ticket for the decision in
 [[../50_Decisions/decided/deprecate-twostep-shortcut-mode]]. Two

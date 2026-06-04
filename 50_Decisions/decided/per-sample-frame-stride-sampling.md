@@ -22,6 +22,15 @@ related:
 aggregation, per-sample uniform draw, mapped fs) are **shelved, not
 adopted** — see "Superseded resolutions" below.
 
+> **SUPERSEDED 2026-06-04** by [[metaworld-frame-stride-load-time]]. Its revisit
+> trigger fired: 16-frame *contiguous* clips cover only ~5% of the 300-frame
+> episodes, so no action effect is visible in logging. The successor keeps `fs`
+> base-only (this decision's surviving part) but **reads at a fixed stride k
+> (default 4)** for a longer window, **adopts the shelved SUM action-
+> aggregation**, and feeds a **constant `fs=1`** (not the anchor 10). The
+> contiguous-reads choice below is no longer in force — read it for the design
+> space, not the current behaviour.
+
 ## Decision
 
 The MetaWorld dataset adapter writes `fps=10` and `frame_stride=10` into

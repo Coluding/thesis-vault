@@ -1,17 +1,30 @@
 ---
 type: bug
 scope: data
-status: open
+status: superseded
 priority: medium
 created: 2026-05-28
-updated: 2026-05-28
-resolution:
-resolution_note:
-closed_at:
+updated: 2026-06-04
+resolution: superseded
+resolution_note: >
+  Superseded 2026-06-04 by the load-time-stride decision
+  [[../50_Decisions/decided/metaworld-frame-stride-load-time]], which
+  deliberately keeps a CONSTANT fs=1 (decoupled from the slice stride) rather
+  than anchoring at 10. The premise of this ticket (feed the pretrained anchor
+  10) is reversed; do NOT apply the 1->10 fix. The fps/frame_stride precedence
+  is now handled by an explicit `fs` key in the batch.
+closed_at: 2026-06-04
 related:
+  - "[[../50_Decisions/decided/metaworld-frame-stride-load-time]]"
   - "[[../50_Decisions/decided/per-sample-frame-stride-sampling]]"
   - "[[../30_Knowledge/tech/frame-stride-conditioning]]"
 ---
+
+> **SUPERSEDED 2026-06-04** — see
+> [[../50_Decisions/decided/metaworld-frame-stride-load-time]]. We keep `fs=1`
+> by design (MetaWorld's large inter-frame disparity makes the base's fps anchor
+> a poor fit; `fs` is a constant, non-conditioning input). The 1→10 anchor fix
+> below is **not** applied. Kept for the audit trail.
 
 # MetaWorld translator feeds the wrong `fs`/`fps` to the frozen base
 

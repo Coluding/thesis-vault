@@ -373,6 +373,11 @@ output. Structurally cleaner than the AVID case.
 
 ## The asymmetric init story (why zero the gate but not `y`)
 
+> See [[../theory/identity-at-init-gradient-flow]] for the clean general
+> statement of *why a zero-init layer trains at all* (zero output ≠ zero
+> gradient) and the one-step upstream stall. This section is the
+> AVID/HyperAlign-specific version of that argument.
+
 The puzzle: if `sigmoid(0) = 0.5`, zero-init'ing the gate alone does
 *not* give base pass-through at step 0. So what is zero-init buying?
 Three things:
