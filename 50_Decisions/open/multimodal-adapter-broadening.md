@@ -3,7 +3,7 @@ type: decision
 status: open
 created: 2026-05-25
 decided_at:
-updated: 2026-05-25
+updated: 2026-06-10
 target_date:
 scope: architecture
 related:
@@ -315,6 +315,48 @@ own trainer/eval without that being a methodological problem.
 > works — fairness can be dropped *across* lines but is still cheap insurance
 > *within* the line that becomes the story. Flagged, not resolved.
 
+## Build status (2026-06-10) — substrate + compositional variant shipped
+
+Despite this note still being **open**, the engineering moved: the parallel
+`multimodal/` package landed in commit `b09e8d5` ("cleaned configs and added
+multimodal model"). What's built vs. the plan above:
+
+**Shared substrate (items 1–4) — done.** Multi-stream output contract
+(`MultiModalAdaptedModel.forward(x_t: dict, t: dict, cond) -> dict`),
+per-modality independent-timestep noising + summed weighted loss
+(`MultiModalTrainer`, the UWM scheme), multimodal batch preprocessor, and
+`OutputModalitySpec` (kinds `video`/`vector`/`map`, per-stream `loss_weight`,
+codec selection) all exist. Codecs: `IdentityCodec`, `ResizeCodec`.
+
+**Fusion variants — 1 of 3 + substrate floor.**
+
+| Variant (plan) | Built? | Code |
+|---|---|---|
+| Channel-stack (baseline floor) | ❌ not yet | — |
+| Single-joint (mid baseline) | ❌ not yet | — |
+| **Compositional (the contribution)** | ✅ | `LearnedMaskFusion` — softmax mask `m ∈ ℝ^{n+2}`, base-biased init |
+| *(extra)* additive substrate | ✅ | `TrivialFusion` — `ε_pre + Σ contributions` |
+
+So the **contribution is built first**, not the baselines (the plan's
+recommended order was channel-stack → single-joint → compositional). The
+"cheap insurance" internal baseline flagged in the residual note above is the
+gap: the compositional variant has no channel-stack floor to compare against yet.
+
+**Tested, not run.** `tests/test_multimodal_substrate.py` (7 tests, passing)
+overfits both `TrivialFusion` and `LearnedMaskFusion` on the `DummyVectorField`
+base — multi-stream learning, codec roundtrips, spec validation, config
+partition all verified. **No DynamiCrafter / real-data run has happened**, so
+none of the three "what works" criteria (modalities predicted / video improves /
+modalities demonstrably used) is tested yet. Diffusion-only —
+`MultiModalTrainer` raises `NotImplementedError` for flow bases.
+
+**What this does and doesn't settle.** It confirms the substrate design is
+buildable and the imports-clean approach (parallel package, untouched
+`AdaptedModel`) held. It does **not** settle the go/no-go (sub-decision 5
+residual): multimodal-vs-shortcut as the thesis headline is still open, and the
+positioning tensions (control as success criterion; PP-as-spine soft lean)
+remain. Decision stays `open`.
+
 ## Consequences (if we proceed)
 
 - New model class (`MultiModalAdaptedModel`) sibling to `AdaptedModel`;
@@ -333,14 +375,22 @@ own trainer/eval without that being a methodological problem.
 
 ## Follow-ups (derive on decide)
 
-- Feat ticket (gated on this decision + sub-decision 1–2): scaffold the
-  shared substrate (items 1–4) + the channel-stack variant.
-- Feat tickets (later): single-joint variant; compositional variant.
-- Ablation plan note in `30_Knowledge/experiments/` once the substrate
-  exists: the variant comparison protocol, mirroring
-  [[../../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]].
-- Resolve sub-decision 5 (multimodal × shortcut relationship) with the user
-  — it was unanswered when this note was written.
+- ~~Feat ticket: scaffold the shared substrate (items 1–4) + the channel-stack
+  variant.~~ **Substrate done (2026-06-10, commit `b09e8d5`)** — but the
+  variant built was *compositional*, not channel-stack. See Build status above.
+- **Open: build the channel-stack and single-joint baseline variants** so the
+  compositional contribution has a floor to beat (the "cheap insurance" residual).
+  → needs a `feat-adapter-*` ticket.
+- **Open: first real-backbone run.** Take the substrate off the dummy base onto
+  DynamiCrafter + a real proprio/depth modality; only then can an experiment
+  note be written. → needs an `exp-adapter-*` ticket.
+- Ablation plan note in `30_Knowledge/experiments/` (variant comparison
+  protocol), mirroring
+  [[../../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]
+  — write once the baseline variants exist.
+- ~~Resolve sub-decision 5 (multimodal × shortcut relationship).~~ Resolved
+  2026-05-25 (alternatives, not layers). The residual **go/no-go** (which line
+  is the thesis headline) stays open.
 
 ## Related
 

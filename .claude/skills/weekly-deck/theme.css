@@ -86,7 +86,9 @@ html, body {
 
 /* figures */
 .slide figure { margin: 1em 0; }
-.slide figure img { max-width: 100%; max-height: 55vh; border-radius: 10px; border: 1px solid var(--line); }
+.slide figure img,
+.slide figure video { max-width: 100%; max-height: 55vh; border-radius: 10px; border: 1px solid var(--line); }
+.columns .col figure video { max-height: 46vh; }
 .slide figure figcaption { font-size: .9rem; color: var(--muted); margin-top: .5em; }
 
 /* speaker notes — hidden on screen, shown when printing */

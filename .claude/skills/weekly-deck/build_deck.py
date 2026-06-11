@@ -113,13 +113,20 @@ def render_blocks(lines: list[str], base_dir: Path) -> str:
             out.append(f'<div class="callout">{inline(" ".join(buf))}</div>')
             continue
 
-        # image
+        # image or video (same ![caption](path) syntax; video by extension)
         im = re.match(r"!\[([^\]]*)\]\(([^)]+)\)", stripped)
         if im:
             alt, src = im.group(1), im.group(2)
-            src = embed_image(src, base_dir)
+            embedded = embed_image(src, base_dir)  # base64 data URI (mime guessed)
             cap = f"<figcaption>{inline(alt)}</figcaption>" if alt else ""
-            out.append(f'<figure><img src="{src}" alt="{html.escape(alt)}">{cap}</figure>')
+            stem = src.lower().split("?", 1)[0]
+            if stem.endswith((".mp4", ".webm", ".ogg", ".mov", ".m4v")):
+                out.append(
+                    f'<figure><video src="{embedded}" controls autoplay muted loop '
+                    f'playsinline></video>{cap}</figure>'
+                )
+            else:
+                out.append(f'<figure><img src="{embedded}" alt="{html.escape(alt)}">{cap}</figure>')
             i += 1; continue
 
         # list (bullets or ordered) — collect consecutive list lines

@@ -1,6 +1,6 @@
 ---
 type: theory
-last_updated: 2026-05-28
+last_updated: 2026-06-04
 sources:
   - "[[ddim-step-v-parameterisation]]"
   - "[[heun-shortcut-target]]"
@@ -19,6 +19,39 @@ sources:
 > training method**. The accompanying decision to deprecate the
 > `two_step` shortcut mode is recorded in
 > [[../../50_Decisions/decided/deprecate-twostep-shortcut-mode]].
+
+> **Resolved framing (grilling session, 2026-06-03/04) — read this first.**
+> The body below still carries the original "general multi-scale deployment
+> regularizer" framing; the session refined it. The settled position:
+>
+> 1. **Loss form:** normalise by `s²` — `L = w(t,s)·‖v₀−sg(v₁)‖²/s² ≈ ‖Df/Dt‖²`.
+>    The raw `‖v₀−v₁‖²` is `≈ s²‖Df/Dt‖²`, so it goes inert at small `s` (the
+>    measured `~1e-7` at `jump=1` is this artifact, **not** a healthy small
+>    signal) and is dominated by the top rung when `s` is sampled. `/s²` removes
+>    the `s`-dependence and decouples `λ_hs` from the schedule range. See §2.
+> 2. **`s` vs `d` are different things.** `s` = the finite-difference *probe
+>    window* (lives only in `ddim_micro_step_v` + the `/s²`); the **model is
+>    never conditioned on `s`**. `d` = the *step-size conditioning input* to the
+>    model. In the regularizer, evaluate `v₀, v₁` at **`d=0` (instantaneous)** —
+>    never feed `d=s`, which would smooth the *chord* field and fight the
+>    shortcut mechanism.
+> 3. **Division of labour (the key refinement).** Small-scale instantaneous
+>    curvature → the Heun term (light, `d=0`). **Big-jump accuracy → the chord /
+>    `d`-conditioning + self-consistency, NOT this term.** The chord velocity
+>    *learns the averaged jump directly*, absorbing big-jump curvature instead of
+>    flattening it. We do **not** extend Heun smoothness to large `s` to chase
+>    big-jump smoothness — that would be the wrong (and base-fighting) tool.
+> 4. **Frozen-base caveat.** `f_θ = f_base(frozen) + Δ`, and the instantaneous
+>    curvature is **base-dominated and data-faithful**. Flattening the *composed*
+>    field forces `Δ` to *cancel* the base's curvature → fidelity loss + waste of
+>    scarce adapter capacity. So scope the term as "**don't let `Δ` *add*
+>    curvature**" (an adapter-excess limiter, `‖DΔ/Dt‖²`), not "force the composed
+>    field flat." Demote it to a **D2 baseline** regularizer / optional small D3
+>    adapter prior; the chord conditioning is the D3/D4 few-step lever.
+> 5. **Usable `s` band is *moderate*.** Tiny `s` → catastrophic cancellation
+>    (differencing two `O(1)` velocities); huge `s` → `x_{t−s}` off-manifold,
+>    `v₁` unreliable. So cap `high`, and replace the `jump=1` fallback with a
+>    moderate default (or refuse-to-start when `λ_hs>0` with no schedule).
 
 ## Convention
 
@@ -337,17 +370,40 @@ config field and a loss function in `losses/consistency.py`.
 Implementation plan and integration with the existing trainer is in
 [[../../20_Tickets/refactor-shortcut-deprecate-twostep-add-heun-smoothness]].
 
+### Delta against the current implementation (observed 2026-06-04)
+
+The `heun_smoothness` loss already exists but does **not** yet match the
+resolved design above:
+
+- **Currently raw, no `/s²`.** Called as
+  `LossRegistry.get_consistency_loss("heun_smoothness")(v0, v1.float())` — no
+  `s`, no `t`. Add the `/s²` normalisation and the `w(t,s)` weight (§2, §4).
+- **`jump=1` fallback is doubly wrong.** When no `shortcut_step_schedule` is
+  configured, `_compute_heun_smoothness` falls back to `jump=1` (one of 1000
+  timesteps, `s≈1e-3`). Observed loss there is `~1e-7` — *inert* under raw (the
+  `s²` artifact), and would be *precision-fragile* under `/s²` (catastrophic
+  cancellation). Fix: moderate default jump, or refuse-to-start with
+  `λ_hs>0` and no schedule. The fallback is "no step-size source configured,"
+  not "smallest schedule level."
+- **`d`-conditioning:** ensure both `v₀, v₁` evaluate at `d=0` when shortcut
+  conditioning is active (do not inherit the batch's `d`).
+- **Confirmed:** `ddim_micro_step_v(x, v, t, prev_t, …)` contains **no model
+  call** — `s` enters only as the `t→t−s` timestep gap. The model never sees
+  `s`. (`shortcut_targets.py:81-126`.)
+
 ## 7. What is *not* claimed here
 
 - _needs verification_: empirical magnitude of the integration-error
   reduction from `L_heun-smooth` on a fixed inference step count.
   Plausibly meaningful at small `N`; plausibly negligible at large
   `N` where the per-step error is already in noise.
-- _needs verification_: whether (S) helps or hurts shortcut training
-  specifically — by smoothing the velocity field, it may make
-  self-consistency easier (smooth fields are easier to learn averages
-  of) or harder (the chord velocity at large `s` is *not* a smooth
-  function of `(x, t)` in general). Ablation needed.
+- _partially resolved (2026-06-03/04)_: the shortcut-interaction question is
+  no longer "at which `d` do we smooth?" — settled as **`d=0`, small-scale
+  only; the chord conditioning owns big jumps** (see Resolved-framing block,
+  items 2–4). What remains _needs verification_ is the *empirical* sign and
+  size of the effect: does a light `d=0` smoothness prior make self-consistency
+  converge faster/cleaner, or is it net-neutral once the chord model is doing
+  the integration work? Ablation needed (`λ_hs ∈ {0, small}` × shortcut on).
 - _needs verification_: optimal `λ_hs` and the right baseline `s`
   schedule. Almost certainly `λ_hs ≪ λ_base` (regularizer, not
   primary objective). Probably `λ_hs ≪ λ_sc` when shortcut training

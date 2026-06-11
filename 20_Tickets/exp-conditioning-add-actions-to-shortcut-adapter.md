@@ -4,31 +4,73 @@ scope: conditioning
 status: open
 priority: high
 created: 2026-06-04
-updated: 2026-06-04
+updated: 2026-06-05
 resolution:
 resolution_note:
 closed_at:
 related:
   - "[[exp-shortcut-vs-image-only-anchor-baseline]]"
   - "[[../50_Decisions/open/output-format-affine-vs-direct]]"
+  - "[[../50_Decisions/open/frame-stride-increase-for-action-dynamics]]"
 ---
 
-# exp: Add action conditioning on top of the step-level shortcut adapter
+# exp: Make action conditioning effective in the shortcut adapter
 
 ## Context
 
-The current shortcut adapter conditions **only on step level `d`** — no action
-conditioning. Qualitatively it already produces clean, step-count-robust
-MetaWorld frames (1→25 NFE), but with actions off the right column is near-static
-across rows, so the figure shows **step-invariance, not action-following**. To
-make this a D4 result (action-conditioned *and* shortcut) the adapter needs to
-take `a_t` as well: `f(x_t, t, a_t, d) = f_base + g(d)·Δ_φ(x_t, t, a_t, d)`.
+**Correction (2026-06-05): the shortcut adapter already conditions on `a_t`.** The
+earlier assumption that it was "step-level only" was wrong — the AVID config
+(`diffusion_avid_shortcut_metaworld.yaml`) already declares the `act` condition,
+and the AVID adapter UNet is natively `action_conditioned: True`, so `a_t` is
+passed to its action head. Yet the predicted dynamics still look **somewhat
+random / not action-following** in the local runs. So this is no longer an
+"add wiring" task — it's a **diagnose-why-actions-aren't-effective** task.
+
+The target remains the D4 shape: `f(x_t, t, a_t, d) = f_base + g(d)·Δ_φ(x_t, t,
+a_t, d)` where the prediction genuinely *responds* to `a_t`.
 
 ## Goal
 
-Jointly condition the shortcut adapter on `(step_level, action)` and verify the
-predicted next-frame actually responds to the action (not just reconstructs a
-static target), while keeping the step-count robustness intact.
+Find out why the (already-wired) action conditioning isn't producing
+action-following dynamics, fix it, and verify the predicted next-frame actually
+responds to `a_t` — while keeping the step-count robustness intact.
+
+## Leading hypotheses for the ineffective action signal
+
+- **Actions null/dropped in practice.** Batch may not supply real `act`, or
+  `dropout_actions` / eval may feed the null action — nominal conditioning only.
+  _Check first: dataloader yields non-null `act`; eval conditions on the real
+  action sequence._
+- **Action not held fixed across the self-consistency micro-step**, so the
+  shortcut target fights the action signal (see below).
+- **Signal too weak / undertrained** — action head barely moves the output;
+  local runs may simply be too short.
+
+## Concrete plan (2026-06-05): local combined run first
+
+Config added: **`configs/diffusion_avid_shortcut_action_metaworld.yaml`** in the
+codebase. It is `diffusion_avid_shortcut_metaworld.yaml` (the anchor_prob=1.0
+baseline) with **`shortcut_anchor_prob: 1.0 → 0.5`** and a new name/output_dir/
+wandb_project — everything else held identical, so it's a clean A/B against the
+baseline.
+
+Grounded discovery while building it: the AVID adapter UNet
+(`act_cond_diffusion_11M.yaml`) is **natively `action_conditioned: True`
+(`action_dropout_prob: 0.0`)**, and `adapters/output/dynamicrafter.py:167-172`
+already passes `act=cond.get("act")` into its action head. So action conditioning
+is **architecturally wired in this config**.
+
+**Status (2026-06-05): the earlier sharp `anchor_prob=0.5` figure was produced by
+this same action-wired config** — so the local sanity check is effectively done.
+The dynamics looked somewhat random there, but that run was **small data + small
+batch (local)**, so undertraining/scale is the leading suspect rather than dead
+actions. The committed config above makes that 0.5+action run reproducible.
+
+Sequence: the next step is a **proper Snellius (HPC) run with more data and a
+bigger batch size** — needed both to get a fair shortcut-vs-baseline comparison
+*and* to see whether actions become effective at scale. If dynamics are *still*
+random after a proper run, fall back to the action-effectiveness diagnostics
+below.
 
 ## Setup (machinery already exists — this is wiring, not building)
 

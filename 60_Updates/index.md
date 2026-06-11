@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-06-01
+last_updated: 2026-06-10
 status: living
 ---
 
@@ -38,6 +38,7 @@ hand-edited.
 
 | Date | Deck | For meeting |
 |---|---|---|
+| 2026-06-09 | [presentations/2026-06-09.html](presentations/2026-06-09.html) · [source](presentations/2026-06-09.slides.md) | 2026-06-09 |
 | 2026-06-01 | [presentations/2026-06-01.html](presentations/2026-06-01.html) · [source](presentations/2026-06-01.slides.md) | 2026-06-01 |
 | 2026-05-25 | [presentations/2026-05-25.html](presentations/2026-05-25.html) · [source](presentations/2026-05-25.slides.md) | — |
 
@@ -45,6 +46,8 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-06-10 | progress | exploratory | [[entries/2026-06-10-multimodal-substrate-landed]] |
+| 2026-06-05 | finding | D3 | [[entries/2026-06-05-anchor-baseline-confirms-shortcut-fewstep-gain]] |
 | 2026-06-04 | added | T1 | [[entries/2026-06-04-training-run-io]] |
 | 2026-06-01 | finding | D1 | [[entries/2026-06-01-flash-attention-sdpa-bf16]] |
 | 2026-06-01 | finding | D1 | [[entries/2026-06-01-mask-mix-gate-composition-surface]] |

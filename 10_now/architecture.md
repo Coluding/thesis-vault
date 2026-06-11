@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-05-15
+last_updated: 2026-06-10
 status: living
 ---
 
@@ -152,6 +152,49 @@ new size point on the same detached-output family). Decision/experiment:
 [[../50_Decisions/open/output-format-affine-vs-direct]],
 [[../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
 
+## Multimodal output adapters (added 2026-06-10)
+
+A new `multimodal/` subpackage implements the multi-stream world model from
+[[../50_Decisions/open/multimodal-adapter-broadening]] — the "optional
+extension" `(x^video_{t+d}, x^prop_{t+d}) = f(x_t, t, a_t)` elevated to a
+parallel research line. **This is a separate class tree from `AdaptedModel`,
+not an extension of it** — the single-modality shortcut/`d` path is untouched
+and dormant (shortcut is shelved for this line per the decision note).
+
+Landed in commit `b09e8d5` ("cleaned configs and added multimodal model",
+2026-06-10), ~1000 LoC across `src/generative_flow_adapters/multimodal/`:
+
+| File | Role |
+|---|---|
+| `model.py` | `MultiModalAdaptedModel` — sibling to `AdaptedModel`; `forward(x_t: dict, t: dict, cond) -> dict`. Frozen base predicts the video stream; modality streams (proprio/tactile/…) have **no frozen prior** and are predicted whole by per-modality heads. |
+| `fusion.py` | Video-stream fusion: `TrivialFusion` (`ε_video = ε_pre + Σ contributions`, additive substrate / degenerate baseline) and `LearnedMaskFusion` (compositional — softmax mask `m ∈ ℝ^{n+2}` over {base, action, modality₁…ₙ}, base-biased init). |
+| `modality_adapter.py` | Per-modality prediction heads (vector / map kinds). |
+| `spec.py` | `OutputModalitySpec` — output-side dual of `ConditionSpec`; kinds `video`/`vector`/`map`, per-stream `loss_weight`, codec selection. |
+| `codecs.py` | `IdentityCodec` (raw + per-channel norm), `ResizeCodec` (map downsample ↔ restore) — raw clip data ↔ diffusion target. |
+| `trainer.py` | `MultiModalTrainer` — forks the diffusion branch. Each stream noised at its **own** timestep `t_m ~ U(0,T)` (the UWM scheme); one summed objective `Σ w_m · L_m`. |
+| `preprocessor.py`, `config.py`, `builders.py` | Batch prep, config partition (`MultiModalExperimentConfig`), and `build_multimodal_experiment` wiring (dummy base **or** the real output-adapter factory for the video stream). |
+
+**Design specifics that are now code, not plan:** independent per-modality
+timesteps + shared summed denoising objective (UWM scheme, sub-decisions 1 & 3);
+default `fusion` knob is `compositional`; modality streams composition-from-scratch.
+
+**Status — substrate built and tested, no real-backbone run yet.** Validated
+on the lightweight `DummyVectorField` base by `tests/test_multimodal_substrate.py`
+(7 tests, all passing): multi-stream contract, codec roundtrips, spec validation,
+config partition, per-stream noising, and **overfit tests for both `TrivialFusion`
+and `LearnedMaskFusion`** (both learn end-to-end; the compositional mask receives
+gradient and stays a normalised softmax). These are unit/overfit checks on a toy
+base — **not** a DynamiCrafter run and **not** an experimental result. The real
+video backbone path is wired in `builders.py` but not yet exercised end-to-end.
+
+**Variant coverage vs the plan.** The decision note's contribution
+(`LearnedMaskFusion`, compositional) is built; the additive `TrivialFusion`
+substrate is built. The two intended *comparison baselines* — channel-stack and
+single-joint — are **not yet** present as distinct fusion strategies.
+
+**Flow matching is deferred** — `MultiModalTrainer` raises `NotImplementedError`
+for non-diffusion bases.
+
 ## Backbone providers
 
 `models/base/factory.py` resolves model configs into concrete backbones.
@@ -227,6 +270,7 @@ inference"). Video logging added in the prior commit (`44b214b`).
 | `test_metaworld_dataset.py` | MetaWorld dataloader |
 | `test_null_caption.py` | Empty / null caption handling for text-conditioned backbones |
 | `test_video_logging.py` | Video logging utilities |
+| `test_multimodal_substrate.py` *(added 2026-06-10)* | Multimodal substrate: multi-stream contract, codecs, spec, config partition, per-stream noising, overfit of trivial + compositional fusion (dummy base, no GPU) |
 
 No CI runner wired. Tests run locally via `pytest`.
 
@@ -297,10 +341,13 @@ Surface-level open decisions that should be opened as
   `linear` but `two_step` is also implemented. The D3 ablation needs both
   cleanly compared. → candidate
   [[../50_Decisions/open/shortcut-target-method]].
-- **Multimodal scope.** The proposal lists a multimodal extension
-  (video + proprio) as optional. Architecturally the conditioning system
-  supports `modalities`, but no config or run uses both yet. → candidate
-  [[../50_Decisions/open/multimodal-scope]].
+- **Multimodal scope.** No longer just conditioning-side: the multi-stream
+  **output** substrate now exists (`multimodal/` subpackage, see above) and the
+  compositional learned-mask adapter is built and overfit-tested on a dummy
+  base. Open parts: (1) the channel-stack and single-joint *baseline* variants
+  aren't built; (2) no real-backbone (DynamiCrafter) run has happened; (3) the
+  go/no-go on whether multimodal becomes the thesis headline vs. shortcut is
+  still open. → tracked in [[../50_Decisions/open/multimodal-adapter-broadening]].
 - **Whether to keep both `external_repos/` and `src/external_deps/`** as
   separate vendored zones. The first is reference-only, the second is on
   the import path — easy to confuse. → trivial enough to be a chore ticket

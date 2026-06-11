@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-05-15
+last_updated: 2026-06-10
 status: pre-results
 ---
 
@@ -57,6 +57,18 @@ The clearest entrypoint is `scripts/train_hyperalign_metaworld.py`, paired
 with `configs/diffusion_hyperalign_metaworld.yaml`. Working tree is
 modified at HEAD — there's in-flight work on this exact path.
 
+### Multimodal extension — substrate built (2026-06-10)
+
+The multi-stream output world model (`multimodal/` subpackage, commit
+`b09e8d5`) is **built and unit/overfit-tested on a dummy base**, but has **not
+run on a real backbone** — so it produces no experimental result yet. It sits
+here, not in the "what has actually run" table, deliberately. What exists:
+`MultiModalAdaptedModel` + compositional `LearnedMaskFusion` (the contribution)
++ additive `TrivialFusion` substrate + per-modality timestep diffusion trainer.
+See [[architecture]] §"Multimodal output adapters" and
+[[../50_Decisions/open/multimodal-adapter-broadening]]. Diffusion-only;
+channel-stack / single-joint baseline variants not yet built.
+
 ## What has actually run
 
 _Needs verification — fill in from wandb / local logs._
@@ -92,11 +104,13 @@ records — each becomes one experiment note under
 - `test_metaworld_dataset.py`
 - `test_null_caption.py`
 - `test_video_logging.py`
+- `test_multimodal_substrate.py` *(added 2026-06-10; 7 tests, all passing)*
 
 Tests cover the architecture / shape / wiring contract for each adapter
 family, the data pipeline, and the video logging path. They do **not**
 constitute experimental results — they ensure the code runs, not that the
-adapters learn anything.
+adapters learn anything. (The multimodal overfit tests show the streams
+*can* be fit on a toy dummy base — still not a real-data result.)
 
 ## What's planned
 
