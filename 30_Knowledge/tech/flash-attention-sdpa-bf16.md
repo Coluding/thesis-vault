@@ -1,7 +1,7 @@
 ---
 type: tech-note
 status: living
-last_updated: 2026-05-25
+last_updated: 2026-06-17
 sources:
   - "code: src/generative_flow_adapters/backbones/dynamicrafter/modules/attention.py"
   - "code: src/generative_flow_adapters/training/trainer.py"
@@ -184,6 +184,30 @@ the frozen base and the fp32 adapter, while leaving all stored weights in fp32.
   fp32 forward, loss finite; `amp=bf16` → bf16 forward, backward succeeds, loss
   matches fp32 to 5 decimals (1.01112 vs 1.01114).
 
+## Temporal self-attention: SDPA grid-limit fix (2026-06-17)
+
+A *second*, distinct SDPA gotcha on the **temporal** path — separate from the
+spatial `(N, N)` memory blow-up above. SDPA's Flash / mem-efficient CUDA kernels
+launch a grid whose y/z dimension is **`batch · n_heads`**, and that dimension
+must stay below the hardware cap of **65,535**. The grid overflow surfaces as a
+**`cudaErrorInvalidConfiguration`** kernel-launch failure — *not* an OOM.
+
+In `TemporalTransformer.forward` (`attention.py`) the `only_self_att` branch
+feeds a batch of `(b·h·w)` — batch times spatial resolution — into the
+attention blocks. At large batch size / spatial resolution, `(b·h·w) · n_heads`
+exceeds 65,535 and the launch is rejected.
+
+**Fix:** store `self.n_heads = n_heads` (attention.py:410), then chunk the batch
+axis in the `only_self_att` loop so each chunk's `chunk · n_heads < 65,535`
+(`chunk = max(1, 65535 // self.n_heads)`, attention.py:482-493), concatenating
+the per-chunk outputs back. Below the cap it runs unchanged. This mirrors the
+existing per-batch `for j in range(b)` loop in the cross-attention branch
+(attention.py:498-503, whose comment already noted the 65,535 limit). The batch
+axis is embarrassingly parallel, so chunking changes nothing numerically and
+preserves Flash — wall-clock and memory are unaffected.
+
+See [[../../20_Tickets/done/bug-backbone-temporal-attn-sdpa-grid-overflow]].
+
 ## xformers routing was removed (important)
 
 `CrossAttention.__init__` used to swap spatial attention onto
@@ -218,6 +242,9 @@ Flash), and also supports masks + relative position. `efficient_forward` and the
 
 ## Related
 
+- [[sdpa-vs-manual-attention-expressiveness]] — why `relative_position` /
+  `causal_attention` route to the manual softmax instead of SDPA, and how SDPA
+  *could* be made causal-aware
 - [[concat-condition]] — `cond["concat"]` channel pack that changes the UNet
   input the attention sees.
 - [[dynamic-rescale]] — the other trainer-side numerical knob touching

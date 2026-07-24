@@ -14,7 +14,7 @@ related:
   - "[[../30_Knowledge/tech/structural-encoder]]"
   - "[[bug-training-hyperalign-oom-flash-attention]]"
   - "[[feat-adapter-flops-per-step-estimator]]"
-  - "[[exp-adapter-param-matched-comparison]]"
+  - "[[experiments/exp-adapter-param-matched-comparison]]"
   - "[[../50_Decisions/open/multimodal-adapter-broadening]]"
 ---
 
@@ -43,7 +43,7 @@ which forces:
 If a much cheaper hypernetwork that conditions on the (small) conditioning
 chunk alone is competitive, it's both a strong memory win **and** a clean
 extra family/variant for the adapter comparison
-([[exp-adapter-param-matched-comparison]]). It also makes an ideal
+([[experiments/exp-adapter-param-matched-comparison]]). It also makes an ideal
 cheap per-modality adapter if the multimodal direction goes ahead
 ([[../50_Decisions/open/multimodal-adapter-broadening]]).
 
@@ -152,7 +152,7 @@ _needs verification._
 - A config under `configs/` mirroring `diffusion_hyperalign_metaworld.yaml`
   but selecting the condition-only variant.
 - One row added to the adapter-family comparison
-  ([[exp-adapter-param-matched-comparison]]).
+  ([[experiments/exp-adapter-param-matched-comparison]]).
 
 ## Related
 

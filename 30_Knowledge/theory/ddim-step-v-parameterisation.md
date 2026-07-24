@@ -243,6 +243,59 @@ skip this branch.
 | **Orthogonality of `R(φ_t)`.** | $\langle (\sqrt{\alpha_t}, \sqrt{1-\alpha_t}), (-\sqrt{1-\alpha_t}, \sqrt{\alpha_t}) \rangle = 0$. | ✓ |
 | **Determinant +1.** | $\alpha_t + (1 - \alpha_t) = 1$. Ray-preserving, no reflection. | ✓ |
 
+## 8. Inverting a finite jump — well-posed at any step size
+
+A recurring worry about the endpoint-inversion shortcut fix
+([[shortcut-v-averaging-bias]] §5, Option A): *"DDIM is only valid
+infinitesimally, so asking which velocity reaches a far endpoint must fail —
+any tangent, extended, leaves the manifold."* It doesn't, and §3 already says
+why.
+
+The DDIM step is **not** an Euler translation `x + v·d`. From §3 it is the
+finite **rotation**
+
+```
+x_{t'} = cos(Δ)·x_t + sin(Δ)·v_t,   Δ = φ_t − φ_{t'}
+```
+
+(unit-ray form; the affine recompose (R) in general). The `cos(Δ)·x_t` term
+rescales the base point so the step **bends back onto the ray** — it stays
+on-manifold for the true `v` at *any* Δ, including a 90° one-shot jump. That
+is exactly why few-step DDIM sampling (50→4 steps) is meaningful at all; if
+the step were only infinitesimally valid, one-step generation could not work.
+
+So the inversion is the inverse of an **affine bijection**: given `x_t` and a
+target endpoint `C`, there is a *unique* velocity
+
+```
+v_target = (C − cos(Δ)·x_t) / sin(Δ)
+```
+
+such that one DDIM step of size Δ lands on `C`. There is no "no such
+velocity" — there is always exactly one, because you are inverting a rotation,
+not searching for an Euler-translation that reaches a far point. The model is
+trained to output `v_target`; at inference the sampler rotates by Δ (scales it
+by `sin Δ` and adds back `cos Δ·x_t`), landing on `C` by construction.
+
+Edge cases:
+
+- **Δ → 0:** `sin Δ → 0`, but `C → x_t` too, so it is a `0/0` whose limit is
+  the true instantaneous velocity. And the smallest step is the **anchor**
+  (grounded by the standard loss, never inverted), so the denominator is
+  bounded away from 0 for every supervised rung.
+- **Large Δ** (up to a full noise→data one-shot, `Δ = π/2`): `sin` is positive
+  on `(0, π)`, so big jumps are *better*-conditioned, not worse.
+- **Imperfect model:** the composed endpoint `C` may sit slightly off the ray.
+  `v_target` is still the unique vector whose rotation hits that `C` — the
+  inversion does not require `C` to be on-manifold.
+
+The contrast that resolves the intuition: "extend a tangent and it leaves the
+manifold" is the **Euler / displacement** picture — there the velocity to
+reach `C` is the chord `(C − x)/d`, which genuinely leaves the manifold, and
+the displacement fix (Option B) *embraces* that (honest off-manifold secants
+compose additively). **DDIM rotates; displacement translates.** Both land on
+`C`; only Euler needs `C` reached by a straight extension.
+
 ## What this primitive is *not*
 
 - **Not a noising step.** Although the recompose formula (R) has the

@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-06-10
+last_updated: 2026-07-15
 status: living
 ---
 
@@ -150,7 +150,7 @@ projection (identity residual at init). Configs:
 [[../30_Knowledge/theory/unicon-output-adapters-detached-backward]] (this is a
 new size point on the same detached-output family). Decision/experiment:
 [[../50_Decisions/open/output-format-affine-vs-direct]],
-[[../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
+[[../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]].
 
 ## Multimodal output adapters (added 2026-06-10)
 
@@ -169,23 +169,38 @@ Landed in commit `b09e8d5` ("cleaned configs and added multimodal model",
 | `model.py` | `MultiModalAdaptedModel` — sibling to `AdaptedModel`; `forward(x_t: dict, t: dict, cond) -> dict`. Frozen base predicts the video stream; modality streams (proprio/tactile/…) have **no frozen prior** and are predicted whole by per-modality heads. |
 | `fusion.py` | Video-stream fusion: `TrivialFusion` (`ε_video = ε_pre + Σ contributions`, additive substrate / degenerate baseline) and `LearnedMaskFusion` (compositional — softmax mask `m ∈ ℝ^{n+2}` over {base, action, modality₁…ₙ}, base-biased init). |
 | `modality_adapter.py` | Per-modality prediction heads (vector / map kinds). |
+| `modality_encoder.py` *(added 2026-06-26)* | Real-backbone compositional coupling: `ModalityEncoder` (**video←m** — encodes `z_t^m` + `t_m` into `context_dim` tokens injected into *that modality's own* AVID adapter's cross-attention `context`) and `VideoReadout` (**m←video** — pools the frozen base video prediction into the modality heads' conditioning). |
 | `spec.py` | `OutputModalitySpec` — output-side dual of `ConditionSpec`; kinds `video`/`vector`/`map`, per-stream `loss_weight`, codec selection. |
 | `codecs.py` | `IdentityCodec` (raw + per-channel norm), `ResizeCodec` (map downsample ↔ restore) — raw clip data ↔ diffusion target. |
-| `trainer.py` | `MultiModalTrainer` — forks the diffusion branch. Each stream noised at its **own** timestep `t_m ~ U(0,T)` (the UWM scheme); one summed objective `Σ w_m · L_m`. |
+| `trainer.py` | `MultiModalTrainer` — forks the diffusion branch. Each stream noised at its **own** timestep `t_m ~ U(0,T)` (the UWM scheme); one summed objective `Σ w_m · L_m`. Logs total + **per-modality (unweighted) denoising losses** (`loss_video/loss_proprio/...`) to stdout, JSONL, and W&B (`--wandb`). |
+| `eval.py` *(added 2026-06-26)* | `MultiModalEvaluator` — eval-time **modality rollout** (full reverse diffusion via `DiffusionInferenceSampler` on a per-modality head wrapper, teacher-forcing the GT video for the m←video readout) + predicted-vs-GT viz. Plugs into `trainer.train(on_step=…)` at a config cadence; modalities flagged `visualize: true`. Vectors → W&B `line_series`; maps → images; always an `.npz` dump. No matplotlib. |
 | `preprocessor.py`, `config.py`, `builders.py` | Batch prep, config partition (`MultiModalExperimentConfig`), and `build_multimodal_experiment` wiring (dummy base **or** the real output-adapter factory for the video stream). |
 
 **Design specifics that are now code, not plan:** independent per-modality
 timesteps + shared summed denoising objective (UWM scheme, sub-decisions 1 & 3);
 default `fusion` knob is `compositional`; modality streams composition-from-scratch.
 
-**Status — substrate built and tested, no real-backbone run yet.** Validated
-on the lightweight `DummyVectorField` base by `tests/test_multimodal_substrate.py`
-(7 tests, all passing): multi-stream contract, codec roundtrips, spec validation,
-config partition, per-stream noising, and **overfit tests for both `TrivialFusion`
-and `LearnedMaskFusion`** (both learn end-to-end; the compositional mask receives
-gradient and stays a normalised softmax). These are unit/overfit checks on a toy
-base — **not** a DynamiCrafter run and **not** an experimental result. The real
-video backbone path is wired in `builders.py` but not yet exercised end-to-end.
+**Status — compositional now wired to the real DynamiCrafter backbone, still no
+training run.** Two layers:
+- *Substrate (2026-06-10):* validated on `DummyVectorField` by
+  `tests/test_multimodal_substrate.py` (7 tests): multi-stream contract, codec
+  roundtrips, spec/config, per-stream noising, overfit of `TrivialFusion` +
+  `LearnedMaskFusion`.
+- *Real-backbone TRUE compositional (2026-06-26):* on a non-dummy provider +
+  `fusion: compositional`, `builders.py` wires **one AVID adapter per modality**
+  (separate weights) + a `ModalityEncoder` each + `VideoReadout` +
+  `LearnedMaskFusion(1+n)`; `model.py` runs `_forward_compositional` —
+  `ε_video = m₀·ε_pre + m₁·ε_adj + Σ_i m_{i+1}·Δ_i`, each Δ_i from an adapter that
+  sees only its own modality tokens (appended to `context`, preserving the fixed
+  77-token text/image split). Contract-tested by
+  `tests/test_multimodal_real_backbone.py` (3 tests): per-modality token routing,
+  text boundary preserved, mask is a normalised n+2 softmax, bidirectional + mask
+  grad flow. (An initial single-shared-adapter cut was corrected to this.)
+
+Both layers are unit/contract checks plus a random-weight smoke run (35.2M
+trainable params, runs end-to-end on the real DynamiCrafter UNet) — **not** a
+DynamiCrafter *training* run and **not** an experimental result. The *fused*
+variant (modality↔modality self-attention) is not yet built.
 
 **Variant coverage vs the plan.** The decision note's contribution
 (`LearnedMaskFusion`, compositional) is built; the additive `TrivialFusion`
@@ -205,6 +220,8 @@ for non-diffusion bases.
 | `diffusers` | `models/base/diffusers.py` | Live (soft integration) | Wraps Hugging Face `diffusers` pipelines; optional dep |
 | `dynamicrafter` | `models/base/dynamicrafter.py` | Live | Video U-Net from DynamiCrafter / AVID — vendored under `backbones/dynamicrafter/` and `src/external_deps/lvdm/` |
 | `opensora` | _via configs_ (`opensora_output_adapter.yaml`) | _Partial_ | OpenSora vendored under `external_repos/` per commit `3572c82`; full provider wiring _needs verification_ |
+| `wan2.2` | `scripts/train_wan22_i2v_metaworld.py` | ⚠️ **Vendored, unverified prior** | Loads the hand-copied `Wan22DiTWrapper`. Confirmed (2026-07-14, wandb run metadata) as the base used by a run whose adapter had to learn entirely from scratch (no useful prior) — see [[../20_Tickets/bug-infra-wan-script-provider-mismatch]]. Also has **no wiring** for `action_per_frame`/`action_seq_len`. Most `diffusion_wan22_*` config headers still point here — treat as a landmine until that ticket is resolved. |
+| `wan2.2_external` | `scripts/train_wan22_i2v_metaworld_external.py` | **Preferred — real pretrained weights** | Loads the real upstream `wan.WanTI2V` (`external_repos/Wan2.2`). Confirmed used by both the proper-prior xattn run and the DC-UNet smoke-validated runs. The only script wired for `action_per_frame`/`action_seq_len` (added 2026-07-14). Use this for any real-weights run. |
 
 ## Conditioning
 
@@ -220,6 +237,35 @@ adapters. Supports:
 - Horizon conditioning (`include_horizon`, `horizon_dim`)
 - Condition dropout via `drop_condition_prob`
 - Fusion modes via `fuse_mode` (default `concat_mlp`)
+
+### Action injection: aggregated vs per-frame (2026-07-14)
+
+**Finding:** across the WAN runs the action reaching the adapter's AdaLN/additive
+path was **aggregated** — the preprocessor summed the per-frame delta-actions over
+the whole clip into one `[B, A]` vector (`wan_batch_preprocessor._aggregate_action`,
+`action_aggregation: sum`), which the MLP encoder broadcast identically to every
+latent frame. This **departs from the original AVID** action head
+(`external_repos/avid/.../openaimodel3d.py:737-747`), which conditions **per-frame**:
+`act` is `[B, T, A]`, embedded per frame and added to each frame's time-embedding.
+The only per-frame signal previously wired anywhere was the **cross-attention**
+`action_seq` token path — i.e. the xattn arm that
+[[../30_Knowledge/experiments/20260712-wan-xattn-action-no-improvement]] showed
+does **not** help. So AVID-style per-frame *additive* conditioning existed nowhere;
+a failed per-frame *cross-attention* result does not speak to it. This aggregation
+is a candidate cause of the standing weak-action-signal finding.
+
+**Fix (flag `action_per_frame`, default False):** when on, the preprocessor bins
+the per-frame delta-actions onto the **latent** temporal grid (`action_seq_len` =
+latent frame count, 11 for a 41-frame/stride-4 clip, summing deltas within each
+bin) and routes that `[B, L, A]` to the adapter's action encoder → `[B, L, C]` →
+per-frame `emb = time_emb + act_emb`, exactly AVID's mechanism. The rank-3 embedding
+flows through `_prepare_adapter_embedding` and combines with the (broadcast)
+step-level embedding. Default False preserves the aggregated AdaLN broadcast, so
+**aggregated-vs-per-frame is a clean one-switch ablation** of the action-signal
+question. Smoke-validated per-frame on the DC-UNet adapter (training steps run,
+`action=per-frame[B,11,A]`). Touched: `wan_batch_preprocessor.py` (config flag +
+routing), `scripts/train_wan22_i2v_metaworld_external.py` (plumb + align
+`action_seq_len` to latent frames), `diffusion_wan22_dcunet_output_metaworld.yaml`.
 
 ## Losses
 
@@ -244,6 +290,10 @@ This is the **D3 deliverable surface**.
 
 ## Training
 
+**Hyperparameter setup (optimizer, LR schedule/warmup, grad accumulation,
+precision, EMA status, per-config values) lives in its own living doc:**
+[[training-hyperparameters]] — this section covers code layout only.
+
 | Layer | Where |
 |---|---|
 | Config dataclasses | `config.py` — `ExperimentConfig`, `ModelConfig`, `AdapterConfig`, `ConditioningConfig`, `TrainingConfig`. Unknown YAML fields land in `extra` dicts. |
@@ -251,6 +301,7 @@ This is the **D3 deliverable surface**.
 | Trainer | `training/trainer.py` — currently modified working tree (`M` in git status); thin loop. |
 | Data | `data/` — batch preprocessor (also modified working tree), dataset loaders |
 | CLI | `scripts/train_hyperalign_metaworld.py` is the only standalone training entrypoint at HEAD. Working tree also modified. |
+| Quality metrics *(added 2026-07-01)* | `training/quality_metrics.py` — `QualityMetricSuite`, a **native** implementation over `torchmetrics` (PSNR/SSIM/LPIPS/FID) + `cd-fvd` (FVD). **Does not import `external_deps`** (hard rule) — the vendored AVID `metrics.py` is untouched. Scored on decoded eval rollouts for **both** the adapted and frozen-base sampler (base-vs-adapted delta). **Two-tier cadence:** paired per-frame metrics (`psnr/ssim/lpips/mse`, `TrainingConfig.quality_metrics`) every eval cycle; distribution metrics (`fid/fvd`, `quality_dist_metrics`) on a separate rarer `quality_dist_every_n_steps` (off by default — they load Inception/i3d and need many samples; both accumulate correctly across batches). Requires a VAE decoder on the wandb logger (`decode_to_uint8`) + inference sampler; else silently skipped. Core deps: `torchmetrics[image]` (pulls torch-fidelity + lpips) + `cd-fvd`. |
 
 ## Inference
 
@@ -271,6 +322,7 @@ inference"). Video logging added in the prior commit (`44b214b`).
 | `test_null_caption.py` | Empty / null caption handling for text-conditioned backbones |
 | `test_video_logging.py` | Video logging utilities |
 | `test_multimodal_substrate.py` *(added 2026-06-10)* | Multimodal substrate: multi-stream contract, codecs, spec, config partition, per-stream noising, overfit of trivial + compositional fusion (dummy base, no GPU) |
+| `test_multimodal_real_backbone.py` *(added 2026-06-26)* | Real-backbone compositional wiring: per-modality token routing (each adapter sees only its own tokens; text/image split preserved), learned mask m∈ℝ^{n+2} normalised, bidirectional + mask grad flow (fake per-modality adapters, no checkpoint/GPU) |
 
 No CI runner wired. Tests run locally via `pytest`.
 
@@ -283,6 +335,63 @@ Clearly fenced third-party code under a single subpackage:
 
 `backbones/dynamicrafter/` contains adapted DynamiCrafter model code (also
 vendored, with the noted modifications to allow adapter injection).
+
+**Vendored DynamiCrafter changes to run the DC 3D-UNet as an output adapter on a
+WAN diffusion-forcing flow base (2026-07-13, three edits — flagged per hard-rule
+Part 12).** These make the DC UNet composable on a base it was never written for
+(WAN's per-frame-timestep diffusion forcing, no CLIP text/image context). All are
+guarded so the standard DC-base path is unchanged:
+
+- `backbones/dynamicrafter/modules/networks/openaimodel3d.py` — `forward` now
+  accepts **per-frame timesteps** `[b, t]` (flatten → embed → skip the scalar-case
+  `repeat_interleave(t)`), in addition to the scalar `[b]` case. WAN diffusion
+  forcing holds the leading obs frame(s) clean at t=0 and noises the rest, so the
+  timestep is per-frame; the DC UNet previously assumed one shared timestep.
+- Same file — the `context` reshape block is guarded for `context is None`
+  (no cross-attn context → SpatialTransformer self-attends).
+- `backbones/dynamicrafter/modules/attention.py` — `BasicTransformerBlock._forward`
+  **skips `attn2` (cross-attention) when `context is None`**: attn2's `to_k/to_v`
+  are sized for `context_dim` (1024) so it cannot self-attend, and with no text/image
+  tokens there is nothing to attend to — the block reduces to self-attn + FF.
+- `adapters/output/dynamicrafter.py` — the adapter drops a **non-tensor** base
+  `context` (the WAN base passes text context as a *list*) → `None`, so the adapter
+  self-attends rather than consuming the frozen base's context.
+
+Smoke-validated: a training step runs end-to-end (145M-tier DC-UNet adapter, 5.1B
+frozen WAN base, `loss≈0.48` at step 1). See
+[[../20_Tickets/feat-adapter-dynamicrafter-output-on-wan-base]]. This confirms the
+D1 claim of a **heterogeneous** adapter (DC-UNet architecture ≠ WAN-DiT base).
+
+**`external_repos/avid/` MetaWorld reference run (2026-07-14) — config +
+one-file data-module fix, no model/training code touched.** Preparing a run of
+the **real, unmodified `AVIDAdapter` + `train_avid.py`** on our MetaWorld
+frames instead of RT1
+([[../20_Tickets/experiments/exp-adapter-avid-native-reference-run]]), so the comparison is
+decoupled from anything in our own trainer/preprocessor:
+
+- Stale hardcoded checkpoint path
+  (`/host_home/avid/dynamicrafter_512/model.ckpt`) in
+  `configs/train/act_cond_diffusion_{11M,34M,145M}.yaml` → local
+  `ckts/dynami512.ckpt`.
+- **Fixed a real bug** in the (pre-existing, not built this session)
+  `src/ldwma/lightning/data_modules/metaworld.py`: it emitted the action
+  tensor under key `"action"`, but `LatentVisualDiffusion.get_batch_input`
+  reads `batch["act"]` — action conditioning would have silently been dropped,
+  no error.
+- **New configs** (additive, no vendored file behaviour changed):
+  `configs/train/act_cond_diffusion_11M_metaworld.yaml` (adds
+  `action_dims: 4` — the UNet's default is `7`, RT1's dim; would have crashed
+  on MetaWorld's 4-dim actions) and
+  `configs/train/avid/avid_11M_metaworld.yaml` (points at the MetaWorld data
+  module + the new UNet config; `base_config_file`/`adapter_params`/trainer
+  block untouched — the real reference composition, just on our data).
+- Not yet smoke-tested (no local Poetry/TF env) — code-read-verified only.
+
+This repo remains a genuinely separate Poetry/TF toolchain, not part of our
+pipeline. Also surfaced a real, externally-validated finding while reading
+`AVIDAdapter.apply_model`: the reference implementation's `init_mask_bias: 0.0`
+(50/50 gate at init) vs. our `gate_bias: 4.0` (98/2) — see
+[[../20_Tickets/bug-adapter-gate-saturation-mask-mix]].
 
 Per the thesis-writing plan: this boundary must be described explicitly so
 the contribution surface is clean — see [[positioning]] for what counts as

@@ -37,6 +37,7 @@ Status legend: **stub** (placeholder only) · **drafting** (partial prose) ·
 - 3.4 Shortcut training modes — **drafting** (target-construction subsection written 2026-05-28) — src: [[../30_Knowledge/tech/shortcut-training-modes]], [[../50_Decisions/decided/shortcut-anchor-schedule]]
 
 ## 4. Experiments (D2 / D3) — `draft/40-experiments.md`
+- 4.4 Ablation design (the axes) — **drafting** — src: [[../30_Knowledge/writing/ablation-axes]] (dataset axis run-in-full × intervention search-toolbox; output-adapter only + complexity discussion for the rest)
 - 4.1 Datasets (MetaWorld), preprocessing, action handling — **drafting** (MetaWorld windowing + `fs` anchor written 2026-05-28) — src: `30_Knowledge/datasets/`, [[../50_Decisions/decided/per-sample-frame-stride-sampling]]
 - 4.2 Protocol: param/FLOPs-matched comparison — **stub** — src: [[../50_Decisions/decided/param-matched-adapter-comparison-definition]]
 - 4.3 Metrics + baselines — **stub**
@@ -44,6 +45,7 @@ Status legend: **stub** (placeholder only) · **drafting** (partial prose) ·
 
 ## 5. Results — `draft/50-results.md`
 - 5.1 Adapter-family comparison (D2) — **stub** — src: `30_Knowledge/experiments/*` (sourced runs only)
+- 5.1.x Diagnostic — base-parity collapse & the traps (D2) — **drafting** — src: [[../30_Knowledge/experiments/20260724-metaworld-cap-shift-triangle-base-parity]] (wandb: uxrst2k5, o79ki0ul, o9113j4h*, rxzwh4ak, hvxlbfjx). The negative result that motivates the dataset switch; `[[FIG:hvxlbfjx-eval_step_grid]]` pending export.
 - 5.2 Shortcut few-step rollout (D3) — **stub**
 - 5.3 Combined action+shortcut (D4) — **stub**
 - _Every number here cites a run (wandb id + ckpt + commit). No exceptions._

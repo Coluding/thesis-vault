@@ -1,0 +1,8 @@
+<svg width="460" height="200" viewBox="0 0 460 200" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect width="460" height="200" fill="#fbfaf6"/>
+<g font-family="Georgia,'Times New Roman',serif" font-size="27" fill="#141413">
+  <text x="20" y="52"><tspan font-style="italic">s</tspan>(<tspan font-style="italic">x</tspan><tspan font-style="italic" font-size="17" dy="7">t</tspan><tspan dy="-7">, </tspan><tspan font-style="italic">t</tspan>, 2<tspan font-style="italic">d</tspan>)   <tspan font-size="28">&#8776;</tspan></text>
+  <text x="52" y="116">&#189; <tspan font-style="italic">s</tspan>(<tspan font-style="italic">x</tspan><tspan font-style="italic" font-size="17" dy="7">t</tspan><tspan dy="-7">, </tspan><tspan font-style="italic">t</tspan>, <tspan font-style="italic">d</tspan>)</text>
+  <text x="20" y="180">+ &#189; <tspan font-style="italic">s</tspan>(<tspan font-style="italic">x</tspan><tspan font-style="italic" font-size="16" dy="7">t+d</tspan><tspan dy="-7">, </tspan><tspan font-style="italic">t</tspan>+<tspan font-style="italic">d</tspan>, <tspan font-style="italic">d</tspan>)</text>
+</g>
+</svg>

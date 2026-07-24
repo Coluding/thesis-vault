@@ -80,6 +80,14 @@ html, body {
 .metric-label { font-size: 1rem; color: var(--ink); margin-top: .35em; }
 .metric-source { font-size: .8rem; color: var(--muted); margin-top: .5em; font-family: var(--mono); }
 
+/* tables */
+.md-table { border-collapse: collapse; width: 100%; margin: .8em 0; font-size: 1.02rem; background: #fff; box-shadow: var(--shadow); border-radius: 10px; overflow: hidden; }
+.md-table th { background: var(--accent); color: #fff; text-align: left; padding: .55em .8em; font-weight: 600; font-size: .95rem; }
+.md-table td { padding: .5em .8em; border-top: 1px solid var(--line); color: var(--ink); vertical-align: top; }
+.md-table tbody tr:nth-child(even) { background: #f7f9fb; }
+.columns .md-table { font-size: .92rem; }
+.columns .md-table th, .columns .md-table td { padding: .42em .6em; }
+
 /* columns */
 .columns { display: flex; gap: 2.5em; align-items: flex-start; }
 .columns .col { flex: 1; min-width: 0; }

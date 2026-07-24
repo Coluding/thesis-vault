@@ -16,6 +16,13 @@ related:
 
 ## Status
 
+> **AMENDED 2026-06-30 for the Wan2.2 base** by
+> [[wan22-temporal-window-stride1]]: the Wan2.2 configs move to **contiguous
+> `frame_stride: 1`** with a **long 121-frame window** (31 latent frames),
+> getting temporal coverage through window *length* instead of subsampling. The
+> stride-4 + action-SUM mechanism below **remains in force for DynamiCrafter/AVID
+> configs**. Read this decision for those; read the amendment for Wan2.2.
+
 **Decided & implemented 2026-06-04.** Supersedes the *contiguous-reads* choice
 of [[per-sample-frame-stride-sampling]] (Option A). The part of that
 decision that **survives**: `fs` is a base-only input, never a `Δ_φ`

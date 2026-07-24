@@ -5,7 +5,7 @@ last_updated: 2026-05-22
 deliverable: D1, D2
 related:
   - "[[../../50_Decisions/open/param-matched-adapter-comparison-definition]]"
-  - "[[../../20_Tickets/exp-adapter-param-matched-comparison]]"
+  - "[[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]]"
   - "[[../related-work/avid]]"
   - "[[../related-work/hyperalign]]"
   - "[[../related-work/unicon]]"
@@ -187,7 +187,7 @@ Resolves once decision (3) closes. Skeleton:
 ## Related
 
 - Decision: [[../../50_Decisions/open/param-matched-adapter-comparison-definition]]
-- Ticket:   [[../../20_Tickets/exp-adapter-param-matched-comparison]]
+- Ticket:   [[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]]
 - Inbox origin: [[../../00_Inbox/2026-05-21]] (16:17 entry)
 - Adapter family neighbours: [[../related-work/avid]],
   [[../related-work/hyperalign]], [[../related-work/unicon]],

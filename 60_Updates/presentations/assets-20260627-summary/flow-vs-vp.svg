@@ -1,0 +1,28 @@
+<svg width="680" height="400" viewBox="0 0 680 400" role="img" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrowA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect x="0" y="0" width="680" height="400" fill="#fbfaf6"/>
+<text x="170" y="34" text-anchor="middle" fill="#141413" font-family="-apple-system,sans-serif" font-size="14" font-weight="500">Flow matching</text>
+<text x="170" y="52" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">straight path, constant velocity</text>
+<circle cx="80" cy="300" r="7" fill="#f1efe8" stroke="#5f5e5a" stroke-width="1"/>
+<text x="80" y="328" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">x₀ (noise)</text>
+<circle cx="300" cy="110" r="7" fill="#e1f5ee" stroke="#0f6e56" stroke-width="1"/>
+<text x="300" y="98" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">x₁ (data)</text>
+<line x1="80" y1="300" x2="300" y2="110" stroke="#888780" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="113" y1="271" x2="153" y2="237" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+<line x1="168" y1="223" x2="208" y2="189" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+<line x1="223" y1="175" x2="263" y2="141" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+<text x="170" y="370" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">every arrow points the same way</text>
+<text x="510" y="34" text-anchor="middle" fill="#141413" font-family="-apple-system,sans-serif" font-size="14" font-weight="500">Variance preserving</text>
+<text x="510" y="52" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">curved arc, rotating velocity</text>
+<circle cx="420" cy="300" r="7" fill="#f1efe8" stroke="#5f5e5a" stroke-width="1"/>
+<text x="420" y="328" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">x₀ (noise)</text>
+<circle cx="620" cy="110" r="7" fill="#e1f5ee" stroke="#0f6e56" stroke-width="1"/>
+<text x="620" y="98" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">x₁ (data)</text>
+<path d="M420 300 Q 440 150 620 110" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="428" y1="248" x2="450" y2="208" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+<line x1="448" y1="178" x2="492" y2="150" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+<line x1="510" y1="135" x2="558" y2="124" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+<text x="510" y="370" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">each arrow points a different way</text>
+</svg>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Shortcut v-Averaging Bias — Space Misalignment</title>
+<style>
+  :root{
+    --bg:#f6f8fa; --panel:#ffffff; --panel2:#eef1f4; --ink:#1c2128; --mut:#57606a;
+    --line:#d0d7de; --accent:#0969da; --good:#1a7f37; --bad:#cf222e; --warn:#9a6700;
+    --code:#0550ae; --paper:#fbfaf6;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.92);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);padding:14px 28px;display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:650}
+  header .sub{color:var(--mut);font-size:13px}
+  nav{margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}
+  nav a{color:var(--mut);text-decoration:none;font-size:13px}
+  nav a:hover{color:var(--accent)}
+  main{max-width:1080px;margin:0 auto;padding:0 28px 120px}
+  section{padding:46px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:26px;margin:0 0 6px;font-weight:680;letter-spacing:.2px}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:10px}
+  h3{font-size:18px;margin:28px 0 8px;color:var(--ink)}
+  p{color:#2c333a}
+  .lead{font-size:18px;color:var(--ink)}
+  .mut{color:var(--mut)}
+  code,.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  code{color:var(--code);background:#eff1f3;padding:1px 5px;border-radius:5px;font-size:.92em}
+  .eq{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:14px 18px;margin:16px 0;font-family:"SF Mono",ui-monospace,Menlo,monospace;
+    font-size:15px;color:var(--ink);overflow-x:auto;white-space:nowrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:880px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h3{margin-top:0}
+  canvas{display:block;width:100%;background:#ffffff;border:1px solid var(--line);border-radius:10px;touch-action:none}
+  .controls{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+  .ctl{display:grid;grid-template-columns:120px 1fr 70px;align-items:center;gap:10px;font-size:14px}
+  .ctl label{color:var(--mut)}
+  .ctl output{font-variant-numeric:tabular-nums;color:var(--code);text-align:right}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:14px;font-size:14px}
+  .readout .k{color:var(--mut)}
+  .readout .v{font-variant-numeric:tabular-nums;text-align:right;font-family:"SF Mono",ui-monospace,monospace}
+  .big{font-size:20px;font-weight:680}
+  table{border-collapse:collapse;width:100%;margin-top:14px;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums}
+  th{background:var(--panel2);color:var(--mut);font-weight:600}
+  td:first-child,th:first-child{text-align:left}
+  .ce{color:var(--bad);font-weight:650}
+  .ok{color:var(--good);font-weight:650}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:10px;color:var(--mut)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:22px;height:0;border-top-width:3px;border-top-style:solid;display:inline-block}
+  .note{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .key{border-left:3px solid var(--warn)}
+  .ok-note{border-left:3px solid var(--good)}
+  ul{color:#2c333a}
+  ol{color:#2c333a}
+  ol li{margin:6px 0}
+  .foot{color:var(--mut);font-size:13px;margin-top:40px}
+  .tag{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .fig{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px 22px 12px;margin:24px 0}
+  .fig svg{display:block}
+  .fig figcaption{color:#3d3d3a;font-size:13.5px;margin-top:10px;line-height:1.55}
+  .fig figcaption b{color:#141413}
+  pre.code{background:#f6f8fa;border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.5;color:#1c2128;margin:12px 0}
+  pre.code .c{color:#6e7781}      /* comment */
+  pre.code .add{color:#1a7f37;background:#e6f6ea;display:block}   /* added line */
+  pre.code .del{color:#b35900}    /* note */
+  pre.code .kw{color:#cf222e}
+  .codehdr{font-size:12px;color:var(--mut);margin:14px 0 0;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<header>
+  <h1>The shortcut <span class="mono">v</span>-averaging bias</h1>
+  <span class="sub">Why <span class="mono">(v1+v2)/2</span> is wrong for diffusion v-prediction — the space misalignment</span>
+  <nav>
+    <a href="#essence">Essence</a>
+    <a href="#two">Two spaces</a>
+    <a href="#circle">The circle</a>
+    <a href="#geometry">The geometry</a>
+    <a href="#fm">Why FM works</a>
+    <a href="#schedule">Schedule</a>
+    <a href="#numbers">Numbers</a>
+    <a href="#fixes">Candidate fixes</a>
+    <a href="#fix">The fix</a>
+  </nav>
+</header>
+
+<main>
+
+<section id="essence">
+  <h2><span class="n">0</span>One sentence</h2>
+  <p class="lead">We <b>add two tangent vectors that live at different points of a curved manifold</b> — an operation the manifold's geometry doesn't define. Doing it in the ambient space silently pretends the local frame didn't rotate between the two points; the leftover rotation (holonomy) is the bias. It's zero for tiny steps and grows with distance along the curve — i.e. worst exactly in the few-/one-step regime D3 cares about.</p>
+  <p class="mut">The honest ambient operation is <b>differencing points</b> (a chord), not <b>adding tangents</b>. That single distinction is the whole story — and it tells you which fixes work (§<a href="#fixes" style="color:var(--accent)">candidate fixes</a>) and which don't.</p>
+  <div class="note key">
+    <b>Where this is in code.</b> <code>training/shortcut_targets.py:compute_self_consistency_target_v</code> returns
+    <code>((v1 + v2) / 2).detach()</code>. That averaging is copied from Frans et&nbsp;al. 2024 eq.&nbsp;(4),
+    which is <i>exact for flow matching</i> — but the model here is <code>prediction_type: velocity</code> diffusion
+    stepped by <code>ddim_micro_step_v</code>, a different space. The "paper-faithful" claim holds only as the step size&nbsp;→&nbsp;0.
+  </div>
+</section>
+
+<section id="two">
+  <h2><span class="n">1</span>Two objects, both called "velocity"</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--good)">Flow matching — flat space</h3>
+      <p>Linear interpolant between data <span class="mono">x₁</span> and noise <span class="mono">x₀</span>:</p>
+      <div class="eq">x_t = (1−t)·x₀ + t·x₁</div>
+      <p>The velocity is the <b>constant</b> displacement direction:</p>
+      <div class="eq">v = dx/dt = x₁ − x₀  &nbsp;(same everywhere on the path)</div>
+      <p>A step is <b>linear</b>: <span class="mono">x_{t+d} = x_t + d·v</span>. The trajectory is a <b>straight line</b>.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--accent)">Diffusion v-pred — curved space</h3>
+      <p>Variance-preserving interpolant (<span class="mono">α</span> = ᾱ_t schedule):</p>
+      <div class="eq">x_t = √α_t·x₀ + √(1−α_t)·ε</div>
+      <p>Set the <b>noise-angle</b> <span class="mono">φ = arccos√α_t</span>. Then <span class="mono">x_φ = cosφ·x₀ + sinφ·ε</span> — a point on a <b>circle</b>. The v-target is the <b>tangent</b>:</p>
+      <div class="eq">v = √α·ε − √(1−α)·x₀ = dx/dφ  (rotates with φ)</div>
+      <p>A step is a <b>rotation</b>: <span class="mono">x_{φ+Δ} = cosΔ·x_φ + sinΔ·v</span>. Trajectory is a <b>circular arc</b>.</p>
+    </div>
+  </div>
+  <p class="mut" style="margin-top:18px">The misalignment in one line: flow-matching velocities are <b>parallel</b> along the path, so averaging is exact; diffusion-v tangents <b>rotate</b> along the path, so averaging shrinks and turns them. <span class="mono">x₀</span>/<span class="mono">ε</span> below are an orthonormal 2-D slice — the geometry generalises to every dimension because the whole step lives in the 2-D plane spanned by <span class="mono">x₀</span> and <span class="mono">ε</span>.</p>
+
+  <figure class="fig">
+    <svg width="100%" viewBox="0 0 680 400" role="img" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrowA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <text x="170" y="34" text-anchor="middle" style="fill:#141413;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:500">Flow matching</text>
+    <text x="170" y="52" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px">straight path, constant velocity</text>
+    <circle cx="80" cy="300" r="7" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="80" y="328" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">x₀ (noise)</text>
+    <circle cx="300" cy="110" r="7" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="300" y="98" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">x₁ (data)</text>
+    <line x1="80" y1="300" x2="300" y2="110" stroke="#888780" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="113" y1="271" x2="153" y2="237" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+    <line x1="168" y1="223" x2="208" y2="189" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+    <line x1="223" y1="175" x2="263" y2="141" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowA)"/>
+    <text x="170" y="370" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">every arrow points the same way</text>
+    <text x="510" y="34" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">Variance preserving</text>
+    <text x="510" y="52" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">curved arc, rotating velocity</text>
+    <circle cx="420" cy="300" r="7" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="420" y="328" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">x₀ (noise)</text>
+    <circle cx="620" cy="110" r="7" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="620" y="98" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">x₁ (data)</text>
+    <path d="M420 300 Q 440 150 620 110" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="428" y1="248" x2="450" y2="208" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+    <line x1="448" y1="178" x2="492" y2="150" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+    <line x1="510" y1="135" x2="558" y2="124" stroke="#D85A30" stroke-width="2" marker-end="url(#arrowA)"/>
+    <text x="510" y="370" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">each arrow points a different way</text>
+    </svg>
+    <figcaption><b>The whole bug in one figure.</b> Left: flow matching — a straight path, so every velocity arrow is identical; averaging them changes nothing. Right: variance-preserving diffusion — a curved arc, so the velocity <b>rotates</b> as you move along it. The code averages arrows from the right-hand picture as if it were the left.</figcaption>
+  </figure>
+</section>
+
+<section id="circle">
+  <h2><span class="n">2</span>The circle — drag the sliders</h2>
+  <p>The unit circle is the trajectory (one fixed <span class="mono">(x₀,ε)</span> ray). We start at <b>P0</b>, take two half-steps of arc-angle <span class="mono">δ</span> through <b>P1</b> to <b>P2</b>, and ask: what single tangent at P0, used for one <span class="mono">2δ</span> jump, reproduces P2?</p>
+
+  <figure class="fig">
+    <svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrowB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <path d="M120 300 Q 240 70 560 90" fill="none" stroke="#888780" stroke-width="1.5"/>
+    <text x="300" y="120" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">true curved trajectory</text>
+    <circle cx="120" cy="300" r="7" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="120" y="326" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">A</text>
+    <circle cx="290" cy="158" r="6" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="290" y="148" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">B</text>
+    <circle cx="560" cy="90" r="7" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="578" y="94" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">C</text>
+    <line x1="120" y1="300" x2="284" y2="163" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowB)"/>
+    <line x1="296" y1="153" x2="552" y2="94" stroke="#1D9E75" stroke-width="2" marker-end="url(#arrowB)"/>
+    <text x="200" y="240" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">step 1</text>
+    <text x="430" y="145" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">step 2</text>
+    <line x1="120" y1="300" x2="438" y2="178" stroke="#D85A30" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrowB)"/>
+    <circle cx="450" cy="173" r="6" fill="none" stroke="#D85A30" stroke-width="2"/>
+    <text x="300" y="270" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">one big averaged step (chord)</text>
+    <line x1="455" y1="167" x2="552" y2="98" stroke="#A32D2D" stroke-width="1" stroke-dasharray="2 2"/>
+    <text x="510" y="150" text-anchor="middle" style="fill:#A32D2D;font-family:-apple-system,sans-serif;font-size:12px">error gap</text>
+    </svg>
+    <figcaption><b>The static version of the idea.</b> Two correct small steps follow the arc A → B → C. One big averaged step takes the <b>chord</b> from A and lands <i>short of C, on the inside of the curve</i> — the error gap. The interactive below is the same thing in the rotating-tangent picture: grow <span style="font-family:monospace">δ</span> and watch the gap open.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="card">
+      <canvas id="cv" width="900" height="640"></canvas>
+      <div class="legend">
+        <span><i class="sw" style="border-color:#9aa3ad"></i> trajectory (true arc)</span>
+        <span><i class="sw" style="border-color:var(--good)"></i> correct target = tangent at P0</span>
+        <span><i class="sw" style="border-color:var(--accent)"></i> v1, v2 (the two half-step tangents)</span>
+        <span><i class="sw" style="border-color:var(--bad)"></i> code target (v1+v2)/2</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="controls">
+        <div class="ctl"><label>start φ₀</label><input id="phi" type="range" min="6" max="84" value="40" step="1"><output id="phiO"></output></div>
+        <div class="ctl"><label>half-step δ</label><input id="del" type="range" min="2" max="58" value="34" step="1"><output id="delO"></output></div>
+      </div>
+      <div class="readout">
+        <div class="k">shrink factor cos(δ/2)</div><div class="v" id="rShrink"></div>
+        <div class="k">phase shift δ/2</div><div class="v" id="rPhase"></div>
+        <div class="k">supervised step 2δ</div><div class="v" id="rStep"></div>
+        <div class="k">‖code − correct‖ / ‖correct‖</div><div class="v ce" id="rTarg"></div>
+        <div class="k">landing error ‖P_land − P2‖</div><div class="v ce" id="rLand"></div>
+      </div>
+      <div class="note" style="margin-top:18px">
+        <p style="margin:0 0 8px"><b>Read it like this.</b></p>
+        <ul style="margin:0">
+          <li>The <span style="color:var(--good)">green</span> tangent at P0, rotated by <span class="mono">2δ</span>, lands <b>exactly</b> on P2. That is the target we want.</li>
+          <li>The <span style="color:var(--bad)">red</span> vector <span class="mono">(v1+v2)/2</span> is the midpoint tangent scaled by <span class="mono">cos(δ/2)</span> — shorter, and rotated by <span class="mono">δ/2</span>.</li>
+          <li>Using red for the <span class="mono">2δ</span> jump lands at the <span style="color:var(--bad)">✕</span> <b>inside the circle</b> — short of P2. That gap is the landing error.</li>
+          <li>Push δ up: the red ✕ pulls further inward. Small δ: red ≈ green.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="geometry">
+  <h2><span class="n">◆</span>The real reason — you can't add tangents from different points</h2>
+  <p class="lead">The circle picture is one instance of a general fact. The trajectory is a curve on a manifold; <span class="mono">v</span> is a <b>tangent</b> to it. <span class="mono">v1</span> and <span class="mono">v2</span> live in <b>different tangent spaces</b> — <span class="mono">T<sub>p₀</sub>M</span> and <span class="mono">T<sub>p₁</sub>M</span> — and a manifold has <b>no intrinsic way to add vectors at different points.</b></p>
+  <p>The ambient <span class="mono">ℝ^d</span> addition <span class="mono">v1+v2</span> <i>is</i> defined — but only because the ambient space hands you a structure the manifold itself doesn't have: the <b>trivial identification of every tangent space</b> (the flat connection). Using it quietly pretends the local frame never rotated between <span class="mono">p₀</span> and <span class="mono">p₁</span>. The leftover — the accumulated <b>frame rotation (holonomy)</b> — is the bias, and it grows with arc-distance.</p>
+
+  <h3>First, forget velocities — just average two points</h3>
+  <p>The bias is there before any tangent talk. Two points on the unit circle, symmetric about 0, separated by total angle <span class="mono">2δ</span>: <span class="mono">P₁=(cosδ,−sinδ)</span>, <span class="mono">P₂=(cosδ,+sinδ)</span>. The <b>arc midpoint</b> (on the circle) is <span class="mono">x(0)=(1,0)</span>. The <b>ambient average</b> is <span class="mono">½(P₁+P₂)=(cosδ,0)</span> — same direction, radius <span class="mono">cosδ&lt;1</span>: pulled inward to the chord, <b>off the manifold</b>.</p>
+
+  <figure class="fig">
+    <svg width="100%" viewBox="0 0 680 440" role="img" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrowS" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <circle cx="200" cy="230" r="180" fill="none" stroke="#888780" stroke-width="1.5"/>
+    <line x1="200" y1="230" x2="356" y2="140" stroke="#888780" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <line x1="200" y1="230" x2="356" y2="320" stroke="#888780" stroke-width="0.6" stroke-dasharray="3 3"/>
+    <circle cx="200" cy="230" r="4" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="200" y="252" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">center</text>
+    <line x1="356" y1="140" x2="356" y2="320" stroke="#378ADD" stroke-width="2"/>
+    <text x="346" y="234" text-anchor="end" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">chord</text>
+    <circle cx="356" cy="140" r="6" style="fill:#e6f1fb;stroke:#185fa5;stroke-width:1px"/>
+    <text x="372" y="130" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">P₁ = x(−δ)</text>
+    <circle cx="356" cy="320" r="6" style="fill:#e6f1fb;stroke:#185fa5;stroke-width:1px"/>
+    <text x="372" y="328" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">P₂ = x(+δ)</text>
+    <circle cx="356" cy="230" r="6" style="fill:#faece7;stroke:#993C1D;stroke-width:1px"/>
+    <text x="356" y="368" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">½(P₁+P₂) — chord midpoint, radius cos δ</text>
+    <circle cx="380" cy="230" r="6" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="396" y="210" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">arc midpoint x(0), radius 1</text>
+    <line x1="362" y1="230" x2="374" y2="230" stroke="#A32D2D" stroke-width="3" marker-end="url(#arrowS)"/>
+    <text x="368" y="412" text-anchor="middle" style="fill:#A32D2D;font-family:-apple-system,sans-serif;font-size:12px">sagitta = 1 − cos δ  (radial inward gap)</text>
+    </svg>
+    <figcaption><b>The sagitta.</b> The blue points are what you average; the coral dot is their average, sitting on the chord <i>inside</i> the circle; the teal dot is the true arc midpoint, on the circle. The red arrow is the gap — the <b>sagitta</b> <span style="font-family:monospace">1−cos δ ≈ δ²/2</span>. Averaging points pulls you radially off the manifold by exactly that much.</figcaption>
+  </figure>
+
+  <p>Averaging two unit <i>tangents</i> <span class="mono">2δ</span> apart gives the <b>same</b> <span class="mono">cosδ</span> foreshortening — point-average and velocity-average are the same error, related by a derivative.</p>
+
+  <h3>Why the shrink factor is cos(θ/2)</h3>
+  <div class="grid2">
+    <figure class="fig" style="margin:0">
+      <svg width="100%" viewBox="0 0 460 230" role="img" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+      <marker id="arrowT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      </defs>
+      <line x1="70" y1="115" x2="330" y2="115" stroke="#888780" stroke-width="0.8" stroke-dasharray="4 4"/>
+      <text x="334" y="119" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:11px">bisector</text>
+      <path d="M 103 92 A 40 40 0 0 1 103 138" fill="none" stroke="#5f5e5a" stroke-width="1"/>
+      <text x="120" y="120" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:13px">θ</text>
+      <line x1="177" y1="115" x2="177" y2="42" stroke="#888780" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <line x1="177" y1="115" x2="177" y2="188" stroke="#888780" stroke-width="0.8" stroke-dasharray="2 3"/>
+      <text x="183" y="78" style="fill:#993C1D;font-family:-apple-system,sans-serif;font-size:11px">+sin(θ/2)</text>
+      <text x="183" y="160" style="fill:#993C1D;font-family:-apple-system,sans-serif;font-size:11px">−sin(θ/2)  cancel</text>
+      <line x1="70" y1="115" x2="177" y2="42" stroke="#185fa5" stroke-width="2.5" marker-end="url(#arrowT)"/>
+      <line x1="70" y1="115" x2="177" y2="188" stroke="#185fa5" stroke-width="2.5" marker-end="url(#arrowT)"/>
+      <line x1="70" y1="115" x2="177" y2="115" stroke="#993C1D" stroke-width="4" marker-end="url(#arrowT)"/>
+      <circle cx="70" cy="115" r="3.5" style="fill:#3d3d3a"/>
+      <text x="150" y="34" style="fill:#185fa5;font-family:-apple-system,sans-serif;font-size:12px">a (unit)</text>
+      <text x="150" y="206" style="fill:#185fa5;font-family:-apple-system,sans-serif;font-size:12px">b (unit)</text>
+      <text x="196" y="112" style="fill:#993C1D;font-family:-apple-system,sans-serif;font-size:12px">½(a+b), length cos(θ/2)</text>
+      </svg>
+      <figcaption><b>Average of two unit vectors at angle θ.</b> The along-bisector parts (each <span style="font-family:monospace">cos(θ/2)</span>) survive; the perpendicular parts (<span style="font-family:monospace">±sin(θ/2)</span>) are equal and opposite and <b>cancel</b>. So the average has length <span style="font-family:monospace">cos(θ/2)</span> and lies on the bisector.</figcaption>
+    </figure>
+    <div class="card">
+      <p style="margin-top:0">The shrink is one fact of vector geometry: <b>averaging keeps only the agreement, discards the disagreement.</b></p>
+      <ul>
+        <li>Each vector splits into a part <b>along</b> the bisector (<span class="mono">cos(θ/2)</span>) and a part <b>perpendicular</b> (<span class="mono">±sin(θ/2)</span>).</li>
+        <li>The perpendicular parts point opposite ways → <b>cancel</b>. Only <span class="mono">cos(θ/2)</span> survives. The "lost" length <span class="mono">1−cos(θ/2)</span> is the spread you threw away.</li>
+        <li><b>θ is the frame rotation (holonomy)</b> between the two points — the arc you crossed. Flat path → θ=0 → <span class="mono">cos 0 = 1</span> → no shrink (why flow matching is exact).</li>
+        <li>Quantitatively, <span class="mono">cos(θ/2) = 1 − θ²/8 + O(θ⁴)</span>, so the lost length is <span class="mono">1 − cos(θ/2) ≈ θ²/8</span> — it dies <b>quadratically</b> as the step shrinks. This is precisely the <b>chord-vs-arc (sagitta) discretization error</b>: <span class="mono">≈ κ · (step)² / 8</span>, with curvature <span class="mono">κ = 1</span> on the unit VP circle (and <span class="mono">κ = 0</span> for the straight flow-matching path → exactly zero).</li>
+        <li>Because it scales with <b>step²</b>, <b>doubling the step quadruples the shrink</b>: each rung up the self-consistency doubling tower carries ≈ 4× the previous rung's error, so the coarse / one-step rungs dominate. Being <span class="mono">O(step²)</span> is also why fine many-step sampling never exposes it — only aggressive few-step does, which is exactly the D3 regime.</li>
+      </ul>
+      <p class="mut" style="margin-bottom:0">In one line: <b>the shrink is the fraction of each vector left over after the frame-rotation (perpendicular) components cancel</b> — the price of a flat average on objects whose frames rotated by θ.</p>
+    </div>
+  </div>
+
+  <div class="note key">
+    <b>The deepest statement: it's the wrong kind of mean.</b>
+    The arithmetic mean is the <b>Euclidean centroid</b> (minimises straight-line squared distance); the manifold's midpoint is the <b>Riemannian centroid / Fréchet mean</b> (minimises arc-length squared distance). Flat space → they coincide; the circle → Euclidean lands inside at radius <span class="mono">cosδ</span>, Riemannian is the arc midpoint. The gap is the sagitta = <b>curvature × step²</b> (κ=1 here; flow matching κ=0 → exact). And it's why differencing points (the honest chord) is fine while averaging (a Euclidean centroid implicitly treated as a manifold point) is not.
+  </div>
+
+  <div class="note">
+    <b>So what is the geometry-aware mean — and is it φ-reparam? No.</b>
+    The Riemannian centroid is a <i>point on the circle</i>; computing it needs a <b>map-back onto the manifold</b>. For the shortcut target that map-back is exactly the <b>endpoint composition</b> (follow the flow, re-derive) — Options A/B in §<a href="#fixes" style="color:var(--accent)">candidate fixes</a>. Making the step grid uniform in <span class="mono">φ</span> (Option C) flattens the ladder but supplies no map-back, so it does <b>not</b> turn the Euclidean mean into the Riemannian one — which is why φ-uniform velocity-averaging is still biased (the fixed-point test below).
+  </div>
+
+  <h3>Two distinct errors (keep them apart)</h3>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--bad)">Addition / holonomy error</h3>
+      <p>The averaged <b>vector</b> is wrong — mostly a <b>rotation</b> of ≈ <span class="mono">δ/2</span> (plus a small <span class="mono">cos(δ/2)</span> shrink) — because the frame rotated between the two points. This is "the vector I computed is wrong."</p>
+      <p class="mut">Happens whenever you add tangents from different points. Grows with the arc between them.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--warn)">Off-manifold drift</h3>
+      <p>Following <i>any</i> tangent as a straight ambient (Euler) step leaves a curved path — the chord departs the arc. This is "even a correct vector, stepped straight, leaves the curve."</p>
+      <p class="mut">A separate, downstream consequence of curvature. On flat space neither error exists.</p>
+    </div>
+  </div>
+
+  <div class="note key">
+    <b>The honest ambient operation is point-differencing, not tangent-adding.</b>
+    Differencing two points gives a secant/chord, and chords compose exactly:
+    <span class="mono">AB⃗ + BC⃗ = AC⃗</span>, always. Adding two tangents from different points does not.
+    Both are "ambient operations," yet one respects the geometry and one doesn't.
+    The shortcut paper parametrises in <b>velocity</b> — which drags the implementation onto the wrong side of that line.
+    You step back over it either by <b>differencing points</b> (predict displacement) or by composing the actual flow (endpoint inversion).
+  </div>
+
+  <h3>The rigorous test: is the true field a fixed point?</h3>
+  <p>A self-consistency target rule is <b>unbiased iff the true field is a fixed point of its composition.</b> If not, the bootstrap converges to a <i>different</i>, biased field — and the <span class="mono">d→0</span> flow anchor pins the base to truth, so the bias instead <b>accumulates up the doubling tower</b> (more training cannot remove it). Measured (pure uniform-angle, consistent ray, <span class="mono">φ₀=50°</span>):</p>
+  <table>
+    <thead><tr><th>half-step δ</th><th>velocity-averaging residual</th><th>displacement-addition residual</th></tr></thead>
+    <tbody>
+      <tr><td>5°</td><td class="ce">0.0436</td><td class="ok">0</td></tr>
+      <tr><td>10°</td><td class="ce">0.0872</td><td class="ok">0</td></tr>
+      <tr><td>20°</td><td class="ce">0.1736</td><td class="ok">0</td></tr>
+      <tr><td>30°</td><td class="ce">0.2588</td><td class="ok">0</td></tr>
+      <tr><td>45°</td><td class="ce">0.3827</td><td class="ok">0</td></tr>
+    </tbody>
+  </table>
+  <p class="mut">Velocity-averaging (<span class="mono">½(v_φ+v_{φ+δ}) = cos(δ/2)·v_{φ+δ/2}</span>, rotated <span class="mono">δ/2</span> off the correct <span class="mono">v_φ</span>) has residual ≈ <span class="mono">2·sin(δ/2)</span> — the true field is <b>not</b> a fixed point. Differencing points (secants) telescopes — residual exactly 0 — so the true field <b>is</b> a fixed point. This is the manifold story restated as a one-line test.</p>
+
+  <h3>"But aren't we off-manifold anyway?" — self-consistent ≠ correct</h3>
+  <p>The sagitta argument used <b>exact</b> points. In practice we don't have exact points — we train a network against a <span class="mono">d→0</span> true-field <b>anchor</b>. So the real question is what a model trained toward these targets learns. Grant the steelman:</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">The objection (valid)</h3>
+      <p>Averaging is off-manifold, but a converged network <i>can</i> drive the loss to zero — <span class="mono">g(2d)=avg(g(d))</span> exactly — a perfectly <b>self-consistent map</b>. So "off-manifold" by itself isn't the indictment.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--bad)">
+      <h3 style="margin-top:0;color:var(--bad)">Why it still fails</h3>
+      <p><b>Self-consistent ≠ correct for generation.</b> Few-step must match many-step, which needs <span class="mono">g(2d)</span> = the velocity that <b>reproduces</b> the two-step endpoint. Averaging gives the shrunk+rotated chord, not that. So the zero-loss model <b>still</b> samples biased at large <span class="mono">d</span>.</p>
+    </div>
+  </div>
+  <div class="note key">
+    <b>Flow matching is exempt because there <span class="mono">avg = reproducing</span>, exactly</b> (linear step) — self-consistent ⟺ correct. VP/DDIM's <span class="mono">cos(θ/2)</span> shrink + rotation splits the two; they only coincide as <span class="mono">d→0</span>. <b>The anchor</b> pins the small-<span class="mono">d</span> field to the true denoiser, and because the target is <span class="mono">.detach()</span>ed, the base / many-step quality is <b>preserved</b> — the bias lives entirely in the large-<span class="mono">d</span> few-step tower built above it.
+  </div>
+  <p class="mut">And this is why φ-reparam (§<a href="#schedule" style="color:var(--accent)">schedule</a> / Option C) is <b>not</b> the cure: uniformising the factor gives a <i>cleaner</i> self-consistent map, but <span class="mono">avg</span> is still not the reproducing velocity, so few-step stays biased (the 3–38% is measured in <i>pure uniform-angle</i>). Only <b>endpoint inversion / displacement</b> makes <span class="mono">avg = reproducing</span> — that's the fix that matters.</p>
+</section>
+
+<section id="fm">
+  <h2><span class="n">3</span>Why the identical recipe is exact for flow matching</h2>
+  <div class="grid2">
+    <div class="card">
+      <canvas id="cvfm" width="900" height="420"></canvas>
+      <div class="legend">
+        <span><i class="sw" style="border-color:#9aa3ad"></i> straight-line trajectory</span>
+        <span><i class="sw" style="border-color:var(--accent)"></i> v1, v2 (parallel)</span>
+        <span><i class="sw" style="border-color:var(--bad)"></i> (v1+v2)/2</span>
+        <span><i class="sw" style="border-color:var(--good)"></i> correct</span>
+      </div>
+    </div>
+    <div class="card">
+      <p>In flow matching the path is straight, so <span class="mono">v1</span> and <span class="mono">v2</span> are the <b>same vector</b>. Their average equals each — no shrink, no rotation:</p>
+      <div class="eq">½v1 + ½v2 = v   (exact)</div>
+      <p>and the linear step <span class="mono">x + d·v</span> means two d-steps and one 2d-step give the same displacement by construction. The red, green, and blue arrows <b>coincide</b>. That is the whole reason Frans eq.&nbsp;(4) is allowed to average.</p>
+      <p class="mut">The moment you swap the linear step <span class="mono">x+d·v</span> for the rotational DDIM step <span class="mono">cosΔ·x+sinΔ·v</span>, the arrows stop coinciding — and you are back in section&nbsp;2.</p>
+    </div>
+  </div>
+</section>
+
+<section id="schedule">
+  <h2><span class="n">4</span>The secondary misalignment — timesteps ≠ angle</h2>
+  <p>Section&nbsp;2 measured the step in <b>arc-angle φ</b>, where the geometry is clean. But the code <b>conditions the model on a step size in timestep units</b> (a normalised <span class="mono">t</span>-fraction <span class="mono">s</span>) and steps by <span class="mono">round(s·T)</span> timesteps. Because <span class="mono">φ(t) = arccos√ᾱ_t</span> is <b>nonlinear</b>, a given step size means a <b>different geometric jump depending on where you are on the circle</b> — so the conditioning variable itself, and the half/2× structure the consistency identity rests on, are both distorted.</p>
+  <div class="grid2">
+    <div class="card">
+      <canvas id="cvsch" width="900" height="420"></canvas>
+      <p class="mut" style="margin-top:10px">Linear-β schedule (DynamiCrafter: β ∈ [0.00085, 0.012], T=1000). The dashed marks show that the timestep midpoint of a jump is far from its angle midpoint near the noisy end.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">The step-size conditioning is geometrically ambiguous</h3>
+      <p>The model conditions on a step size <span class="mono">d</span> in <b>timestep</b> units — but <span class="mono">d</span> is <b>not</b> a fixed geometric jump. The arc swept per unit <span class="mono">t</span> is</p>
+      <div class="eq">dφ/dt = β(t)/2 · cot φ</div>
+      <p>which runs <b>≈ 5.7× faster near the clean end</b> than the noisy end (DynamiCrafter, zero-terminal-SNR). So the <i>same</i> conditioned <span class="mono">d</span> means a <b>big arc near clean, a tiny arc near noise</b> — one scalar, many different jumps.</p>
+      <p>That breaks the doubling the consistency identity needs: the supervised <span class="mono">2d</span> and its two halves (at <span class="mono">t</span> and <span class="mono">t−d</span>) sweep <b>different arcs that don't sum to the <span class="mono">2d</span> arc</b> — the "halving" is warped, worst where <span class="mono">dφ/dt</span> changes fastest.</p>
+      <p class="mut">Fix: condition on (and grid in) <b>arc-length φ</b> or <b>log-SNR λ</b>. Then a given step size always sweeps the same arc, halving is a true geometric halving, and the conditioning is unambiguous. Still <b>secondary</b> — stack it on endpoint/displacement; it doesn't touch the primary averaging bias.</p>
+    </div>
+  </div>
+</section>
+
+<section id="numbers">
+  <h2><span class="n">5</span>Measured on the real <span class="mono">ddim_micro_step_v</span></h2>
+  <p>Not the toy 2-D circle — the actual code path, with the DynamiCrafter linear-β schedule, on a single exact ray (<b>zero model error</b>). "Landing error" = relative distance between where a single <span class="mono">2d</span> step lands and the true two-step result.</p>
+  <table>
+    <thead><tr><th>half-step s/2</th><th>supervised step s</th><th>code (v1+v2)/2 — landing err</th><th>endpoint target — landing err</th></tr></thead>
+    <tbody>
+      <tr><td>1/128</td><td>1/64</td><td class="ok">0.03%</td><td class="ok">0.000000</td></tr>
+      <tr><td>1/16</td><td>1/8</td><td class="ok">1.5%</td><td class="ok">0.000000</td></tr>
+      <tr><td>1/8</td><td>1/4</td><td style="color:var(--warn);font-weight:650">5.1%</td><td class="ok">0.000000</td></tr>
+      <tr><td>1/4</td><td><b>1/2 (2-step)</b></td><td class="ce">16.1%</td><td class="ok">0.000000</td></tr>
+      <tr><td>3/8</td><td><b>3/4</b></td><td class="ce">24.1%</td><td class="ok">0.000000</td></tr>
+    </tbody>
+  </table>
+  <div class="note key" style="margin-top:18px">
+    <b>The key fact:</b> the bias is on a trajectory with a <i>perfect</i> model. So it is <b>not</b> something more training removes — the self-consistency loss's fixed point is a <b>biased velocity field</b>, not the true one. And it is worst exactly where D3 lives: few-step / one-step.
+  </div>
+</section>
+
+<section id="fixes">
+  <h2><span class="n">◆</span>Evaluating the candidate fixes</h2>
+  <p>Four ideas were on the table. The fixed-point criterion (§<a href="#geometry" style="color:var(--accent)">the geometry</a>) and the landing-error numbers sort them cleanly. Landing error = how far a single <span class="mono">2δ</span> step lands from the true endpoint, pure uniform-angle, zero model error:</p>
+  <table>
+    <thead><tr><th>step 2δ</th><th>code <span class="mono">(v1+v2)/2</span></th><th>Sol 3 (scalar)</th><th>mag-only un-shrink</th><th>endpoint / displacement</th></tr></thead>
+    <tbody>
+      <tr><td>20°</td><td class="ce">3.0%</td><td class="ce">3.0%</td><td class="ce">3.0%</td><td class="ok">0.000%</td></tr>
+      <tr><td>40°</td><td class="ce">11.2%</td><td class="ce">11.2%</td><td class="ce">11.2%</td><td class="ok">0.000%</td></tr>
+      <tr><td>60°</td><td class="ce">22.4%</td><td class="ce">22.4%</td><td class="ce">22.6%</td><td class="ok">0.000%</td></tr>
+      <tr><td>90°</td><td class="ce">38.3%</td><td class="ce">38.3%</td><td class="ce">39.0%</td><td class="ok">0.000%</td></tr>
+    </tbody>
+  </table>
+  <p class="mut" style="margin-top:8px">Key reframe: the bias is a <b>rotation</b> (≈ δ/2), not a shrink (‖avg‖ = cos(δ/2) ≈ 0.92–1.0). That is why a <b>scalar</b> correction (Sol 3) is a no-op — its landing error is identical to the uncorrected average to the decimal.</p>
+
+  <div class="grid2" style="margin-top:18px">
+    <div class="card" style="border-left:3px solid var(--good)">
+      <h3 style="margin-top:0;color:var(--good)">✓ Endpoint inversion <span class="mut" style="font-weight:400">— start here</span></h3>
+      <p>Follow the ODE <b>both</b> sub-steps to the real landing <span class="mono">x_end</span>, then invert the DDIM step for the single-<span class="mono">2δ</span> velocity that hits it. <b>Exact</b> (true field is a fixed point). Target-only change; keeps the velocity head + DDIM sampler; schedule-faithful. Least invasive. <i>Detailed below.</i></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--good)">
+      <h3 style="margin-top:0;color:var(--good)">✓ Predict displacement (Sol 2)</h3>
+      <p>Output net displacement and compose additively: <span class="mono">Δ(2d)=Δ(d)+Δ′(d)</span> — point-differencing telescopes exactly, <b>schedule-independent</b>. The same fix in displacement coordinates. Cost: reparametrise the head <b>and</b> the shortcut sampler; base case grounds on <span class="mono">≈ d·v_true</span>. Best if the β-schedule isn't a clean circle.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--warn)">
+      <h3 style="margin-top:0;color:var(--warn)">~ Arc-length reparam (Sol 1) <span class="mut" style="font-weight:400">— secondary, stack it</span></h3>
+      <p>Condition / sample uniform in the angle <span class="mono">φ</span>. Fixes the <b>secondary</b> misalignment (§<a href="#schedule" style="color:var(--accent)">schedule</a>: timesteps ≠ angle) — worth doing on top of a real fix. But it <b>doesn't change the composition rule</b>, so velocity-averaging's biased fixed point persists (pure uniform-angle still 3–38% off). "Uniform holonomy → absorbable scalar" fails: the discrepancy is a rotation, and the true field isn't a fixed point, so it compounds rather than absorbs.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--bad)">
+      <h3 style="margin-top:0;color:var(--bad)">✕ Scalar correction (Sol 3) <span class="mut" style="font-weight:400">— reject</span></h3>
+      <p><span class="mono">sin(δ/2)/(δ/2)·½(v1+v2)</span>. A scalar fixes only magnitude; the dominant error is the δ/2 <b>rotation</b>. Landing error identical to the uncorrected average (table). A no-op — not even a useful ablation.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--good)">
+      <h3 style="margin-top:0;color:var(--good)">✓ Use a flow-matching base <span class="mut" style="font-weight:400">— the structural escape</span></h3>
+      <p>The bias <i>is</i> curvature. A flow-matching model has <span class="mono">κ=0</span> (straight path) → <span class="mono">avg = reproducing</span>, sagitta ≡ 0, <b>no fix needed at all</b>. Caveat: this is a <b>backbone</b> choice (DynamiCrafter is v-pred diffusion), not a loss tweak — but the framework spans both (D1), so it's a legitimate, clean sidestep.</p>
+    </div>
+  </div>
+  <p class="mut" style="margin-top:16px">"Flatten the space" was the right instinct — but the flattening that works is <b>displacement / endpoint space</b>, not <b>angle-time</b>. Angle-time removes a different, smaller curvature (the schedule's), not the tangent-averaging curvature.</p>
+</section>
+
+<section id="fix">
+  <h2><span class="n">6</span>The fix in detail — endpoint inversion</h2>
+  <p class="lead">Stop comparing <b>tangents</b>. Compare <b>where you land</b>. The endpoint of the trajectory is a frame-independent point on the circle; the tangent is frame-dependent (it rotates). Enforcing consistency on the endpoint is exact at every step size — that is the consistency-models philosophy, transplanted onto your shortcut adapter.</p>
+
+  <figure class="fig">
+    <svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrowC" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <path d="M120 300 Q 240 70 560 90" fill="none" stroke="#888780" stroke-width="1.5"/>
+    <text x="300" y="118" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">true curved trajectory</text>
+    <circle cx="120" cy="300" r="7" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="120" y="326" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">A</text>
+    <circle cx="290" cy="158" r="5" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="290" y="148" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">B</text>
+    <circle cx="560" cy="90" r="8" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:2px"/>
+    <text x="578" y="94" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">C</text>
+    <!-- naive chord (faint) lands short -->
+    <line x1="120" y1="300" x2="438" y2="178" stroke="#D85A30" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.55" marker-end="url(#arrowC)"/>
+    <circle cx="450" cy="173" r="5" fill="none" stroke="#D85A30" stroke-width="1.5" opacity="0.6"/>
+    <text x="360" y="250" text-anchor="middle" style="fill:#b06a3a;font-family:-apple-system,sans-serif;font-size:11px">naive (v1+v2)/2 — lands short</text>
+    <!-- corrected single step lands ON C -->
+    <line x1="120" y1="300" x2="551" y2="96" stroke="#1A7F37" stroke-width="2.5" marker-end="url(#arrowC)"/>
+    <text x="330" y="300" text-anchor="middle" style="fill:#1A7F37;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600">corrected single 2d step → lands exactly on C</text>
+    </svg>
+    <figcaption><b>The fix, pictured.</b> Instead of averaging the two arrows (which gives the orange chord that lands short), follow the ODE both sub-steps to the real endpoint <b>C</b>, then solve for the one tangent at A whose <span style="font-family:monospace">2d</span> rotation lands <b>exactly on C</b> (green). Exact for any step size and any model error.</figcaption>
+  </figure>
+
+  <h3>Recipe</h3>
+  <ol>
+    <li><b>First sub-step (already done).</b> <span class="mono">v1 = model(x_t, t, d)</span>; step to <span class="mono">x_mid = DDIM(x_t, v1, t → t−d)</span>.</li>
+    <li><b>Second sub-step (new).</b> <span class="mono">v2 = model(x_mid, t−d, d)</span>; <b>take the second step too</b> — <span class="mono">x_end = DDIM(x_mid, v2, t−d → t−2d)</span>. The current code stops at <span class="mono">x_mid</span> and never forms <span class="mono">x_end</span> — that omission is the bug.</li>
+    <li><b>Invert (new).</b> Solve for the single velocity at <span class="mono">(x_t, t)</span> whose one <span class="mono">2d</span> DDIM step lands on <span class="mono">x_end</span>. Detach; that is the target.</li>
+  </ol>
+
+  <h3>The math</h3>
+  <p>The DDIM step is invertible because it is affine in <span class="mono">v</span>. With <span class="mono">α₀ = ᾱ_t</span>, <span class="mono">α₂ = ᾱ_{t−2d}</span> (and <span class="mono">√(1−α)</span> the noise weights), the recompose from <span class="mono">(x_t, v)</span> to the <span class="mono">2d</span> landing is:</p>
+  <div class="eq">DDIM₂(v) = (√(α₂α₀) + √((1−α₂)(1−α₀)))·x_t + (√((1−α₂)α₀) − √(α₂(1−α₀)))·v</div>
+  <p>Set <span class="mono">DDIM₂(v) = x_end</span> and solve:</p>
+  <div class="eq">v_target = ( x_end − (√(α₂α₀) + √((1−α₂)(1−α₀)))·x_t ) / ( √((1−α₂)α₀) − √(α₂(1−α₀)) )</div>
+  <p class="mut">This is the same decompose-recompose your <span class="mono">ddim-step-v-parameterisation.md</span> derives (eq. D), read backwards. Equivalently: decode <span class="mono">x_end</span> and <span class="mono">x_t</span> to clean-data estimates <span class="mono">(x̂₀, ε̂)</span> — the frame-independent coordinates — and read off the velocity that connects them; the two views give the same <span class="mono">v_target</span>. Compare to the buggy target <span class="mono">(v1+v2)/2</span>, which on a consistent ray equals <span class="mono">cos(δ/2)·v_{φ+δ/2}</span> — shrunk by <span class="mono">cos(δ/2)</span> and rotated by <span class="mono">δ/2</span> off the correct <span class="mono">v_φ</span>.</p>
+
+  <div class="note key">
+    <b>"But you can't invert a big jump — isn't DDIM only infinitesimal?"</b> No. The DDIM step is <b>not</b> an Euler translation <span class="mono">x + v·d</span> (that <i>would</i> leave a curved manifold). It is a finite <b>rotation</b> — <span class="mono">x_next = cos(2δ)·x + sin(2δ)·v</span> — and the <span class="mono">cos(2δ)·x</span> term bends it back onto the manifold, <b>exact at any jump size</b> (which is why 4-step sampling works at all). Inverting a rotation is trivial and unique: for any endpoint C there is exactly one <span class="mono">v = (C − cos(2δ)·x)/sin(2δ)</span>. Edge cases behave — <span class="mono">2δ→0</span> is a <span class="mono">0/0</span> → the true instantaneous velocity (and the smallest step is the anchor, never inverted); large <span class="mono">2δ</span> is <i>better</i>-conditioned (<span class="mono">sin&gt;0</span> on <span class="mono">(0,π)</span>). The "extend a tangent and you leave the manifold" worry is the <b>Euler/displacement</b> picture — exactly what Option B embraces with honest chords. <b>DDIM rotates; displacement translates.</b>
+  </div>
+
+  <h3>The change in code</h3>
+  <p class="codehdr">current — <span class="mono">training/shortcut_targets.py</span></p>
+<pre class="code"><span class="kw">def</span> compute_self_consistency_target_v(*, model, x_t, t, cond_half, d, alphas_cumprod, scale_arr):
+    model.eval()
+    <span class="kw">with</span> torch.no_grad():
+        v1 = model(x_t, t, cond_half)
+        prev_t = (t - d).clamp_min(0)
+        x_mid  = ddim_micro_step_v(x=x_t, v=v1, t=t, prev_t=prev_t, ...)
+        v2 = model(x_mid, prev_t, cond_half)
+    <span class="kw">return</span> ((v1 + v2) / 2.0).detach()        <span class="c"># &lt;- averages tangents on a curved manifold</span></pre>
+  <p class="codehdr">corrected — endpoint-space target</p>
+<pre class="code"><span class="kw">def</span> compute_self_consistency_target_v(*, model, x_t, t, cond_half, d, alphas_cumprod, scale_arr):
+    model.eval()
+    <span class="kw">with</span> torch.no_grad():
+        v1 = model(x_t, t, cond_half)
+        prev_t  = (t -   d).clamp_min(0)
+        prev_t2 = (t - 2*d).clamp_min(0)
+        x_mid = ddim_micro_step_v(x=x_t,  v=v1, t=t,      prev_t=prev_t,  alphas_cumprod=alphas_cumprod, scale_arr=scale_arr)
+        v2    = model(x_mid, prev_t, cond_half)
+<span class="add">        # NEW: actually take the second sub-step to the true 2d landing</span>
+<span class="add">        x_end = ddim_micro_step_v(x=x_mid, v=v2, t=prev_t, prev_t=prev_t2, alphas_cumprod=alphas_cumprod, scale_arr=scale_arr)</span>
+<span class="add">        # NEW: invert the SAME DDIM recompose for the one-step-2d velocity that hits x_end</span>
+<span class="add">        v_target = invert_ddim_v(x_t, x_end, t, prev_t2, alphas_cumprod, scale_arr)</span>
+    <span class="kw">return</span> v_target.detach()</pre>
+  <p class="mut"><span class="mono">invert_ddim_v</span> must mirror <em>exactly</em> what <span class="mono">ddim_micro_step_v</span> does. With <span class="mono">scale_arr=None</span> it is the closed form above. <b>With dynamic rescale</b> (<span class="mono">scale_arr</span> set), <span class="mono">ddim_micro_step_v</span> multiplies <span class="mono">pred_x0</span> by <span class="mono">prev_scale/cur_scale</span> before recompose, so the inversion must divide it back out — cleanest is to invert via the decoded <span class="mono">(x̂₀, ε̂)</span> so the rescale cancels on both sides rather than hand-deriving a second formula.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">Implementation checklist</h3>
+      <ul>
+        <li>Add the second <code>ddim_micro_step_v</code> call → <code>x_end</code>.</li>
+        <li>Add <code>invert_ddim_v</code> (closed form for <code>scale_arr=None</code>; rescale-aware via <code>(x̂₀,ε̂)</code> otherwise).</li>
+        <li>Guard the denominator <code>√((1−α₂)α₀) − √(α₂(1−α₀))</code>: it shrinks toward 0 only as <code>2d → 0</code>, and the smallest step is the <b>anchor</b> (handled by the standard loss, never routed here) — but clamp for safety.</li>
+        <li>Leave the <b>anchor</b> path untouched: at <code>d → 0</code> the old and new targets already coincide.</li>
+        <li><b>No extra model forward.</b> The two forwards (<code>v1</code>, <code>v2</code>) are already paid; the fix adds one cheap DDIM micro-step (<code>x_end</code>) + an algebraic inversion on tensors you already hold. Negligible vs the gradient step.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Regression test</h3>
+      <ul>
+        <li>On a synthetic <code>(x₀,ε)</code> ray, assert one <code>2d</code> DDIM step with <code>v_target</code> reproduces the two-step landing to <code>&lt;1e-5</code> — for several step sizes and under a perturbed <code>v2</code> (the <span class="ok">0.000000</span> column in §5).</li>
+        <li>Assert the old <code>(v1+v2)/2</code> target fails that same check at the 2-step rung (≈16%), to lock in the contrast.</li>
+        <li>Pair with the per-rung logging: coarse rungs should now <i>converge</i>, not plateau.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note ok-note">
+    <b>Why it matters for the thesis.</b> It removes a systematic cap on <b>few-step quality</b> — the D3 headline — by making the self-consistency objective's fixed point the <b>true</b> velocity field instead of a biased one. And it corrects the "paper-faithful" wording: under v-prediction, faithful means <i>endpoint-consistent</i>, not <i>v-averaged</i>. Frans eq.&nbsp;(4) is recovered exactly in the <span class="mono">d → 0</span> / flow-matching limit.
+  </div>
+
+  <h3>Equivalent fix: predict the net displacement (Option B)</h3>
+  <p>Instead of inverting back to a velocity, change <i>what the head outputs</i>: the net <b>displacement</b> <span class="mono">Δ</span> (the chord to the next point), composed additively <span class="mono">Δ(2d) = Δ(d) + Δ′(d)</span>, and sample by adding displacements <span class="mono">x_next = x + Δ</span>. Differencing points gives honest chords, and chords telescope <b>exactly</b> — the intermediate point cancels — for any curvature or schedule.</p>
+  <figure class="fig">
+    <svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrowDp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <path d="M120 300 Q 240 70 560 90" fill="none" stroke="#888780" stroke-width="1.5"/>
+    <text x="300" y="120" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">true curved trajectory</text>
+    <line x1="120" y1="300" x2="281" y2="166" stroke="#1A7F37" stroke-width="2.5" marker-end="url(#arrowDp)"/>
+    <line x1="298" y1="156" x2="548" y2="93" stroke="#1A7F37" stroke-width="2.5" marker-end="url(#arrowDp)"/>
+    <line x1="120" y1="300" x2="549" y2="95" stroke="#185fa5" stroke-width="3.5" marker-end="url(#arrowDp)"/>
+    <circle cx="120" cy="300" r="7" style="fill:#f1efe8;stroke:#5f5e5a;stroke-width:1px"/>
+    <text x="120" y="326" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">A</text>
+    <circle cx="290" cy="158" r="5" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:1px"/>
+    <text x="282" y="150" text-anchor="end" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">B</text>
+    <circle cx="560" cy="90" r="7" style="fill:#e1f5ee;stroke:#0f6e56;stroke-width:2px"/>
+    <text x="578" y="94" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:500">C</text>
+    <text x="138" y="250" style="fill:#1A7F37;font-family:-apple-system,sans-serif;font-size:12px">Δ(d) = AB⃗</text>
+    <text x="412" y="110" style="fill:#1A7F37;font-family:-apple-system,sans-serif;font-size:12px">Δ′(d) = B→C</text>
+    <text x="298" y="242" style="fill:#185fa5;font-family:-apple-system,sans-serif;font-size:12px">Δ(2d) = AB⃗ + B→C = A→C → lands on C</text>
+    <text x="298" y="262" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:11px">B cancels — exact telescoping, any curvature</text>
+    </svg>
+    <figcaption><b>Displacements compose; tangents don't.</b> The two green sub-chords <span style="font-family:monospace">AB⃗</span>, <span style="font-family:monospace">B→C</span> add tip-to-tail to the blue <span style="font-family:monospace">A→C</span>, which lands <b>exactly</b> on C — because differencing points is the honest ambient operation (<span style="font-family:monospace">AB⃗+B→C=A→C</span>) and the intermediate point cancels, regardless of curvature. Contrast the chord-undershoot of §2: that averaged <i>velocities</i>; this composes <i>displacements</i>.</figcaption>
+  </figure>
+  <p class="mut">Same endpoint-consistency as inversion, in displacement coordinates: exact and <b>schedule-independent</b>. Cost: reparametrise the head's output and the shortcut sampler (add displacements rather than DDIM-recompose), and ground the <span class="mono">d→0</span> displacement on <span class="mono">≈ d·v_true</span>. Pick this over inversion if you don't trust the β-schedule to be a clean uniform-angle circle.</p>
+
+  <h3>…or sidestep it entirely: use a flow-matching base</h3>
+  <div class="note ok-note">
+    <b>The structural escape.</b> The bias <i>is</i> curvature — <span class="mono">κ=1</span> on the VP circle. A <b>flow-matching</b> model has <span class="mono">κ=0</span>: a straight path, so <span class="mono">avg = reproducing</span> and the sagitta is identically zero. Swap the frozen base from v-prediction diffusion to flow matching and <b>the whole bug disappears</b> — no target surgery, no inversion, no reparametrisation, eq.&nbsp;(4) is exact as written. The cost is that this is a <b>backbone-level</b> decision (DynamiCrafter is v-pred diffusion), so it means adopting a flow-matching video backbone (or reparametrising the base) rather than touching the loss. But the thesis framework already spans diffusion <i>and</i> flow matching (D1) — so "just be on a straight line" is a legitimate, and arguably the cleanest, way to avoid D3's sharpest pitfall.
+  </div>
+
+  <p class="foot">
+    Sources — code: <span class="mono">training/shortcut_targets.py</span>, <span class="mono">training/trainer.py</span>;
+    schedule: DynamiCrafter linear-β (T=1000). Numbers in §5 reproduced from a single-ray check against the real
+    <span class="mono">ddim_micro_step_v</span>. The 2-D circle in §2/§3 is the exact geometry of one step (the step lives in the
+    <span class="mono">span(x₀,ε)</span> plane). Companion theory note: <span class="mono">30_Knowledge/theory/shortcut-v-averaging-bias.md</span>.
+    <span class="tag">analysed result — shown work + numerical verification</span>
+  </p>
+</section>
+
+</main>
+
+<script>
+const TAU=Math.PI*2, D2R=Math.PI/180;
+const COL={ ink:'#1c2128', mut:'#57606a', faint:'#d0d7de', circle:'#c2cad2', arc:'#9aa3ad',
+  blue:'#0969da', green:'#1a7f37', red:'#cf222e', warn:'#9a6700', chord:'#aab2bb',
+  axislbl:'#6e7781', bg:'#ffffff' };
+function arrow(ctx,x0,y0,x1,y1,col,w=2.5,head=10){
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;
+  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+  const a=Math.atan2(y1-y0,x1-x0);
+  ctx.beginPath();ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-head*Math.cos(a-0.4),y1-head*Math.sin(a-0.4));
+  ctx.lineTo(x1-head*Math.cos(a+0.4),y1-head*Math.sin(a+0.4));
+  ctx.closePath();ctx.fill();
+}
+function dot(ctx,x,y,r,col){ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();}
+function label(ctx,t,x,y,col,size=14,al='left'){ctx.fillStyle=col;ctx.font=size+'px ui-monospace,Menlo,monospace';ctx.textAlign=al;ctx.fillText(t,x,y);}
+function bgfill(ctx,W,H){ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);}
+
+/* ---------------- Section 2 : the circle ---------------- */
+const cv=document.getElementById('cv'), cx=cv.getContext('2d');
+const phiS=document.getElementById('phi'), delS=document.getElementById('del');
+function drawCircle(){
+  const W=cv.width,H=cv.height; bgfill(cx,W,H);
+  const cxp=W*0.52, cyp=H*0.54, Rr=Math.min(W,H)*0.34;
+  const M=(p)=>[cxp+p[0]*Rr, cyp-p[1]*Rr];
+  const phi0=+phiS.value*D2R, d=+delS.value*D2R;
+  const Pt=(a)=>[Math.cos(a),Math.sin(a)];
+  const Vt=(a)=>[Math.sin(a),-Math.cos(a)];          // unit tangent toward data
+  const P0=Pt(phi0), P1=Pt(phi0-d), P2=Pt(phi0-2*d);
+  const v1=Vt(phi0), v2=Vt(phi0-d);
+  const avg=[(v1[0]+v2[0])/2,(v1[1]+v2[1])/2];        // code target
+  const correct=v1;                                   // exact target for the ray
+  const step2=(v)=>[Math.cos(2*d)*P0[0]+Math.sin(2*d)*v[0], Math.cos(2*d)*P0[1]+Math.sin(2*d)*v[1]];
+  const Pland=step2(avg);
+
+  cx.strokeStyle=COL.faint;cx.lineWidth=1;
+  cx.beginPath();cx.moveTo(cxp-Rr*1.35,cyp);cx.lineTo(cxp+Rr*1.35,cyp);cx.stroke();
+  cx.beginPath();cx.moveTo(cxp,cyp-Rr*1.35);cx.lineTo(cxp,cyp+Rr*1.2);cx.stroke();
+  label(cx,'x₀  (data)',cxp+Rr*1.36,cyp+4,COL.axislbl,13);
+  label(cx,'ε  (noise)',cxp+6,cyp-Rr*1.36,COL.axislbl,13);
+  cx.strokeStyle=COL.circle;cx.lineWidth=1.5;
+  cx.beginPath();cx.arc(cxp,cyp,Rr,0,TAU);cx.stroke();
+  cx.strokeStyle=COL.arc;cx.lineWidth=5;
+  cx.beginPath();cx.arc(cxp,cyp,Rr, -phi0, -(phi0-2*d), false);cx.stroke();
+
+  const sc=Rr*0.92;
+  const A=(P,v,col,w)=>{const a=M(P);arrow(cx,a[0],a[1],a[0]+v[0]*sc,a[1]-v[1]*sc,col,w);};
+  A(P0,v1,COL.blue,2.5); A(P1,v2,COL.blue,2.5);
+  A(P0,correct,COL.green,4);
+  A(P0,avg,COL.red,4);
+
+  const a0=M(P0),a2=M(P2),al=M(Pland);
+  cx.strokeStyle=COL.chord;cx.setLineDash([4,4]);cx.lineWidth=1.5;
+  cx.beginPath();cx.moveTo(a0[0],a0[1]);cx.lineTo(a2[0],a2[1]);cx.stroke();
+  cx.strokeStyle=COL.red;cx.beginPath();cx.moveTo(a2[0],a2[1]);cx.lineTo(al[0],al[1]);cx.stroke();
+  cx.setLineDash([]);
+
+  dot(cx,...M(P0),6,COL.ink); dot(cx,...M(P1),5,COL.mut); dot(cx,...M(P2),6,COL.green);
+  cx.strokeStyle=COL.red;cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(al[0]-7,al[1]-7);cx.lineTo(al[0]+7,al[1]+7);
+  cx.moveTo(al[0]+7,al[1]-7);cx.lineTo(al[0]-7,al[1]+7);cx.stroke();
+
+  label(cx,'P0',a0[0]+10,a0[1]-8,COL.ink,14);
+  label(cx,'P1',M(P1)[0]+8,M(P1)[1]+16,COL.mut,13);
+  label(cx,'P2  (true 2-step landing)',a2[0]+10,a2[1]+4,COL.green,13);
+  label(cx,'lands here with (v1+v2)/2',al[0]+12,al[1]+4,COL.red,13);
+
+  const nrm=(u)=>Math.hypot(u[0],u[1]);
+  const targErr=nrm([avg[0]-correct[0],avg[1]-correct[1]])/nrm(correct);
+  const landErr=nrm([Pland[0]-P2[0],Pland[1]-P2[1]]);
+  phiO.value=phiS.value+'°'; delO.value=delS.value+'°';
+  rShrink.textContent=Math.cos(d/2).toFixed(3);
+  rPhase.textContent=(+delS.value/2).toFixed(1)+'°';
+  rStep.textContent=(2*delS.value)+'°';
+  rTarg.textContent=(targErr*100).toFixed(1)+'%';
+  rLand.textContent=(landErr*100).toFixed(1)+'%';
+}
+phiS.oninput=drawCircle; delS.oninput=drawCircle;
+
+/* ---------------- Section 3 : flow matching straight line ---------------- */
+const fm=document.getElementById('cvfm'), fcx=fm.getContext('2d');
+function drawFM(){
+  const W=fm.width,H=fm.height;bgfill(fcx,W,H);
+  const x0=W*0.12,y0=H*0.72,x1=W*0.88,y1=H*0.28;
+  fcx.strokeStyle=COL.arc;fcx.lineWidth=5;
+  fcx.beginPath();fcx.moveTo(x0,y0);fcx.lineTo(x1,y1);fcx.stroke();
+  dot(fcx,x0,y0,6,COL.mut); dot(fcx,x1,y1,6,COL.green);
+  label(fcx,'x₀ (noise)',x0-6,y0+22,COL.axislbl,13,'left');
+  label(fcx,'x₁ (data)',x1-70,y1-12,COL.axislbl,13,'left');
+  const lerp=(t)=>[x0+(x1-x0)*t,y0+(y1-y0)*t];
+  const P0=lerp(0.25),P1=lerp(0.55);
+  const dir=[(x1-x0),(y1-y0)]; const L=Math.hypot(...dir); const u=[dir[0]/L,dir[1]/L];
+  const al=120;
+  arrow(fcx,P1[0],P1[1],P1[0]+u[0]*al,P1[1]+u[1]*al,COL.blue,2.5);
+  arrow(fcx,P0[0],P0[1],P0[0]+u[0]*al,P0[1]+u[1]*al,COL.blue,2.5);
+  arrow(fcx,P0[0],P0[1]-3,P0[0]+u[0]*al,P0[1]+u[1]*al-3,COL.green,4);
+  arrow(fcx,P0[0],P0[1]+3,P0[0]+u[0]*al,P0[1]+u[1]*al+3,COL.red,4);
+  dot(fcx,P0[0],P0[1],6,COL.ink); dot(fcx,P1[0],P1[1],5,COL.mut);
+  label(fcx,'P0',P0[0]+8,P0[1]+22,COL.ink,14);
+  label(fcx,'P1',P1[0]+8,P1[1]+22,COL.mut,13);
+  label(fcx,'v1, v2, correct, (v1+v2)/2 — all the same vector',W*0.30,H*0.92,COL.green,14,'left');
+}
+
+/* ---------------- Section 4 : schedule phi(t) ---------------- */
+const sch=document.getElementById('cvsch'), scx=sch.getContext('2d');
+function drawSchedule(){
+  const W=sch.width,H=sch.height;bgfill(scx,W,H);
+  const T=1000;
+  const ac=[];let prod=1;
+  for(let i=0;i<T;i++){const b=Math.pow(0.00085**0.5+(0.012**0.5-0.00085**0.5)*i/(T-1),2);prod*=(1-b);ac.push(prod);}
+  const phi=(t)=>Math.acos(Math.sqrt(ac[Math.max(0,Math.min(T-1,t|0))]));
+  const m=44;
+  const X=(t)=>m+(W-2*m)*t/(T-1), Y=(p)=>H-m-(H-2*m)*(p/(Math.PI/2));
+  scx.strokeStyle=COL.faint;scx.lineWidth=1;
+  scx.beginPath();scx.moveTo(m,H-m);scx.lineTo(W-m,H-m);scx.moveTo(m,H-m);scx.lineTo(m,m);scx.stroke();
+  label(scx,'timestep t  (0 = data, T = noise)',W/2,H-10,COL.axislbl,13,'center');
+  scx.save();scx.translate(14,H/2);scx.rotate(-Math.PI/2);label(scx,'noise-angle φ = arccos√ᾱ',0,0,COL.axislbl,13,'center');scx.restore();
+  scx.strokeStyle=COL.blue;scx.lineWidth=3;scx.beginPath();
+  for(let t=0;t<T;t+=4){const x=X(t),y=Y(phi(t));t===0?scx.moveTo(x,y):scx.lineTo(x,y);}
+  scx.stroke();
+  const ta=900,tb=500,tm=700;
+  const pa=phi(ta),pb=phi(tb),pmAngle=(pa+pb)/2;
+  scx.setLineDash([5,4]);scx.strokeStyle=COL.warn;scx.lineWidth=1.5;
+  [ta,tb].forEach(t=>{scx.beginPath();scx.moveTo(X(t),H-m);scx.lineTo(X(t),Y(phi(t)));scx.stroke();
+    scx.beginPath();scx.moveTo(X(t),Y(phi(t)));scx.lineTo(m,Y(phi(t)));scx.stroke();});
+  scx.setLineDash([]);
+  dot(scx,X(ta),Y(phi(ta)),5,COL.warn); dot(scx,X(tb),Y(phi(tb)),5,COL.warn);
+  dot(scx,X(tm),Y(phi(tm)),5,COL.red);
+  let tAngleMid=tm;for(let t=tb;t<=ta;t++){if(phi(t)>=pmAngle){tAngleMid=t;break;}}
+  dot(scx,X(tAngleMid),Y(pmAngle),5,COL.green);
+  label(scx,'timestep midpoint (t=700)',X(tm)+8,Y(phi(tm))-8,COL.red,12,'left');
+  label(scx,'angle midpoint',X(tAngleMid)+8,Y(pmAngle)+16,COL.green,12,'left');
+  label(scx,'a jump t:900→500',X(700),m+14,COL.mut,13,'center');
+}
+
+drawCircle();drawFM();drawSchedule();
+</script>
+</body>
+</html>

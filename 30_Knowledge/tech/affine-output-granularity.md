@@ -127,7 +127,7 @@ delta = reference * scale + shift                # broadcasts if pooled
   with a tiny fraction of the parameters and `dense` buys little.
 
 Reasoning, not measurement — the numbers come from
-[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
+[[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]].
 
 ## Backbone caveat
 

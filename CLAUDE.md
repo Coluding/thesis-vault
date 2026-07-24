@@ -111,7 +111,7 @@ show the result.
 | User intent | Your action | Confirmation |
 |---|---|---|
 | Describes a bug | Create `20_Tickets/bug-{scope}-{slug}.md` | None — say "Logged: [filename]" |
-| Describes an experiment to run | Create `20_Tickets/exp-{scope}-{slug}.md` | None |
+| Describes an experiment to run | Create `20_Tickets/experiments/exp-{scope}-{slug}.md` | None |
 | Describes perf / refactor / chore work | Create matching ticket | None |
 | Names an architecture change in the codebase | Edit `10_Now/architecture.md` directly | Show diff *after* the edit |
 | Names a contribution / framing change for the thesis | Edit `10_Now/positioning.md` directly | Show diff after |
@@ -130,7 +130,7 @@ show the result.
 4. **Never edit `90_Meta/`.** That's vault infrastructure.
 5. **When in doubt about where something belongs, dump to inbox.**
 6. **Never write speculative results into `30_Knowledge/experiments/`.** That folder documents experiments that **actually ran** and have observed numbers/plots/logs. Anything earlier than that goes into:
-   - a ticket — `20_Tickets/exp-{scope}-{slug}.md` — for planned experiments, OR
+   - a ticket — `20_Tickets/experiments/exp-{scope}-{slug}.md` — for planned experiments, OR
    - an open decision — `50_Decisions/open/{slug}.md` — for unresolved design choices, OR
    - the inbox for fleeting "what if" thoughts.
 
@@ -345,8 +345,8 @@ You have access to the whole vault. **Use it sparingly.**
 **Find tickets by frontmatter, not by reading them all:**
 
 ```bash
-grep -l "scope: shortcut" 20_Tickets/*.md
-grep -l "status: open" 20_Tickets/*.md
+grep -l "scope: shortcut" 20_Tickets/*.md 20_Tickets/experiments/*.md
+grep -l "status: open" 20_Tickets/*.md 20_Tickets/experiments/*.md
 ```
 
 ---
@@ -355,6 +355,10 @@ grep -l "status: open" 20_Tickets/*.md
 
 ### Tickets — `20_Tickets/{type}-{scope}-{slug}.md`
 
+- **Experiment tickets live in their own subdirectory** (restructure
+  2026-07-21): `20_Tickets/experiments/exp-{scope}-{slug}.md`. All other
+  types stay flat in `20_Tickets/`. Closed tickets of every type go to
+  `20_Tickets/done/` as before.
 - **Types (closed set, ask before extending):** `exp`, `feat`, `bug`, `perf`, `chore`, `refactor`, `writeup`
 - **Scopes (closed set, ask before extending):** `adapter`, `backbone`, `conditioning`, `shortcut`, `losses`, `training`, `data`, `eval`, `infra`, `writing`, `figures`
 - **Slug:** kebab-case, 3–6 words max
@@ -367,7 +371,7 @@ grep -l "status: open" 20_Tickets/*.md
 ### Experiment notes — `30_Knowledge/experiments/{slug}.md`
 
 - An experiment note documents a run that **actually executed** with logged outputs.
-- Tempted to create one for an experiment you just planned? Stop. Open a ticket (`20_Tickets/exp-{scope}-{slug}.md`) instead. If there are unresolved design choices, also open `50_Decisions/open/{slug}.md`.
+- Tempted to create one for an experiment you just planned? Stop. Open a ticket (`20_Tickets/experiments/exp-{scope}-{slug}.md`) instead. If there are unresolved design choices, also open `50_Decisions/open/{slug}.md`.
 - Promote planning material into an experiment note **only after** the run is launched and logging.
 - See hard rule 6 in Part 3.
 
@@ -589,15 +593,16 @@ A short list of recurring traps in this work specifically. Watch for them.
 
 ## Part 13 — Skills and the outward-facing layers
 
-Three project skills live in `.claude/skills/` (committed to the vault):
+Four project skills live in `.claude/skills/` (committed to the vault):
 
 | Skill | Invoke when the user says… | What it does |
 |---|---|---|
 | `/log-update` | "log an update", "record this for the meeting", "we found/added X", "I'm blocked on Y" | Writes one curated entry to `60_Updates/entries/` + registers it in the index. Outward-facing distillation, not a raw log. |
 | `/weekly-deck` | "make the weekly deck", "prep slides for the meeting" | Reads recent updates + product-state + sourced experiments + open decisions; writes a slide-spec and runs `build_deck.py` to emit a self-contained HTML deck in `60_Updates/presentations/`. |
 | `/thesis-write` | "write/extend the thesis section X", "write about the newest changes" | Drafts/extends `70_Thesis/draft/{file}.md` from `70_Thesis/outline.md` + linked sources + recent `60_Updates/`. |
+| `/blog` | "blog about X", "start a post on X", "brainstorm a blog topic", "continue the X blog" | Scaffolds a per-topic subdir `80_Blog/{slug}/` (`brainstorm.md` + `draft.md`) linked to existing vault notes, then brainstorms one-question-at-a-time and co-writes the draft. |
 
-**The two layers and how they relate to the internal vault:**
+**The outward-facing layers and how they relate to the internal vault:**
 
 - `60_Updates/` is the **curated, chronological, outward-facing** layer for
   the weekly meeting. It distils — never duplicates — `10_now/product-state.md`
@@ -607,8 +612,14 @@ Three project skills live in `.claude/skills/` (committed to the vault):
   `index.md` (chapter→source map) and `outline.md` (per-section status). It
   links into `30_Knowledge/writing/`, `related-work/`, `theory/`,
   `experiments/`, and `50_Decisions/decided/` rather than copying them.
+- `80_Blog/` is the **public-writing** layer: one subdir per post
+  (`{slug}/brainstorm.md` + `draft.md`), preserving what was learned through
+  the thesis as standalone posts for a general technical reader. It `[[links]]`
+  into `30_Knowledge/` and `50_Decisions/` rather than copying them; the
+  status lifecycle is `idea → brainstorming → drafting → draft-complete →
+  published`. Entry point: `80_Blog/index.md`.
 
-**Both layers inherit the hard rules.** No unsourced numbers on a slide or in
+**All these layers inherit the hard rules.** No unsourced numbers on a slide or in
 the draft (rules 7–8); no promoting planned runs to results (Part 12); respect
 deliverable separation (D1–D4). The deck builder (`build_deck.py`,
 `theme.css`) is skill-owned tooling — edit it freely (it is not under

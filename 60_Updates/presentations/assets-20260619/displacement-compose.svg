@@ -1,0 +1,21 @@
+<svg width="680" height="360" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrowDp" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect x="0" y="0" width="680" height="360" fill="#fbfaf6"/>
+<path d="M120 300 Q 240 70 560 90" fill="none" stroke="#888780" stroke-width="1.5"/>
+<text x="300" y="120" text-anchor="middle" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="12">true curved trajectory</text>
+<line x1="120" y1="300" x2="281" y2="166" stroke="#1A7F37" stroke-width="2.5" marker-end="url(#arrowDp)"/>
+<line x1="298" y1="156" x2="548" y2="93" stroke="#1A7F37" stroke-width="2.5" marker-end="url(#arrowDp)"/>
+<line x1="120" y1="300" x2="549" y2="95" stroke="#185fa5" stroke-width="3.5" marker-end="url(#arrowDp)"/>
+<circle cx="120" cy="300" r="7" fill="#f1efe8" stroke="#5f5e5a" stroke-width="1"/>
+<text x="120" y="326" text-anchor="middle" fill="#141413" font-family="-apple-system,sans-serif" font-size="14" font-weight="500">A</text>
+<circle cx="290" cy="158" r="5" fill="#e1f5ee" stroke="#0f6e56" stroke-width="1"/>
+<text x="282" y="150" text-anchor="end" fill="#141413" font-family="-apple-system,sans-serif" font-size="14" font-weight="500">B</text>
+<circle cx="560" cy="90" r="7" fill="#e1f5ee" stroke="#0f6e56" stroke-width="2"/>
+<text x="578" y="94" fill="#141413" font-family="-apple-system,sans-serif" font-size="14" font-weight="500">C</text>
+<text x="138" y="250" fill="#1A7F37" font-family="-apple-system,sans-serif" font-size="12">Δ(d) = AB⃗</text>
+<text x="412" y="110" fill="#1A7F37" font-family="-apple-system,sans-serif" font-size="12">Δ′(d) = B→C</text>
+<text x="298" y="242" fill="#185fa5" font-family="-apple-system,sans-serif" font-size="12">Δ(2d) = AB⃗ + B→C = A→C → lands on C</text>
+<text x="298" y="262" fill="#3d3d3a" font-family="-apple-system,sans-serif" font-size="11">B cancels, exact telescoping, any curvature</text>
+</svg>

@@ -3,7 +3,7 @@ type: decision
 status: open
 created: 2026-05-25
 decided_at:
-updated: 2026-06-10
+updated: 2026-06-26
 target_date:
 scope: architecture
 related:
@@ -356,6 +356,313 @@ buildable and the imports-clean approach (parallel package, untouched
 residual): multimodal-vs-shortcut as the thesis headline is still open, and the
 positioning tensions (control as success criterion; PP-as-spine soft lean)
 remain. Decision stays `open`.
+
+## Cross-attention fusion design (2026-06-17) — the real interaction mechanism
+
+Discussion prompted by EchoMotion (arXiv:2512.18814 — dual-branch DiT that
+**concatenates video+motion tokens into one joint self-attention**, MVS-RoPE
+aligns them, per-modality decoders read both back out). Comparing it to what we
+shipped exposed the gap: **the current heads have no input-modality interaction
+at all.** Each `modality_heads[name](x_t[name], t[name], cond_emb)` sees only its
+own noised stream + the shared action embedding; the `LearnedMaskFusion` mask `m`
+only combines *video* contributions *after* prediction. The noised modality
+states never see each other or the video latent. So sub-decision-5 residual
+item (c) "cross-attention between modality adapters" is the live design now.
+
+**Constraint that picks the architecture:** the video base is **frozen and
+video-only** — it cannot jointly attend over motion/depth tokens like EchoMotion's
+trainable DiT. So *all* cross-modal interaction must live **in the adapter**. And
+the "works" criterion *"video prediction improves"* (line 197) is a hard
+requirement: information **must flow modalities → video**, spatially, and
+attributably (claim 3 "demonstrably used").
+
+**Cost insight:** EchoMotion pays O(N²) full self-attention, video-dominated
+(`T·H·W` ≈ 4096 latent tokens). We don't need that — **directional cross-attention**
+(video-latent tokens as *queries*, the few modality tokens as *keys/values*) gives
+the mandatory modalities→video path at **O(N_video · N_modality)** (linear in video
+tokens), and the **attention map is the interpretability story** (replaces the
+scalar mask `m`).
+
+**Two variants, isolating exactly one variable — modality↔modality interaction:**
+
+| Variant | video ↔ each modality | modality ↔ modality | Video Δ combine | Role |
+|---|---|---|---|---|
+| **compositional** | ✅ per-modality **independent** cross-attn | ❌ **none** (decided) | learned mask `m` over per-modality `Δ_m` | contribution A |
+| **fused** | ✅ | ✅ joint attention | single joint Δ | contribution B |
+
+Decided 2026-06-17: **in the compositional adapter the modalities do NOT attend to
+each other** (only each-modality↔video, preserving the one-adapter-per-modality
+figure, cross-attn replacing the flat-MLP adjuster and fixing the latent-shape
+gap). **Only the fused adapter has modality↔modality attention.** This makes the
+two a clean ablation: *does modality-to-modality coupling buy anything beyond
+each-modality-to-video?*
+
+**Orthogonal video-Δ knob — BOTH offered (decided 2026-06-17):**
+- `video_delta_mode: conditioning` — cross-modal context enriches the existing
+  DynamiCrafter adapter's conditioning; it emits one modality-aware video Δ.
+  Lower-risk, reuses the 11M adapter as workhorse.
+- `video_delta_mode: direct` — the DynamiCrafter adapter emits its action-only Δ
+  *and* the cross-attn emits an additional additive latent Δ; both sum onto base.
+  More EchoMotion-like, gives modalities a direct spatial channel.
+
+Both keep `base + Δ` and keep the 11M adapter present, so this is a true
+orthogonal axis (and the comparison "is conditioning enough vs. a direct spatial
+channel?" is itself a result).
+
+**Config surface (planned):**
+```yaml
+adapter.extra:
+  fusion: compositional | fused        # (+ existing trivial / mask baselines)
+  video_delta_mode: conditioning | direct
+  fusion_dim: 256
+  fusion_layers: 3
+  fusion_heads: 4
+  video_patch: [2, 2]                  # latent patchify -> token count (compute dial)
+```
+Param impact: cross-attn core ~2–4M (vs 11M video adapter, 1.5B frozen base);
+`video_patch` is the only real compute dial. Lives entirely in the adapter —
+`MultiModalAdaptedModel.forward` swaps the head loop for a fusion block; substrate
+(noising, loss, data, baselines) untouched. **Not yet implemented** — next build step.
+
+## Converged fusion design (2026-06-19) — supersedes the sketch above
+
+The 2026-06-17 sketch (standalone cross-attn core, `video_patch`, fusion_dim/layers)
+is **superseded** by a leaner, lower-risk design after working through the mechanism.
+Three things changed the picture:
+
+1. **What EchoMotion actually does** (method section, not abstract): modality-specific
+   Q/K/V projections → **concatenate tokens along sequence** → **one joint self-attention**
+   (`Q_mm=[Q_v;Q_m]` …) → disentangle → per-modality FFN + text cross-attn; **MVS-RoPE**
+   gives video `(t,h,w)` and motion `(t/4, H+i, W+i)` distinct positions. So "fuse like
+   EchoMotion" = **concatenation + joint self-attention** (MM-DiT / SD3 pattern), *not*
+   cross-attention. They have only 2 streams (video+motion) and train the whole DiT.
+
+2. **The adapter is video-primary, not symmetric.** Its job is the **video noise
+   correction `Δ` for the frozen base** — the modalities are *coupled auxiliaries*, not
+   co-equal generated outputs (the EchoMotion symmetry doesn't apply). The adapter
+   **has to be a video network** because it outputs a video correction.
+
+3. **The inductive bias (user, 2026-06-19):** each per-modality adapter does **two
+   coupled jobs — denoise the modality (`pred_m`) AND correct the video (`Δ_m`)** — with
+   **bidirectional video↔modality interaction**, *because each modality tells you
+   something about how the video should be corrected* (`video←m`), and the video context
+   tells the modality how to denoise (`m←video`). Joint training stops `m` collapsing to
+   noise, which is what makes the `video←m` path meaningful.
+
+### Decided architecture — reuse the AVID adapter, inject the modality via `context`
+
+**Do not build a new DiT spine.** Orient on the existing **AVID 11M DynamiCrafter output
+adapter** (`adapters/output/dynamicrafter.py`) as the video processor — it already
+(a) processes video + outputs the correction, (b) conditions on `base_output`
+(`adapter_input = cat([x_t, base_output])`, line 149), (c) conditions on the **initial
+frame** (`context` = OpenCLIP image/text from `DynamiCrafterBatchPreprocessor`,
+`cond_frame_index=0`) and on `act`, and (d) its SpatialTransformer blocks **already
+cross-attend to `context`**. So the modality injection point is **extending `context`** —
+no surgery on the UNet.
+
+```
+video correction (video ← m):
+    m_tokens = ModalityEncoder(z_t^m, t_m)        # state -> tokens at context_dim (1024)
+    context' = concat[ CLIP_context , m_tokens ]  # the fused-attention entry point
+    Δ_video  = AVID_adapter(x_t, base_output, context', act)   # existing 11M UNet, unchanged
+
+modality denoising (m ← video):
+    pred_m   = ModalityHead( m_tokens cross-attend to pooled AVID video features )
+```
+
+`video←m` is just the UNet's existing cross-attention now also seeing modality tokens
+(zero new UNet layers); `m←video` is a small cross-attn denoiser head. New params =
+`ModalityEncoder` + `ModalityHead` only, ~1–2M per modality. This is the
+`video_delta_mode: conditioning` path made concrete (the reuse-AVID workhorse); the
+`direct` additive-Δ path stays as the alternative.
+
+### Phased build
+
+- **Phase 1 — video (AVID) + ONE modality.** With a single modality, compositional ==
+  fused (no modality↔modality possible), so Phase 1 builds the whole bidirectional
+  mechanism on the smallest case. Deliver: `ModalityEncoder`, `context` extension,
+  `ModalityHead`, wired as a `fusion` path in `MultiModalAdaptedModel` + a dummy-base
+  substrate test. **(next build step)**
+- **Phase 2 — N modalities, the compositional/fused split:**
+  - **compositional** — one AVID adapter per modality, each with only *its* tokens in
+    `context'` (no mod↔mod); `Δ_m` combined by the learned mask.
+  - **fused** — one adapter, `context' = [CLIP, m₁, m₂, …]` **plus a small self-attention
+    over the modality tokens before injection** — that modality self-attn is exactly the
+    mod↔mod edge that distinguishes fused from compositional.
+
+The two variants still differ in **one** thing (the modality-token self-attention stage),
+so the thesis ablation — *does modality↔modality coupling buy anything beyond
+each-modality↔video?* — stays clean. Substrate (noising, UWM per-modality timesteps,
+summed loss, data, baselines) untouched.
+
+## Build status (2026-06-26) — TRUE compositional wired to the real DynamiCrafter backbone
+
+The **compositional** variant — the contribution from `docs/composite (2).png`:
+one adapter per modality + a learned mask `m ∈ ℝ^{n+2}` — is now **implemented**
+against the real DynamiCrafter backbone (the Phase-2 compositional split, not the
+single-shared-adapter workhorse). Before this, `fusion: compositional` only worked
+on the dummy "video-as-vector" base; on a real backbone the builder fell back to
+flat `ModalityPredictionHead` video-adjusters that have no notion of the
+`(B,C,T,H,W)` latent layout (the gap flagged in the 2026-06-10 build status).
+
+> **Course-correction note.** A first cut (earlier on 2026-06-26) wired a *single
+> shared adapter* with all modality tokens concatenated into one `context` → one
+> gated video Δ — i.e. the decision note's lower-risk `video_delta_mode:
+> conditioning` workhorse, closer to *fused* topology, **not** compositional. That
+> conflation was caught and replaced with the true per-modality structure below.
+
+**Architecture (`ε_video = m₀·ε_pre + m₁·ε_adj + Σ_i m_{i+1}·Δ_i`):**
+
+- **ε_pre** — frozen base prediction.
+- **ε_adj** — the action adapter (the shared AVID adapter), context = CLIP only.
+- **Δ_i** — **one AVID output adapter per modality** (separate weights), each
+  seeing *only its own* modality tokens in `context` (one-adapter-per-modality, no
+  modality↔modality coupling — that edge is reserved for the future *fused*
+  variant). With `n` modalities there are `n+1` adapters.
+- **m ∈ ℝ^{n+2}** — `LearnedMaskFusion` softmax mask over {base, action, Δ₁…Δ_n},
+  base-biased init; its weights are the inspectable "modalities-used" readout.
+
+**What was built** (sibling repo `generative-flow-adapters`, working tree on
+`main`):
+
+- `multimodal/modality_encoder.py` (new) — `ModalityEncoder` (**video←m**:
+  `z_t^m` + `t_m` → context tokens at `context_dim=1024`) and `VideoReadout`
+  (**m←video**: pools the frozen base video prediction → `cond_dim`, added to the
+  modality heads' conditioning).
+- `multimodal/model.py` — new `_forward_compositional` branch (triggered by
+  `modality_video_adapters`): runs the action adapter + one per-modality adapter
+  (each with only its tokens in context), blends all Δ with the base via
+  `LearnedMaskFusion`, and runs the m←video heads. The dummy/substrate path is
+  byte-unchanged.
+- `multimodal/builders.py` — real backbone + `fusion: compositional` builds one
+  `build_adapter(...)` per modality + a `ModalityEncoder` each + `VideoReadout` +
+  `LearnedMaskFusion(1+n)`. Dummy base keeps the flat-adjuster substrate.
+- `configs/multimodal_dynamicrafter.yaml` — `fusion: compositional`, stale note
+  replaced.
+
+**Key backbone constraint honoured.** The AVID adapter UNet
+(`act_cond_diffusion_11M.yaml`: `context_dim: 1024`, `image_cross_attention: true`)
+splits `context` at a fixed `text_context_len=77` boundary
+(`backbones/dynamicrafter/modules/attention.py` lines 105/178). Modality tokens
+are **appended** (ride the image cross-attn stream as a distinct K/V projection),
+never inserted — text boundary preserved.
+
+**Tested + smoke-run, still not trained.**
+- `tests/test_multimodal_real_backbone.py` (3 tests, passing) — compositional
+  contract with fake per-modality adapters: each modality adapter sees *only* its
+  own tokens (action adapter sees none), text boundary untouched, mask is a
+  normalised `n+2` softmax, and **bidirectional + mask gradients** all flow. The
+  7 substrate tests pass.
+- `examples/multimodal_training_test.py` — the compositional path **runs
+  end-to-end on the real DynamiCrafter UNet** (real architecture, *random* weights
+  via `allow_missing_checkpoint`, synthetic clip batch). Built **35.2M** trainable
+  params (3 AVID adapters: action + proprio + tactile, + mask + encoders +
+  readout + heads), 2 `MultiModalTrainer` steps, per-stream losses computed. Proves
+  the path *executes* — **not** a training result (random base + synthetic data;
+  per hard rules 6/8 no experiment note).
+
+**No real training run has happened** — that needs the 4.4GB checkpoint + a real
+MetaWorld proprio/depth loader, so none of the three "what works" criteria is
+tested yet. This does **not** settle the go/no-go (sub-decision 5 residual);
+decision stays `open`.
+
+**Next step.** A first real-backbone *training* run: `multimodal_dynamicrafter.yaml`
++ `scripts/train_multimodal_metaworld.py` with the DynamiCrafter checkpoint and a
+real proprio modality (the smoke path is already proven). Only then can a
+`30_Knowledge/experiments/` note exist. → needs an `exp-adapter-*` ticket.
+
+**Follow-up — the *fused* variant.** The clean ablation (does modality↔modality
+coupling help beyond each-modality↔video?) still needs the fused adapter: one
+adapter, `context = [CLIP, m₁, m₂, …]` + a small self-attention over the modality
+tokens. Not yet built.
+
+## Design option (2026-06-27) — action as a predicted modality, not a conditioning input
+
+Prompted by DreamZero / World Action Models
+([[../../30_Knowledge/related-work/dreamzero-wam]], arXiv:2602.15922). Today the
+multimodal design treats **action as conditioning** — `act` rides into every
+adapter's `context` (the 2026-06-19 AVID-reuse design; proposal rule
+`f_base + g(d)·Δ_φ(x_t,t,a_t,d)` has `a_t` on the input side). The option:
+move action to the **output** side as one more `OutputModalitySpec(kind="vector")`
+stream, jointly predicted via the same per-modality flow-matching loss.
+
+**Why it is nearly free on the shipped substrate.** Action becomes the
+lowest-dim modality (`kind: vector`) on `MultiModalAdaptedModel` — the
+per-modality independent-timestep noising, summed loss, and the 2026-06-19
+bidirectional coupling (`ModalityEncoder` for `video←m`, `VideoReadout` for
+`m←video`) already instantiate exactly DreamZero's joint = video-prediction ×
+inverse-dynamics decomposition (their Eq. 1). `action←video` *is* the IDM
+readout; `video←action` *is* forward dynamics. No new mechanism — just `m=action`.
+
+**Why it is the interesting move — it dissolves the control/anti-positioning
+tension** flagged above (line ~216). With action as a predicted stream, policy /
+forward-dynamics / inverse-dynamics are all just **inference modes of one joint
+world model**, selected by which timesteps are clamped clean (the UWM
+marginalisation we already adopted): clamp video+proprio clean → denoise action =
+**policy**; clamp action clean → denoise video = **forward dynamics**; clamp two
+frames clean → denoise action between = **IDM**. The world model *is* the policy —
+so success-criterion 4 (control) stops colliding with the *"not a control/RL
+paper"* anti-positioning, because nothing is bolted on: control is a conditional
+of the joint we already train.
+
+**Costs / open risks:**
+- **This reframes D2, not just the multimodal extension.** The proposal sells D2
+  as action-*conditioned*. Action-as-output departs from that spine. Licensed by
+  the "exploratory, headline-open" stance — but must be an *explicit* call, not a
+  silent drift in [[../../10_now/positioning]].
+- **Not binary.** DreamZero still conditions on proprio `q_l`, past obs, language;
+  only *future action+video* are predicted. Real variable = which streams are
+  clamped-clean (cond) vs noised-and-predicted (output), chosen per-inference.
+  Likely keep proprio as conditioning, predict action.
+- **Frozen-base coupling (sub-decision 3) becomes load-bearing.** The whole
+  policy-readout story now rests on `action←video` actually coupling through a
+  frozen video-only base via the trainable `VideoReadout` head — plausible but
+  **untested**.
+- **Timestep-scheme counterpoint.** DreamZero *shares* video/action timestep
+  (vs. our UWM independent scheme), and Flash decouples (video noisy `Beta(7,1)`,
+  action uniform) for 1-step action-from-noisy-video — a concrete idea that
+  bridges into the shortcut line. Feeds sub-decision 1.
+
+**Status: option captured, not decided.** Cheap to try (action = one vector
+modality on the path that already runs end-to-end, 2026-06-26 build status).
+Recommended as a parallel framing to run alongside the existing
+action-as-conditioning multimodal line. Go/no-go folds into the same headline
+go/no-go (sub-decision 5 residual). → would need an `exp-adapter-*` ticket once
+a real-backbone run is feasible.
+
+### Clarification (2026-06-27, user) — committal "pure modality" stance
+
+User's chosen variant is **stronger than DreamZero's hybrid**: *"if actions are
+part of the predicted modalities, they should not be conditionings anymore — we
+treat them as a modality."* DreamZero still conditions on proprio `q_l` + past
+obs and only predicts *future* action; the user drops the action-conditioning
+path entirely.
+
+**Forces architecturally:** the dedicated action adapter `ε_adj` (AVID adapter +
+`act` arg) is **removed**; action becomes one of the `Δ_i` modality streams. The
+mask collapses to `m ∈ ℝ^{n+1}` over `{base, modality₁…modalityₙ}`, action =
+modality #1. One action pathway, not two. The existing single-modality
+action-conditioning line (`AdaptedModel`) stays byte-unchanged — this is the
+multimodal-package line only.
+
+**Does NOT lose action-conditioning:** it relocates it to **inference-time
+timestep clamping** — clamp `t_action=0` (clean) → condition on action → denoise
+video = forward dynamics; noise action → predict it = policy. And the
+**independent-per-modality timesteps already adopted (UWM, sub-decision 1) are
+what make clamp-clean trainable** — training already shows (clean action, noisy
+video) configs, the regime DreamZero had to add Flash to manufacture under its
+shared timestep. The earlier sub-decision-1 choice pays off precisely here.
+
+**Open boundary question (next grill):** the frozen DynamiCrafter base is
+fundamentally image-conditioned (initial frame, `cond_frame_index=0`), so *some*
+conditioning stays privileged — it can't be total. Where is the line?
+(a) **pure-UWM:** initial frame is the *only* privileged conditioning, action +
+proprio + past-state all become clampable modality streams — cleaner story,
+bigger bet on sub-decision 3 (does clamp-clean condition through a frozen
+video-only base?); vs (b) **hybrid:** proprio/past-obs stay conditioning,
+only action is demoted. User leans toward the uniform principle ("if predicted,
+not conditioning") which points at (a). _Unresolved — decides the conditioning
+boundary._
 
 ## Consequences (if we proceed)
 

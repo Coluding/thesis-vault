@@ -8,7 +8,7 @@ target_date:
 scope: adapter
 related:
   - "[[../../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]"
-  - "[[../../20_Tickets/exp-adapter-param-matched-comparison]]"
+  - "[[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]]"
   - "[[../../20_Tickets/feat-adapter-flops-per-step-estimator]]"
   - "[[../../20_Tickets/writeup-writing-preregistered-protocol-paragraph]]"
   - "[[../../10_now/positioning]]"
@@ -21,7 +21,7 @@ related:
 **Decided 2026-05-22.** Unblocks the protocol at
 [[../../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]
 once the new prerequisite (FLOPs estimator) lands. The run-ticket
-[[../../20_Tickets/exp-adapter-param-matched-comparison]] remains
+[[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]] remains
 `blocked`, now on the estimator rather than on this decision.
 
 ## Context
@@ -185,7 +185,7 @@ Total run count: **~39-48** (36-45 adapter cells + 3 full-FT cells).
   — pre-registered methods paragraph for the D1 chapter. The
   "what-we-commit-to-before-running" block has to land before any run
   finishes, or the methodology contribution is post-hoc.
-- Update to [[../../20_Tickets/exp-adapter-param-matched-comparison]]:
+- Update to [[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]]:
   reflects FLOPs-matched sweep grid (4-5 families x 3 budgets x 3 seeds
   + 1 full-FT cell x 3 seeds), keeps `blocked` status, points blocker
   to the estimator ticket.
@@ -211,7 +211,7 @@ heavily for the right answer. _Closed via grilling on 2026-05-22._
 ## Related
 
 - Protocol: [[../../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]
-- Run ticket: [[../../20_Tickets/exp-adapter-param-matched-comparison]]
+- Run ticket: [[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]]
 - Inbox origin: [[../../00_Inbox/2026-05-21]] (16:17)
 - Positioning, anti-positioning: [[../../10_now/positioning#What this thesis is not]]
 - Adapter family notes: [[../../30_Knowledge/related-work/avid]],

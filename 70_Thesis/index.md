@@ -38,7 +38,7 @@ World Models via Plug-and-Play Adapters.*
 | 2 | Related Work | [[draft/20-related-work]] | stub | theory/baseline | `30_Knowledge/related-work/*`, [[../30_Knowledge/related-work/hyperalign]] |
 | 3 | Method | [[draft/30-method]] | drafting | D1 | [[../30_Knowledge/tech/structural-encoder]], [[../30_Knowledge/tech/shortcut-training-modes]], [[../30_Knowledge/tech/frame-stride-conditioning]], [[../50_Decisions/decided/shortcut-anchor-schedule]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]], [[../10_now/architecture]] |
 | 4 | Experiments | [[draft/40-experiments]] | drafting | D2/D3 | `30_Knowledge/experiments/*`, [[../50_Decisions/decided/param-matched-adapter-comparison-definition]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]] |
-| 5 | Results | [[draft/50-results]] | stub | D2/D3/D4 | `30_Knowledge/experiments/*` (sourced runs only) |
+| 5 | Results | [[draft/50-results]] | drafting | D2/D3/D4 | [[../30_Knowledge/experiments/20260724-metaworld-cap-shift-triangle-base-parity]] (§5.1.x, wandb-sourced), [[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]], other `30_Knowledge/experiments/*` (sourced runs only) |
 | 6 | Discussion | [[draft/60-discussion]] | stub | all | `50_Decisions/decided/*`, open questions |
 | 7 | Conclusion | [[draft/70-conclusion]] | stub | all | — |
 

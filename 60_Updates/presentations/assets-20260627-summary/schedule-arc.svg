@@ -1,0 +1,44 @@
+<svg width="760" height="380" viewBox="0 0 760 380" role="img" xmlns="http://www.w3.org/2000/svg">
+<rect x="0" y="0" width="760" height="380" fill="#fbfaf6"/>
+<text x="200" y="26" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600">VP diffusion — curved arc</text>
+<text x="610" y="26" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600">Flow matching — straight</text>
+<line x1="150" y1="320" x2="398" y2="320" stroke="#d0d7de" stroke-width="1"/>
+<line x1="150" y1="320" x2="150" y2="72" stroke="#d0d7de" stroke-width="1"/>
+<polyline points="380.0,320.0 379.9,314.0 379.7,308.0 379.3,302.0 378.7,296.0 378.0,290.0 377.2,284.0 376.1,278.1 375.0,272.2 373.6,266.3 372.2,260.5 370.5,254.7 368.7,248.9 366.8,243.2 364.7,237.6 362.5,232.0 360.1,226.5 357.6,221.0 354.9,215.6 352.1,210.3 349.2,205.0 346.1,199.8 342.9,194.7 339.5,189.7 336.1,184.8 332.5,180.0 328.7,175.3 324.9,170.6 320.9,166.1 316.8,161.7 312.6,157.4 308.3,153.2 303.9,149.1 299.4,145.1 294.7,141.3 290.0,137.5 285.2,133.9 280.3,130.5 275.3,127.1 270.2,123.9 265.0,120.8 259.7,117.9 254.4,115.1 249.0,112.4 243.5,109.9 238.0,107.5 232.4,105.3 226.8,103.2 221.1,101.3 215.3,99.5 209.5,97.8 203.7,96.4 197.8,95.0 191.9,93.9 186.0,92.8 180.0,92.0 174.0,91.3 168.0,90.7 162.0,90.3 156.0,90.1 150.0,90.0" fill="none" stroke="#9aa3ad" stroke-width="2"/>
+<polyline points="379.9,313.3 379.7,308.1 379.4,303.0 378.9,297.8 378.4,292.7 377.7,287.6 376.9,282.5 376.0,277.4 375.0,272.4 373.9,267.3 372.7,262.3 371.3,257.3 369.8,252.4 368.3,247.5 366.6,242.6" fill="none" stroke="#1A7F37" stroke-width="6"/>
+<polyline points="162.7,90.3 161.8,90.3 160.9,90.3 160.0,90.2 159.1,90.2 158.1,90.1 157.2,90.1 156.3,90.1 155.4,90.1 154.5,90.0 153.6,90.0 152.7,90.0 151.8,90.0 150.9,90.0 150.0,90.0" fill="none" stroke="#D85A30" stroke-width="6"/>
+<circle cx="379.9" cy="313.3" r="3" fill="#185fa5"/>
+<circle cx="366.6" cy="242.6" r="3" fill="#185fa5"/>
+<circle cx="347.5" cy="202.1" r="3" fill="#185fa5"/>
+<circle cx="322.8" cy="168.3" r="3" fill="#185fa5"/>
+<circle cx="294.0" cy="140.6" r="3" fill="#185fa5"/>
+<circle cx="262.9" cy="119.6" r="3" fill="#185fa5"/>
+<circle cx="232.4" cy="105.3" r="3" fill="#185fa5"/>
+<circle cx="204.3" cy="96.5" r="3" fill="#185fa5"/>
+<circle cx="180.8" cy="92.1" r="3" fill="#185fa5"/>
+<circle cx="162.7" cy="90.3" r="3" fill="#185fa5"/>
+<circle cx="150.0" cy="90.0" r="3" fill="#185fa5"/>
+<text x="388" y="325" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">data (end)</text>
+<text x="150" y="80" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">noise (start)</text>
+<text x="300" y="318" style="fill:#1A7F37;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600">long arc</text>
+<text x="58" y="118" style="fill:#D85A30;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600">short arc</text>
+<text x="150" y="360" text-anchor="middle" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:11px">dots = equal steps in t (Δt = 0.1·T)</text>
+<text x="150" y="376" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600">same Δt ⇒ 5.7× longer arc near data</text>
+<line x1="480" y1="320" x2="700" y2="110" stroke="#9aa3ad" stroke-width="2"/>
+<polyline points="480.0,320.0 502.0,299.0" fill="none" stroke="#1A7F37" stroke-width="6"/>
+<polyline points="678.0,131.0 700.0,110.0" fill="none" stroke="#1A7F37" stroke-width="6"/>
+<circle cx="480.0" cy="320.0" r="3" fill="#185fa5"/>
+<circle cx="502.0" cy="299.0" r="3" fill="#185fa5"/>
+<circle cx="524.0" cy="278.0" r="3" fill="#185fa5"/>
+<circle cx="546.0" cy="257.0" r="3" fill="#185fa5"/>
+<circle cx="568.0" cy="236.0" r="3" fill="#185fa5"/>
+<circle cx="590.0" cy="215.0" r="3" fill="#185fa5"/>
+<circle cx="612.0" cy="194.0" r="3" fill="#185fa5"/>
+<circle cx="634.0" cy="173.0" r="3" fill="#185fa5"/>
+<circle cx="656.0" cy="152.0" r="3" fill="#185fa5"/>
+<circle cx="678.0" cy="131.0" r="3" fill="#185fa5"/>
+<circle cx="700.0" cy="110.0" r="3" fill="#185fa5"/>
+<text x="476" y="338" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">noise</text>
+<text x="666" y="102" style="fill:#3d3d3a;font-family:-apple-system,sans-serif;font-size:12px">data</text>
+<text x="600" y="376" text-anchor="middle" style="fill:#141413;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600">same Δt ⇒ same length everywhere</text>
+</svg>

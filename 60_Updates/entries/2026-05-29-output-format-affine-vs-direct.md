@@ -5,7 +5,7 @@ deliverable: D1
 meeting:
 sources:
   - "[[../../50_Decisions/open/output-format-affine-vs-direct]]"
-  - "[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]]"
+  - "[[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]]"
   - "[[../../30_Knowledge/theory/unicon-output-adapters-detached-backward]]"
   - "code: src/generative_flow_adapters/adapters/output/format.py"
   - "code: src/generative_flow_adapters/adapters/output/output_head.py"
@@ -82,7 +82,7 @@ adapters (unicon composition tests) unaffected.
   configs; the affine-vs-direct numbers come from the ticket run._
 
 ## Next
-- Run [[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]]:
+- Run [[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]]:
   transformer backbone, `dense` affine first (fairest), then add the mlp and
   unet points. Equal seed/budget per arm.
 - Resolve [[../../50_Decisions/open/output-format-affine-vs-direct]] once the

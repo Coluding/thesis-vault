@@ -129,6 +129,18 @@ def render_blocks(lines: list[str], base_dir: Path) -> str:
                 out.append(f'<figure><img src="{embedded}" alt="{html.escape(alt)}">{cap}</figure>')
             i += 1; continue
 
+        # GFM table: a header row of |-separated cells followed by a delimiter row
+        if "|" in stripped and i + 1 < n and _is_table_delim(lines[i + 1]):
+            header = _split_row(stripped)
+            i += 2  # consume header + delimiter row
+            rows: list[list[str]] = []
+            while i < n and lines[i].strip() and "|" in lines[i] \
+                    and lines[i].strip() != "|||" and not lines[i].strip().startswith(":::"):
+                rows.append(_split_row(lines[i].strip()))
+                i += 1
+            out.append(_render_table(header, rows))
+            continue
+
         # list (bullets or ordered) — collect consecutive list lines
         if re.match(r"\s*([-*]|\d+\.)\s+", line):
             items: list[tuple[int, str, bool]] = []
@@ -189,6 +201,41 @@ def _render_region(kind: str, body: list[str], base_dir: Path) -> str:
         return f'<aside class="notes">{render_blocks(body, base_dir)}</aside>'
     # unknown region → render as plain blocks
     return render_blocks(body, base_dir)
+
+
+def _split_row(line: str) -> list[str]:
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
+
+def _is_table_delim(line: str) -> bool:
+    cells = _split_row(line)
+    seen = False
+    for c in cells:
+        c2 = c.replace(" ", "")
+        if c2 == "":
+            continue
+        if not re.fullmatch(r":?-+:?", c2):
+            return False
+        seen = True
+    return seen
+
+
+def _render_table(header: list[str], rows: list[list[str]]) -> str:
+    ncol = len(header)
+    thead = "".join(f"<th>{inline(c)}</th>" for c in header)
+    body = []
+    for r in rows:
+        cells = (r + [""] * ncol)[:ncol]
+        body.append("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in cells) + "</tr>")
+    return (
+        f'<table class="md-table"><thead><tr>{thead}</tr></thead>'
+        f'<tbody>{"".join(body)}</tbody></table>'
+    )
 
 
 def _render_list(items: list[tuple[int, str, bool]]) -> str:

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Forcing — visual explainer</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --muted:#9aa7b4;
+    --accent:#58a6ff; --warm:#ffa657; --good:#3fb950; --line:#30363d; --noise:#f0f6fc;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 22px 80px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.5px}
+  h2{font-size:21px;margin:42px 0 10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .sub{color:var(--muted);font-size:16px;margin-bottom:8px}
+  p{color:#cdd6e0}
+  code,.mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.92em}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+    border-radius:6px;padding:1px 7px;color:var(--muted);font-size:12px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin:18px 0}
+  .lead{background:linear-gradient(180deg,#161b22,#11161d);border-left:3px solid var(--accent)}
+  /* frame strip */
+  .strip{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .frame{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px}
+  .frame canvas{border-radius:8px;border:1px solid var(--line);background:#000;width:96px;height:96px;
+    image-rendering:pixelated}
+  .frame.obs canvas{border:2px solid var(--good);box-shadow:0 0 0 2px rgba(63,185,80,.18)}
+  .flabel{font-size:11px;color:var(--muted)}
+  .sig{font-family:"SF Mono",monospace;font-size:12px;color:var(--warm)}
+  .sig.zero{color:var(--good)}
+  input[type=range]{accent-color:var(--accent)}
+  .vrange{writing-mode:vertical-lr;direction:rtl;width:22px;height:70px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 2px}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent);color:#fff}
+  button.active{background:var(--accent);color:#04101f;border-color:var(--accent);font-weight:600}
+  button.play{background:var(--good);color:#04140a;border-color:var(--good);font-weight:600}
+  .readout{font-family:"SF Mono",monospace;font-size:13px;color:var(--muted);margin-top:12px;
+    background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto}
+  .readout b{color:var(--warm)}
+  /* forcing axis */
+  .axis{height:34px;border-radius:8px;margin:10px 0 6px;
+    background:linear-gradient(90deg,var(--good),#9aa7b4 50%,var(--accent))}
+  .axislabels{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:var(--panel2);color:var(--ink)}
+  td.mono{color:var(--warm)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:10px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:middle;margin-right:5px}
+  .key li{margin:6px 0}
+  .foot{color:var(--muted);font-size:13px;margin-top:30px;border-top:1px solid var(--line);padding-top:14px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Diffusion Forcing</h1>
+  <div class="sub">a visual explainer · world-model conditioning via per-frame noise levels</div>
+
+  <div class="panel lead">
+    <b>One line:</b> standard diffusion gives every frame the <i>same</i> noise level;
+    diffusion forcing lets every frame have its <i>own</i>. Once a frame's noise level is
+    independent, it becomes a <b>conditioning knob</b> — a frame at σ&nbsp;=&nbsp;0 is
+    <span style="color:var(--good)">given (observed)</span>, a frame at σ&nbsp;=&nbsp;1 is
+    <span style="color:var(--accent)">generated</span>. Image-to-video, text-to-video and
+    autoregressive rollout become the <i>same model</i> run with a different per-frame schedule —
+    no CLIP encoder, no concat channel.
+  </div>
+
+  <h2>1 · The σ axis — &ldquo;how forced&rdquo; a frame is</h2>
+  <p>Each frame carries a noise level σ ∈ [0,1]. It generalises <i>teacher forcing</i> (binary
+     given/absent) into a continuous dial:</p>
+  <div class="axis"></div>
+  <div class="axislabels">
+    <span>σ = 0 · <b style="color:var(--good)">forced</b> (clean, given)</span>
+    <span>partially forced (noisy hint)</span>
+    <span>σ = 1 · <b style="color:var(--accent)">free</b> (generate)</span>
+  </div>
+
+  <h2>2 · Build a schedule</h2>
+  <p>Drag a slider to set each frame's σ, or pick a preset. The frames render noisier as σ rises.
+     The scene has a moving marker so you can see structure resolve. Green-bordered frames are
+     <b>observed</b> (σ = 0).</p>
+
+  <div class="panel">
+    <div class="controls">
+      <button id="p-t2v">Text→Video (all equal)</button>
+      <button id="p-i2v" class="active">Image→Video (frame 0 observed)</button>
+      <button id="p-ar">Autoregressive (ramp)</button>
+    </div>
+    <div class="strip" id="builder"></div>
+    <div class="readout">σ = [ <span id="sigout"></span> ]&nbsp;&nbsp;→&nbsp;&nbsp;per-frame timestep t = σ·1000 = [ <b id="tout"></b> ]</div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--good)"></span>observed · σ=0 · clamped clean · timestep 0</span>
+      <span><span class="dot" style="background:var(--warm)"></span>noised · contributes to the loss</span>
+    </div>
+  </div>
+
+  <h2>3 · Watch image-to-video denoise</h2>
+  <p>The <b style="color:var(--good)">observation frame</b> is pinned clean the whole time; the
+     <b style="color:var(--accent)">future frames</b> start as noise and denoise down — guided, through
+     attention, by that clean frame. This is exactly our sampler loop (re-clamp the observation each step).</p>
+  <div class="panel">
+    <div class="controls">
+      <button id="play" class="play">▶ Play denoising</button>
+      <span class="mono" style="color:var(--muted);align-self:center">step <b id="stepn" style="color:var(--ink)">—</b> · future σ = <b id="curs" class="sig">1.00</b></span>
+    </div>
+    <div class="strip" id="anim"></div>
+  </div>
+
+  <h2>4 · The schedule <i>is</i> the task</h2>
+  <p>Same trained weights — you just choose the per-frame σ trajectory at sampling time:</p>
+  <table>
+    <tr><th>Task</th><th>Per-frame σ schedule</th></tr>
+    <tr><td>Text → Video</td><td class="mono">all frames share σ, anneal 1 → 0 together</td></tr>
+    <tr><td><b>Image → Video</b> (ours)</td><td class="mono">frame 0 pinned σ=0; rest anneal 1 → 0</td></tr>
+    <tr><td>Autoregressive / ∞ video</td><td class="mono">past σ=0, future noisier with horizon; slide window</td></tr>
+    <tr><td>Inpaint / interpolate</td><td class="mono">known frames σ=0, gaps noised</td></tr>
+  </table>
+
+  <h2>5 · What we actually run (important nuance)</h2>
+  <ul class="key">
+    <li><b>Capability vs usage.</b> The model is <i>built</i> to accept a fully independent σ per
+        frame (that's the per-token timestep). But our I2V uses a <b>two-level</b> schedule:
+        <span class="mono">σ = [0, s, s, s, …]</span> — observation at 0, <i>all</i> future frames
+        sharing one annealing s. Not all-different.</li>
+    <li><b>Masked loss.</b> Observed frames (σ=0) get <i>no</i> gradient — their velocity target
+        references an unobservable noise draw. We supervise only the predicted frames.</li>
+    <li><b>Re-clamp every step.</b> The scheduler nudges all frames, so the observation is rewritten
+        to its clean latent after each step or it drifts.</li>
+    <li><b>Why it fixes our world model.</b> Old T2V setup: hallucinate the whole scene from noise +
+        a 4-dim action (ill-posed → washed-out eval). Now: the model is <i>given</i> the present and
+        only predicts the consequences of the actions — well-posed.</li>
+    <li><b>All-different earns its keep for long rollout</b> (the ramp preset): cleaner near &ldquo;now&rdquo;,
+        noisier far ahead → uncertainty grows with horizon; slide the window to generate indefinitely.</li>
+  </ul>
+
+  <div class="foot">
+    Companion to the theory note <code>30_Knowledge/theory/diffusion-forcing.md</code> ·
+    implementation: <code>feat-wan22-ti2v-diffusion-forcing-i2v</code> ·
+    method: Chen et&nbsp;al., <i>Diffusion Forcing</i>, NeurIPS 2024.
+  </div>
+</div>
+
+<script>
+const N = 6, SIZE = 96;
+let sigmas = [0, 0.45, 0.62, 0.76, 0.86, 0.93];
+
+// deterministic pseudo-random for stable noise per (frame,pixel)
+function hash(x){ x = Math.sin(x*127.1)*43758.5453; return x - Math.floor(x); }
+
+function renderFrame(cv, f, sigma){
+  const ctx = cv.getContext('2d'); const w=cv.width, h=cv.height;
+  // base scene: vertical gradient + ground + a marker that moves with frame index
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#10243b'); g.addColorStop(1,'#0a3d3a');
+  ctx.globalAlpha = 1; ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha = Math.max(0, 1 - sigma*0.85);          // scene fades as it gets noisier
+  ctx.fillStyle='#0e2c2a'; ctx.fillRect(0,h*0.72,w,h*0.28); // ground
+  const mx = w*0.16 + (w*0.68)*(f/(N-1));                   // marker moves left->right
+  const my = h*0.62 - Math.sin(f*0.9)*h*0.12;
+  ctx.fillStyle='#ffa657';
+  ctx.beginPath(); ctx.arc(mx,my,h*0.11,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(88,166,255,.7)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(w*0.16,h*0.72); ctx.lineTo(mx,my); ctx.stroke(); // "arm"
+  // noise overlay: a fraction ~sigma of pixels become random gray
+  ctx.globalAlpha = 1;
+  const img = ctx.getImageData(0,0,w,h); const d = img.data; const step=2;
+  for(let y=0;y<h;y+=step) for(let x=0;x<w;x+=step){
+    if(hash(f*9301 + y*w + x) < sigma){
+      const v = (hash(f*7 + x*3.1 + y*1.7)*255)|0; const i=(y*w+x)*4;
+      d[i]=v; d[i+1]=v; d[i+2]=v;
+      if(x+1<w){const j=i+4; d[j]=v;d[j+1]=v;d[j+2]=v;}
+      if(y+1<h){const k=((y+1)*w+x)*4; d[k]=v;d[k+1]=v;d[k+2]=v;}
+    }
+  }
+  ctx.putImageData(img,0,0);
+}
+
+// ---- builder ----
+const builder = document.getElementById('builder');
+const cells = [];
+for(let f=0; f<N; f++){
+  const wrap = document.createElement('div'); wrap.className='frame';
+  const cv = document.createElement('canvas'); cv.width=SIZE; cv.height=SIZE;
+  const sl = document.createElement('input'); sl.type='range'; sl.min=0; sl.max=1; sl.step=0.01;
+  sl.value=sigmas[f]; sl.className='vrange';
+  const lab = document.createElement('div'); lab.className='flabel'; lab.textContent='frame '+f;
+  const sg = document.createElement('div'); sg.className='sig';
+  sl.addEventListener('input',()=>{ sigmas[f]=parseFloat(sl.value); clearPreset(); draw(); });
+  wrap.append(cv, sl, sg, lab);
+  builder.append(wrap);
+  cells.push({wrap, cv, sl, sg});
+}
+
+function draw(){
+  let so=[], to=[];
+  for(let f=0; f<N; f++){
+    const s = sigmas[f];
+    renderFrame(cells[f].cv, f, s);
+    cells[f].sl.value = s;
+    cells[f].sg.textContent = 'σ '+s.toFixed(2);
+    cells[f].sg.className = 'sig' + (s<0.001?' zero':'');
+    cells[f].wrap.classList.toggle('obs', s<0.001);
+    so.push(s.toFixed(2)); to.push(Math.round(s*1000));
+  }
+  document.getElementById('sigout').textContent = so.join(', ');
+  document.getElementById('tout').textContent = to.join(', ');
+}
+
+// ---- presets ----
+const buttons = {t2v:'p-t2v', i2v:'p-i2v', ar:'p-ar'};
+function clearPreset(){ Object.values(buttons).forEach(id=>document.getElementById(id).classList.remove('active')); }
+function setActive(id){ clearPreset(); document.getElementById(id).classList.add('active'); }
+document.getElementById('p-t2v').onclick=()=>{ sigmas=Array(N).fill(0.8); setActive('p-t2v'); draw(); };
+document.getElementById('p-i2v').onclick=()=>{ sigmas=[0,.8,.8,.8,.8,.8]; setActive('p-i2v'); draw(); };
+document.getElementById('p-ar').onclick =()=>{ sigmas=[0,0,.2,.45,.7,.95]; setActive('p-ar'); draw(); };
+
+// ---- I2V denoising animation (separate strip) ----
+const animEl = document.getElementById('anim');
+const acells=[];
+for(let f=0; f<N; f++){
+  const wrap=document.createElement('div'); wrap.className='frame'+(f===0?' obs':'');
+  const cv=document.createElement('canvas'); cv.width=SIZE; cv.height=SIZE;
+  const lab=document.createElement('div'); lab.className='flabel';
+  lab.textContent = f===0?'obs':'frame '+f;
+  wrap.append(cv,lab); animEl.append(wrap); acells.push(cv);
+}
+function drawAnim(futureSigma){
+  for(let f=0; f<N; f++) renderFrame(acells[f], f, f===0?0:futureSigma);
+}
+let raf=null;
+document.getElementById('play').onclick=()=>{
+  if(raf) cancelAnimationFrame(raf);
+  const steps=28; let i=0;
+  const tick=()=>{
+    const s = 1 - i/steps;                     // future σ anneals 1 -> 0
+    drawAnim(s);
+    document.getElementById('curs').textContent = s.toFixed(2);
+    document.getElementById('stepn').textContent = i+'/'+steps;
+    if(i++<steps) raf=setTimeout(()=>requestAnimationFrame(tick),70);
+  };
+  tick();
+};
+
+draw();
+drawAnim(1.0);
+</script>
+</body>
+</html>

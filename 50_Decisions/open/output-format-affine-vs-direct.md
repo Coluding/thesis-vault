@@ -10,7 +10,7 @@ related:
   - "[[../../30_Knowledge/theory/unicon-output-adapters-detached-backward]]"
   - "[[../../30_Knowledge/theory/interior-vs-output-adapters-backward-cost]]"
   - "[[../../30_Knowledge/tech/affine-output-granularity]]"
-  - "[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]]"
+  - "[[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]]"
   - "[[../../10_now/architecture]]"
 ---
 
@@ -52,7 +52,7 @@ differ in output format *and* composition (`add` vs `avid_mask_mix`), both under
 shortcut. We accepted this (option [a]): treat it as the practical
 affine-under-shortcut comparison and report the confound. A clean single-axis
 run would need an added `direct`+`add` shortcut sibling. See the ticket
-[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]].
+[[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]].
 
 ## Context
 
@@ -127,7 +127,7 @@ These are reasoning, not measurements — resolve via the ticket.
 ## Decision
 
 _Pending the ablation run._ Promote to `decided/` once
-[[../../20_Tickets/exp-adapter-output-format-affine-vs-direct]] produces
+[[../../20_Tickets/experiments/exp-adapter-output-format-affine-vs-direct]] produces
 sourced numbers (wandb id + ckpt + commit).
 
 ## Consequences

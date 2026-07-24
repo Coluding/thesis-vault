@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the rescaling lands back on the circle</title>
+<style>
+  :root{
+    --ink:#1c2230; --muted:#667085; --line:#e4e7ec; --bg:#fbfcfe;
+    --ddim:#2563eb; --ddim-bg:#eff4ff; --euler:#b42318; --euler-bg:#fef3f2;
+    --grey:#9aa6bd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:720px;margin:0 auto;padding:36px 22px 60px}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:15px}
+  .fbox{background:#0f1726;border-radius:12px;padding:13px 18px;margin:0 0 18px;color:#e7edf6;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14.5px}
+  .fbox b{color:#7fb0ff}
+  .fbox .small{display:block;margin-top:6px;color:#8aa0bf;font-size:12.5px}
+  .stage{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px}
+  svg{display:block;width:100%;height:auto}
+  .controls{display:flex;align-items:center;gap:14px;margin:16px 2px 4px}
+  .controls label{font-size:14px;color:var(--muted);white-space:nowrap;font-weight:600}
+  input[type=range]{flex:1;accent-color:var(--ddim);height:4px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+  .chip{flex:1 1 120px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:#fff}
+  .chip .k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .chip .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .chip.on .v{color:var(--ddim)} .chip.off .v{color:var(--euler)}
+  .takeaway{border-left:3px solid var(--ink);padding:6px 0 6px 16px;margin:22px 0 0;font-size:15px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;
+    background:#f1f4f8;padding:.5px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>How the rescaling lands back on the circle</h1>
+  <p class="sub">Start at <b>xₜ</b>, read off the velocity <b>v</b> (the tangent). Scale the base point by <code>cos Δ</code>, scale the velocity by <code>sin Δ</code>, add them — and because <b>xₜ ⊥ v</b> with equal length, the corner lands exactly on the circle.</p>
+
+  <div class="fbox">
+    x<sub>t&prime;</sub> = <b>cos Δ</b> · xₜ + <b>sin Δ</b> · v
+    <span class="small">|xₜ| = |v| = R and xₜ ⊥ v &nbsp;⟹&nbsp; |x<sub>t&prime;</sub>| = R·√(cos²Δ + sin²Δ) = R &nbsp;→ on the circle, every Δ.</span>
+  </div>
+
+  <div class="stage">
+    <svg id="viz" viewBox="0 0 540 410" role="img" aria-label="Vector construction: cos times the base point plus sin times the velocity lands on the circle">
+      <defs>
+        <marker id="mInk" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#1c2230"/></marker>
+        <marker id="mRed" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#b42318"/></marker>
+        <marker id="mBlue" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#2563eb"/></marker>
+      </defs>
+
+      <!-- manifold arc -->
+      <path id="arcManifold" fill="none" stroke="#c9d3e4" stroke-width="2"/>
+      <text id="manLbl" font-size="12.5" fill="#9aa6bd">manifold</text>
+
+      <!-- rectangle O-P1-E-P2 -->
+      <path id="rect" fill="#eff4ff" stroke="#bcd0f5" stroke-width="1.4" stroke-dasharray="4 4"/>
+
+      <!-- radius O -> x_t : removed part (P1->x_t) dashed, kept part (O->P1) bold -->
+      <line id="radRemoved" stroke="#c4ccd9" stroke-width="2" stroke-dasharray="3 4"/>
+      <line id="radKept" stroke="#1c2230" stroke-width="3.4" marker-end="url(#mInk)"/>
+
+      <!-- scaled velocity sinΔ·v : P1 -> E -->
+      <line id="sinSeg" stroke="#2563eb" stroke-width="3.4" marker-end="url(#mBlue)"/>
+
+      <!-- full velocity v at x_t (where it points) -> naive off-circle -->
+      <line id="vArrow" stroke="#b42318" stroke-width="2.6" stroke-dasharray="5 4" marker-end="url(#mRed)"/>
+
+      <!-- radius to E (shows |OE| = R) -->
+      <line id="radE" stroke="#dbe2ec" stroke-width="1.6"/>
+
+      <!-- travelled arc x_t -> E -->
+      <path id="arcTrav" fill="none" stroke="#2563eb" stroke-width="2" stroke-dasharray="2 3"/>
+
+      <!-- right-angle mark at P1 -->
+      <path id="rang" fill="none" stroke="#9aa6bd" stroke-width="1.3"/>
+
+      <!-- centre -->
+      <circle id="oDot" r="3.5" fill="#1c2230"/>
+      <text id="oLbl" font-size="12.5" fill="#1c2230">O</text>
+
+      <!-- points -->
+      <circle id="xtDot" r="5.5" fill="#1c2230"/>
+      <text id="xtLbl" font-size="13" fill="#1c2230" font-weight="700">xₜ</text>
+      <circle id="naiveDot" r="4.5" fill="#b42318"/>
+      <text id="naiveLbl" font-size="12" fill="#b42318" font-weight="600">xₜ + v ✗ off circle</text>
+      <circle id="eDot" r="6" fill="#2563eb"/>
+      <text id="eLbl" font-size="13" fill="#2563eb" font-weight="700">x_t′ ✓ on circle</text>
+
+      <!-- vector labels -->
+      <text id="lblCos" font-size="12.5" fill="#1c2230" font-weight="600">cos Δ · xₜ</text>
+      <text id="lblSin" font-size="12.5" fill="#2563eb" font-weight="600">sin Δ · v</text>
+      <text id="lblV"   font-size="13"   fill="#b42318" font-weight="700" font-style="italic">v</text>
+    </svg>
+  </div>
+
+  <div class="controls">
+    <label for="step">step angle&nbsp;Δ</label>
+    <input id="step" type="range" min="4" max="90" value="50" step="1">
+    <span style="font-variant-numeric:tabular-nums;font-weight:700;min-width:46px;text-align:right" id="degOut">50°</span>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><div class="k">cos Δ (scales xₜ)</div><div class="v" id="cosOut">0.643</div></div>
+    <div class="chip"><div class="k">sin Δ (scales v)</div><div class="v" id="sinOut">0.766</div></div>
+    <div class="chip on"><div class="k">|O→x_t′| result</div><div class="v" id="oeOut">100% R</div></div>
+    <div class="chip off"><div class="k">|O→(xₜ+v)| naive</div><div class="v" id="naiveOut">141% R</div></div>
+  </div>
+
+  <p class="takeaway">
+    <b>The base point is the half that matters.</b> The red dashed arrow is where the velocity <i>points</i> — follow it fully and you land at <code>xₜ + v</code>, off the circle at <code>√2·R</code>. The fix isn't to the velocity alone: you also <i>shrink the base point</i> to <code>cos Δ · xₜ</code>. Those two rescaled, perpendicular, equal-length legs form a right triangle whose hypotenuse from O is always exactly <code>R</code>. Slide to Δ = 90°: <code>cos Δ → 0</code> kills the base point entirely and the answer <i>is</i> the (full) velocity — still on the circle. Slide to Δ = 0°: <code>sin Δ → 0</code>, no move, you stay at xₜ.
+  </p>
+
+</div>
+
+<script>
+(function(){
+  const O = {x:235, y:300}, R = 190;
+  const $ = id => document.getElementById(id);
+  const set = (el,a)=>{ for(const k in a) el.setAttribute(k, a[k]); };
+  // math angle a (CCW from +x), screen y flipped:
+  const P = a => ({ x: O.x + R*Math.cos(a), y: O.y - R*Math.sin(a) });
+
+  // static: manifold arc from -25deg to 115deg
+  (function(){
+    let d='', a0=-25*Math.PI/180, a1=115*Math.PI/180, N=60;
+    for(let i=0;i<=N;i++){ const a=a0+(a1-a0)*i/N, p=P(a); d+=(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)+' '; }
+    $('arcManifold').setAttribute('d', d);
+  })();
+  set($('oDot'), {cx:O.x, cy:O.y});
+  $('oLbl').setAttribute('x', O.x-16); $('oLbl').setAttribute('y', O.y+15);
+  $('manLbl').setAttribute('x', P(108*Math.PI/180).x-6); $('manLbl').setAttribute('y', P(108*Math.PI/180).y-6);
+
+  const xt = P(0);                     // base point on circle (radius axis = horizontal)
+  const vdir = {x:0, y:-1};            // tangent at xt points "up" (screen)
+  const naive = {x: xt.x + R*vdir.x, y: xt.y + R*vdir.y};   // xt + v (full velocity)
+
+  set($('xtDot'), {cx:xt.x, cy:xt.y});
+  $('xtLbl').setAttribute('x', xt.x+10); $('xtLbl').setAttribute('y', xt.y+18);
+  set($('naiveDot'), {cx:naive.x, cy:naive.y});
+  $('naiveLbl').setAttribute('x', naive.x+9); $('naiveLbl').setAttribute('y', naive.y+4);
+  set($('vArrow'), {x1:xt.x, y1:xt.y, x2:naive.x, y2:naive.y});
+  $('lblV').setAttribute('x', xt.x+9); $('lblV').setAttribute('y', (xt.y+naive.y)/2);
+
+  function render(deg){
+    const d = deg*Math.PI/180, c = Math.cos(d), s = Math.sin(d);
+    $('degOut').textContent = deg+'°';
+    $('cosOut').textContent = c.toFixed(3);
+    $('sinOut').textContent = s.toFixed(3);
+
+    const P1 = {x: O.x + R*c, y: O.y};               // cosΔ·xt  (along radius)
+    const E  = P(d);                                  // cosΔ·xt + sinΔ·v  (on circle)
+    const P2 = {x: O.x, y: O.y - R*s};               // sinΔ·v from O
+
+    // rectangle O - P1 - E - P2
+    $('rect').setAttribute('d', `M${O.x},${O.y} L${P1.x.toFixed(1)},${P1.y} L${E.x.toFixed(1)},${E.y.toFixed(1)} L${P2.x},${P2.y.toFixed(1)} Z`);
+
+    // radius kept / removed
+    set($('radKept'),    {x1:O.x, y1:O.y, x2:P1.x, y2:P1.y});
+    set($('radRemoved'), {x1:P1.x, y1:P1.y, x2:xt.x, y2:xt.y});
+    $('lblCos').setAttribute('x', (O.x+P1.x)/2 - 26); $('lblCos').setAttribute('y', O.y+18);
+
+    // scaled velocity sinΔ·v : P1 -> E
+    set($('sinSeg'), {x1:P1.x, y1:P1.y, x2:E.x, y2:E.y});
+    $('lblSin').setAttribute('x', P1.x+8); $('lblSin').setAttribute('y', (P1.y+E.y)/2);
+
+    // radius to E
+    set($('radE'), {x1:O.x, y1:O.y, x2:E.x, y2:E.y});
+
+    // travelled arc xt -> E
+    let path='', N=40;
+    for(let i=0;i<=N;i++){ const a=d*i/N, p=P(a); path+=(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)+' '; }
+    $('arcTrav').setAttribute('d', path);
+
+    // right-angle mark at P1 (between radius -x and velocity -y)
+    const m=11;
+    $('rang').setAttribute('d', `M${P1.x-m},${P1.y} L${P1.x-m},${P1.y-m} L${P1.x},${P1.y-m}`);
+
+    // result point
+    set($('eDot'), {cx:E.x, cy:E.y});
+    $('eLbl').setAttribute('x', E.x-8); $('eLbl').setAttribute('y', E.y-12);
+
+    $('oeOut').textContent = '100% R';
+    const nd = Math.hypot(naive.x-O.x, naive.y-O.y);
+    $('naiveOut').textContent = Math.round(nd/R*100)+'% R';
+  }
+
+  const slider = $('step');
+  slider.addEventListener('input', e=>render(+e.target.value));
+  render(+slider.value);
+})();
+</script>
+</body>
+</html>

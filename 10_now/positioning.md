@@ -87,6 +87,18 @@ finished a real training run end-to-end with logged outputs in wandb. The
 comparative ablation across all four adapter families on the same task is
 the headline deliverable and is **not yet evidence-backed**.
 
+**Evidence strategy (decided 2026-07-21, grilling session):** the target D2
+claim is **(a) "adapters can make a frozen video model action-following on
+at least one benchmark"** — one clean positive result. Fallback if (a)
+fails after the current intervention round: shift to **(b) the comparative
+trade-off analysis** plus **(c) the diagnostic contribution** (base-parity
+convergence, copy-through traps, action-blindness measurement — already
+banked, see
+[[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]]).
+Context: the current Wan2.2 xattn adapter is measured fully action-blind on
+MetaWorld scripted demos; whether the benchmark itself rewards actions is an
+open dataset decision (ACWM-Phys candidate).
+
 ### D3 — Shortcut adapters (methods contribution)
 
 **What:** Extend the adapter to take a step-size argument `d`:
@@ -119,9 +131,16 @@ number of denoising steps required at rollout time.
 [[architecture#Losses|consistency losses]] are implemented; configs
 `flow_output_shortcut.yaml`, `flow_hyper_shortcut_stepwise.yaml`,
 `diffusion_output_shortcut_*.yaml` exist; `test_hyper_step_size_conditioning.py`
-covers the step-size-conditioned hyper. **Real few-step-rollout evidence
-is not yet in the vault.** A run that produces such a curve is one of the
-highest-leverage outstanding pieces of work.
+covers the step-size-conditioned hyper. A first real-backbone shortcut run
+has now landed (AVID/DynamiCrafter, `anchor_prob=0.45`, larger MetaWorld) —
+but as a **cautionary** result, not a clean win: the honest `base_loss` is
+stable while the **`shortcut_direction_loss` is volatile**, and prediction
+**degraded** on the larger dataset (the earlier qualitative NFE-robustness
+looks like small-data overfit). See
+[[../30_Knowledge/experiments/avid-shortcut-anchor045-volatile-loss]].
+**A clean few-step-rollout quality curve is still not in the vault**, and
+diagnosing the shortcut-loss instability (per-step-size logging in progress)
+is currently the highest-leverage shortcut work.
 
 ### D4 — Combined: action-conditioned shortcut world models (integration)
 

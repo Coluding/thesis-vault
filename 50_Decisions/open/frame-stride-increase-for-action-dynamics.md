@@ -9,7 +9,7 @@ scope: data
 related:
   - "[[../decided/metaworld-frame-stride-load-time]]"
   - "[[../decided/per-sample-frame-stride-sampling]]"
-  - "[[../../20_Tickets/exp-conditioning-add-actions-to-shortcut-adapter]]"
+  - "[[../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]]"
   - "[[../../30_Knowledge/tech/frame-stride-conditioning]]"
   - "[[../../60_Updates/entries/2026-06-05-anchor-baseline-confirms-shortcut-fewstep-gain]]"
 ---
@@ -31,7 +31,7 @@ shows action-following emerging at the chosen stride.
 On the smallest AVID adapter (11M params) the local shortcut runs predict
 dynamics that look *somewhat random / not action-following*
 ([[../../60_Updates/entries/2026-06-05-anchor-baseline-confirms-shortcut-fewstep-gain]],
-[[../../20_Tickets/exp-conditioning-add-actions-to-shortcut-adapter]]). The
+[[../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]]). The
 action conditioning is confirmed *wired* (the adapter UNet is natively
 `action_conditioned: True` and `a_t` reaches its action head), yet ineffective.
 A leading structural suspect: at the current stride, consecutive kept frames
@@ -71,7 +71,7 @@ constant `fs` is fed to the base regardless of `k`.
 - It is entangled with the action-effectiveness diagnosis: if a larger stride
   fixes the "random dynamics", that *confirms* the fine-grained-action
   hypothesis over the null-action / undertraining hypotheses, which redirects
-  the rest of [[../../20_Tickets/exp-conditioning-add-actions-to-shortcut-adapter]].
+  the rest of [[../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]].
 
 ## Open questions / what closes this
 

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The DDIM step stays on the circle — rotation vs. straight walk</title>
+<style>
+  :root{
+    --ink:#1c2230; --muted:#667085; --line:#e4e7ec; --bg:#fbfcfe;
+    --ddim:#2563eb; --ddim-bg:#eff4ff; --euler:#b42318; --euler-bg:#fef3f2;
+    --faint:#9cb4e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:36px 22px 60px}
+  h1{font-size:23px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:15px}
+  .stage{background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 8px 4px}
+  svg{display:block;width:100%;height:auto}
+  .controls{display:flex;align-items:center;gap:14px;margin:16px 2px 4px}
+  .controls label{font-size:14px;color:var(--muted);white-space:nowrap;font-weight:600}
+  input[type=range]{flex:1;accent-color:var(--ddim);height:4px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 0}
+  .chip{flex:1 1 150px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff}
+  .chip .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .chip .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+  .chip.ddim{background:var(--ddim-bg)} .chip.ddim .v{color:var(--ddim)}
+  .chip.euler{background:var(--euler-bg)} .chip.euler .v{color:var(--euler)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:#39435a;margin:12px 2px 0}
+  .legend i{display:inline-block;width:22px;height:0;border-top-width:3px;border-top-style:solid;
+    vertical-align:middle;margin-right:6px}
+  .takeaway{border-left:3px solid var(--ink);padding:6px 0 6px 16px;margin:22px 0 0;font-size:15px}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;
+    background:#f1f4f8;padding:.5px 5px;border-radius:5px}
+  .fbox{background:#0f1726;border-radius:12px;padding:14px 18px;margin:0 0 20px;color:#e7edf6;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .fbox .frow{font-size:15px;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:3px 0}
+  .fbox .lhs{display:inline-block;min-width:92px;font-size:11px;letter-spacing:.04em;
+    text-transform:uppercase;color:#8aa0bf;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:700}
+  .fbox .eq{color:#cdd9ea}
+  .fbox.live-host .ddim .eq b{color:#7fb0ff} .fbox .ddim .eq b{color:#7fb0ff}
+  .fbox .eu .eq b{color:#ff9b8c}
+  .fbox .note{color:#7e8ca3;font-size:12.5px}
+  .fbox .live{margin-top:9px;padding-top:9px;border-top:1px solid #24324a;font-size:13.5px;color:#aebbd0}
+  .fbox .live b{color:#fff;font-variant-numeric:tabular-nums}
+  sub{font-size:.72em}
+  .deriv{margin:30px 0 0}
+  .deriv h2{font-size:17px;margin:0 0 12px;letter-spacing:-.01em}
+  .deriv ol{margin:0;padding-left:22px}
+  .deriv li{margin:0 0 14px;font-size:14.5px}
+  .deriv li b{color:var(--ink)}
+  .deriv .eqn{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
+    background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:7px 0 0;
+    color:#27324a;overflow-x:auto;white-space:nowrap}
+  .deriv .eqn b{color:var(--ddim)}
+  .deriv-note{font-size:14px;color:#39435a;border-left:3px solid var(--faint);padding:5px 0 5px 14px;margin:16px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>The DDIM step stays on the circle</h1>
+  <p class="sub">A velocity is a tangent. A <b>straight walk</b> along it leaves the manifold (worse with bigger steps). The <b>DDIM step</b> rebalances <code>cos·x + sin·v</code> and rides the arc — at any step size.</p>
+
+  <div class="fbox">
+    <div class="frow ddim"><span class="lhs">DDIM step</span>
+      <span class="eq">x<sub>φ+Δ</sub> = <b>cos(Δ)</b>·xₜ + <b>sin(Δ)</b>·v = ( cos(φ+Δ), sin(φ+Δ) )</span>
+      <span class="note">— length 1, on the circle</span></div>
+    <div class="frow eu"><span class="lhs">straight walk</span>
+      <span class="eq">xₜ + <b>Δ</b>·v</span>
+      <span class="note">— length √(1+Δ²) &gt; 1, off the circle</span></div>
+    <div class="live">at Δ = <b id="fdeg">58°</b> &nbsp;→&nbsp; cos Δ = <b id="fcos">0.530</b>, &nbsp; sin Δ = <b id="fsin">0.848</b> &nbsp;&nbsp;(rescales xₜ, grows v)</div>
+  </div>
+
+  <div class="stage">
+    <svg id="viz" viewBox="0 0 620 430" role="img" aria-label="Interactive: a straight tangent walk leaves the circle while the DDIM rotation stays on it">
+      <defs>
+        <marker id="vhead" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#1c2230"/></marker>
+        <marker id="chead" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9cb4e6"/></marker>
+      </defs>
+      <!-- manifold circle -->
+      <circle id="circle" fill="none" stroke="#c9d3e4" stroke-width="2"/>
+      <text id="manifoldLbl" font-size="12.5" fill="#9aa6bd">manifold (VP circle)</text>
+      <!-- center -->
+      <circle id="ctr" r="3" fill="#9aa6bd"/>
+      <!-- construction: shortened radius + velocity component -->
+      <line id="shortRad" stroke="#9cb4e6" stroke-width="2" stroke-dasharray="3 4"/>
+      <line id="compVec" stroke="#9cb4e6" stroke-width="2" marker-end="url(#chead)"/>
+      <!-- radius to x_t -->
+      <line id="radius" stroke="#dbe2ec" stroke-width="2"/>
+      <!-- tangent line through x_t -->
+      <line id="tangent" stroke="#c4ccd9" stroke-width="1.6" stroke-dasharray="2 5"/>
+      <!-- DDIM arc travelled -->
+      <path id="ddimArc" fill="none" stroke="#2563eb" stroke-width="4"/>
+      <!-- euler straight segment -->
+      <line id="eulerSeg" stroke="#b42318" stroke-width="3.2"/>
+      <!-- gap from euler point back to manifold -->
+      <line id="gapLine" stroke="#b42318" stroke-width="1.6" stroke-dasharray="3 3"/>
+      <text id="gapLbl" font-size="12" fill="#b42318" font-weight="600">off manifold</text>
+      <!-- velocity arrow -->
+      <line id="vArrow" stroke="#1c2230" stroke-width="2.4" marker-end="url(#vhead)"/>
+      <text id="vLbl" font-size="13" fill="#1c2230" font-weight="700" font-style="italic">v</text>
+      <!-- points -->
+      <circle id="xt" r="5.5" fill="#1c2230"/>
+      <text id="xtLbl" font-size="13" fill="#1c2230" font-weight="600">xₜ</text>
+      <circle id="eulerDot" r="5.5" fill="#b42318"/>
+      <text id="eulerLbl" font-size="12.5" fill="#b42318" font-weight="600">straight walk</text>
+      <circle id="ddimDot" r="6" fill="#2563eb"/>
+      <text id="ddimLbl" font-size="12.5" fill="#2563eb" font-weight="600">DDIM step</text>
+    </svg>
+  </div>
+
+  <div class="controls">
+    <label for="step">step size&nbsp;Δ</label>
+    <input id="step" type="range" min="6" max="100" value="58" step="1">
+    <span style="font-variant-numeric:tabular-nums;font-weight:700;min-width:48px;text-align:right" id="degOut">58°</span>
+  </div>
+
+  <div class="legend">
+    <span><i style="border-color:#2563eb"></i>DDIM rotation — on the circle</span>
+    <span><i style="border-color:#b42318"></i>straight tangent walk — Euler</span>
+    <span><i style="border-color:#9cb4e6"></i><code>cos·xₜ + sin·v</code> construction</span>
+  </div>
+
+  <div class="chips">
+    <div class="chip ddim"><div class="k">DDIM distance from centre</div><div class="v" id="dR">100.0% · on R</div></div>
+    <div class="chip euler"><div class="k">Straight-walk distance</div><div class="v" id="eR">— · off R</div></div>
+  </div>
+
+  <p class="takeaway">
+    <b>The <code>cos(Δ)·xₜ</code> term is the whole trick.</b> A straight walk keeps the base point at full weight (<code>1·xₜ + Δ·v</code>) and flies off the tangent line — the error grows with Δ (this is the bias). The DDIM step <i>shrinks</i> the base point by <code>cos(Δ)</code> and grows the velocity by <code>sin(Δ)</code>, tracing <code>(cos(φ+Δ), sin(φ+Δ))</code> — length 1, on the circle, for <b>any</b> Δ. Inversion just picks the velocity that aims this rotation at the true endpoint.
+  </p>
+
+  <section class="deriv">
+    <h2>Where the circle comes from — straight out of the noising schedule</h2>
+    <ol>
+      <li><b>The usual forward (noising) process.</b> Variance-preserving diffusion corrupts data as
+        <div class="eqn">xₜ = √ᾱₜ · x₀ + √(1−ᾱₜ) · ε ,&nbsp;&nbsp; ε ~ 𝒩(0, I)</div>
+        with the schedule ᾱₜ = ∏ₛ αₛ running 1 → 0 as t : 0 → T (clean data → pure noise).</li>
+
+      <li><b>Its two coefficients already lie on a circle.</b>
+        <div class="eqn">(√ᾱₜ)² + (√(1−ᾱₜ))² = ᾱₜ + (1−ᾱₜ) = 1</div>
+        Two numbers whose squares sum to 1 <i>are</i> the cosine and sine of some angle. Nothing is assumed — this holds identically, for every schedule.</li>
+
+      <li><b>Name that angle.</b> Define the <b>noise angle</b> φₜ = arccos√ᾱₜ, so
+        <div class="eqn">cos φₜ = √ᾱₜ ,&nbsp; sin φₜ = √(1−ᾱₜ)&nbsp;&nbsp;⟹&nbsp;&nbsp; xₜ = cos φₜ · x₀ + sin φₜ · ε</div>
+        As t : 0 → T the schedule drives φ : 0 → π/2 — the point swings from the <b>data axis</b> (x₀) to the <b>noise axis</b> (ε). That sweep <i>is</i> the circle on the canvas.</li>
+
+      <li><b>The velocity is the tangent.</b> Differentiate the arc with respect to its own angle:
+        <div class="eqn">dxₜ/dφ = −sin φₜ · x₀ + cos φₜ · ε  =:  vₜ</div>
+        This is exactly the v-prediction target (Salimans &amp; Ho 2022). "Velocity" is literal — it is the tangent to the noising arc.</li>
+
+      <li><b>A DDIM step just changes φ.</b> Hold the ray (x₀, ε) fixed and move the angle by Δ:
+        <div class="eqn">x<sub>φ+Δ</sub> = cos(φ+Δ)·x₀ + sin(φ+Δ)·ε = <b>cos Δ · xₜ + sin Δ · vₜ</b></div>
+        — the rotation in the box above. Sampling decreases φ (noise → data); the schedule only sets <i>how far</i> along the arc each timestep moves.</li>
+    </ol>
+    <p class="deriv-note">The schedule chooses the <i>spacing</i> of φ along the circle; the circle itself is forced by <code>√ᾱ² + √(1−ᾱ)² = 1</code>. That is why v-prediction lives on an arc — and why averaging two tangents from different angles (the shortcut bias) is a manifold mistake, not a rounding error.</p>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  const C = {x:250, y:235}, R = 165, phi0 = -42 * Math.PI/180;
+  const $ = id => document.getElementById(id);
+  const set = (el,a)=>{ for(const k in a) el.setAttribute(k, a[k]); };
+
+  // static geometry
+  set($('circle'), {cx:C.x, cy:C.y, r:R});
+  set($('ctr'),    {cx:C.x, cy:C.y});
+  $('manifoldLbl').setAttribute('x', C.x - 40);
+  $('manifoldLbl').setAttribute('y', C.y + R + 22);
+
+  const pt = a => ({ x: C.x + R*Math.cos(a), y: C.y - R*Math.sin(a) });   // math angle, screen y flipped
+  const xt = pt(phi0);
+  // unit screen tangent in the direction of increasing angle (the motion direction)
+  const T  = { x: -Math.sin(phi0), y: -Math.cos(phi0) };
+
+  set($('radius'), {x1:C.x, y1:C.y, x2:xt.x, y2:xt.y});
+  set($('xt'), {cx:xt.x, cy:xt.y});
+  $('xtLbl').setAttribute('x', xt.x + 9);
+  $('xtLbl').setAttribute('y', xt.y + 16);
+  // long dashed tangent line both ways
+  set($('tangent'), {x1: xt.x - T.x*200, y1: xt.y - T.y*200, x2: xt.x + T.x*240, y2: xt.y + T.y*240});
+  // velocity arrow
+  set($('vArrow'), {x1: xt.x, y1: xt.y, x2: xt.x + T.x*46, y2: xt.y + T.y*46});
+  $('vLbl').setAttribute('x', xt.x + T.x*54 - 4);
+  $('vLbl').setAttribute('y', xt.y + T.y*54 + 4);
+
+  function render(deg){
+    const d = deg * Math.PI/180;
+    $('degOut').textContent = deg + '°';
+    $('fdeg').textContent = deg + '°';
+    $('fcos').textContent = Math.cos(d).toFixed(3);
+    $('fsin').textContent = Math.sin(d).toFixed(3);
+
+    // DDIM point (rotation) at phi0 + d
+    const ddim = pt(phi0 + d);
+    set($('ddimDot'), {cx:ddim.x, cy:ddim.y});
+    $('ddimLbl').setAttribute('x', ddim.x - 4);
+    $('ddimLbl').setAttribute('y', ddim.y - 13);
+
+    // arc travelled (polyline for robustness)
+    let path = '', N = 48;
+    for(let i=0;i<=N;i++){ const a = phi0 + d*i/N, p = pt(a); path += (i?'L':'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ' '; }
+    $('ddimArc').setAttribute('d', path);
+
+    // construction: shortened radius (cos d) then + sin d * v
+    const p1 = { x: C.x + Math.cos(d)*(xt.x - C.x), y: C.y + Math.cos(d)*(xt.y - C.y) };
+    set($('shortRad'), {x1:C.x, y1:C.y, x2:p1.x, y2:p1.y});
+    set($('compVec'),  {x1:p1.x, y1:p1.y, x2:ddim.x, y2:ddim.y});
+
+    // Euler straight walk: arc-length L = d * R along the fixed tangent
+    const L = d * R;
+    const E = { x: xt.x + T.x*L, y: xt.y + T.y*L };
+    set($('eulerSeg'), {x1:xt.x, y1:xt.y, x2:E.x, y2:E.y});
+    set($('eulerDot'), {cx:E.x, cy:E.y});
+    $('eulerLbl').setAttribute('x', E.x + 9);
+    $('eulerLbl').setAttribute('y', E.y + 4);
+
+    // gap: from E radially back to the circle
+    const dx = E.x - C.x, dy = E.y - C.y, dist = Math.hypot(dx, dy);
+    const onC = { x: C.x + dx/dist*R, y: C.y + dy/dist*R };
+    set($('gapLine'), {x1:E.x, y1:E.y, x2:onC.x, y2:onC.y});
+    const mid = { x:(E.x+onC.x)/2, y:(E.y+onC.y)/2 };
+    $('gapLbl').setAttribute('x', mid.x + 8);
+    $('gapLbl').setAttribute('y', mid.y);
+
+    // readouts (distance from centre, relative to R)
+    $('dR').textContent = '100.0% · on R';
+    $('eR').textContent = (dist/R*100).toFixed(1) + '% · off R';
+  }
+
+  const slider = $('step');
+  slider.addEventListener('input', e => render(+e.target.value));
+  render(+slider.value);
+})();
+</script>
+</body>
+</html>

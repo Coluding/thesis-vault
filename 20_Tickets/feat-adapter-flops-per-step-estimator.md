@@ -10,7 +10,7 @@ resolution_note:
 closed_at:
 related:
   - "[[../50_Decisions/decided/param-matched-adapter-comparison-definition]]"
-  - "[[exp-adapter-param-matched-comparison]]"
+  - "[[experiments/exp-adapter-param-matched-comparison]]"
 ---
 
 # Per-family `flops_per_step(input_shape)` estimator
@@ -27,7 +27,7 @@ for the cross-family comparison. Without a per-family FLOPs estimator,
 the sweep cells (3 budgets x 4-5 families x 3 seeds) are not
 computable and the protocol is not pre-registrable. This ticket is the
 gate on the run-ticket
-[[exp-adapter-param-matched-comparison]] moving from `blocked` →
+[[experiments/exp-adapter-param-matched-comparison]] moving from `blocked` →
 `open`.
 
 ## What
@@ -84,4 +84,4 @@ family. Likely a shared mixin in
 ## Related
 
 - Decision: [[../50_Decisions/decided/param-matched-adapter-comparison-definition]]
-- Run ticket (blocked on this): [[exp-adapter-param-matched-comparison]]
+- Run ticket (blocked on this): [[experiments/exp-adapter-param-matched-comparison]]

@@ -4,11 +4,11 @@ scope: backbone
 status: open
 priority: high
 created: 2026-05-22
-updated: 2026-05-22
+updated: 2026-07-15
 resolution:
 resolution_note:
 closed_at:
-related: []
+related: ["[[../10_now/architecture]]"]
 ---
 
 # DynamiCrafter assumptions have leaked across the supposedly base-model-agnostic core
@@ -38,6 +38,41 @@ the protocol surfaces are agreed.
   raises if `provider != "dynamicrafter"` — a paper-aligned adapter
   family that cannot be evaluated on other backbones is not really a
   reusable adapter family.
+
+## Update (2026-07-15) — a second backbone now exists, but via a different path than this ticket envisioned
+
+Since this audit was written, **WAN2.2 (`provider: wan2.2`/`wan2.2_external`)
+has become the primary backbone for the whole D2/D3 debugging effort** — a
+frozen flow-matching video model, used end-to-end with its own dedicated
+adapter family (`Wan21OutputAdapter`/`ActionWanModel`,
+`backbones/wan/modules/action_model.py`) that does **not** reach into DC U-Net
+internals. This partially satisfies this ticket's second "done when" bullet
+("a second backbone has been used end-to-end against at least one adapter
+family without touching DC code").
+
+**But this happened via an alternate path, not the refactor envisioned here**:
+a parallel, WAN-native adapter class was built from scratch
+(`adapters/output/wan.py`), rather than the generic `ConditionSpec`/
+`BaseGenerativeModel` protocol (items 1–2 in the refactor plan below) that
+would let *any* adapter family — including HyperAlign — target any backbone.
+Concretely still unaddressed:
+
+- **The six refactor items are still not split into sub-tickets** (this
+  ticket's first "done when" bullet).
+- **`adapters/factory.py:135` still hard-guards HyperAlign to
+  `provider == "dynamicrafter"`** — not re-checked this session, but nothing
+  in the WAN work touched that guard or HyperAlign at all, so almost
+  certainly still true.
+- The DC-specific coupling audited below (batch/data layer, U-Net
+  introspection, conditioning prep, training/losses) is about DynamiCrafter
+  specifically — WAN's own adapter avoided the problem by not being built on
+  top of DC's `DynamicCrafterOutputAdapter` at all, not by fixing the
+  underlying leakage for adapters that *do* need to generalize across
+  backbones (HyperAlign, UniCon).
+
+Net: real evidence the framework *can* support a second backbone, but the
+audit's actual architectural goal (one generic adapter/backbone interface,
+not two parallel hard-coded ones) is unchanged. Still open.
 
 ## Audit — where the coupling lives
 

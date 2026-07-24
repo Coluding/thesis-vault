@@ -10,7 +10,7 @@ resolution_note:
 closed_at:
 related:
   - "[[../50_Decisions/decided/param-matched-adapter-comparison-definition]]"
-  - "[[exp-adapter-param-matched-comparison]]"
+  - "[[experiments/exp-adapter-param-matched-comparison]]"
   - "[[../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]"
 ---
 
@@ -50,7 +50,7 @@ once written; final source-of-truth in the chapter draft.
   to confirm every committed claim has protocol-side machinery.
 - Pre-registration date stamped (so post-hoc additions are detectable).
 - Cited from the run-ticket
-  [[exp-adapter-param-matched-comparison]] so the launch trigger
+  [[experiments/exp-adapter-param-matched-comparison]] so the launch trigger
   references it.
 
 ## Not in scope
@@ -64,4 +64,4 @@ once written; final source-of-truth in the chapter draft.
 
 - Decision: [[../50_Decisions/decided/param-matched-adapter-comparison-definition]]
 - Protocol: [[../30_Knowledge/experiments/protocol-param-matched-adapter-comparison]]
-- Run ticket: [[exp-adapter-param-matched-comparison]]
+- Run ticket: [[experiments/exp-adapter-param-matched-comparison]]

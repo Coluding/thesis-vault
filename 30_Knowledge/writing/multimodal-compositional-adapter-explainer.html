@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compositional Multimodal Adapter — Build · Train · Denoise</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --panel2:#eef1f5; --ink:#1b1f27; --muted:#64707f;
+    --line:#dde2ea; --frozen:#e7ebf1; --frozenink:#56616f;
+    --video:#2f6fd6; --proprio:#159c74; --tactile:#c47d1e; --action:#8a4fc4;
+    --accent:#e0426a; --good:#1f9e57; --code:#f3f5f8; --boxbg:#fbfcfe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px;}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.4px}
+  h2{font-size:21px;margin:46px 0 6px;letter-spacing:-.2px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;
+    background:var(--accent);color:#fff;font-size:15px;font-weight:700}
+  h3{font-size:16px;margin:26px 0 4px;color:#2b313c}
+  p{margin:8px 0;color:#363c47}
+  .sub{color:var(--muted);font-size:14px;margin-top:0}
+  .lead{font-size:16px;color:#2b313c}
+  code,.mono{font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0;
+    box-shadow:0 1px 2px rgba(20,30,50,.04)}
+  .eq{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0;
+    font-family:"SF Mono",ui-monospace,monospace;font-size:14px;color:#1d232c;overflow-x:auto}
+  .eq .c{color:var(--muted)}
+  .tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12px;font-weight:600;vertical-align:middle}
+  .t-frozen{background:var(--frozen);color:var(--frozenink)}
+  .t-train{background:#efe7fb;color:#6b3fae;border:1px solid #d8c6f2}
+  .t-video{background:rgba(91,156,246,.16);color:var(--video)}
+  .t-prop{background:rgba(70,195,154,.16);color:var(--proprio)}
+  .t-tac{background:rgba(230,161,75,.16);color:var(--tactile)}
+  .t-act{background:rgba(176,123,224,.16);color:var(--action)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+  /* diagram */
+  .diagram{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:8px 8px 4px;margin:18px 0}
+  .row{display:flex;gap:12px;align-items:stretch;justify-content:center;flex-wrap:wrap;padding:10px 6px}
+  .box{border-radius:11px;padding:12px 14px;min-width:150px;border:1px solid var(--line);background:var(--boxbg);
+    box-shadow:0 1px 2px rgba(20,30,50,.05)}
+  .box .h{font-weight:700;font-size:13.5px;margin-bottom:3px}
+  .box .d{font-size:12px;color:var(--muted);line-height:1.45}
+  .box.frozen{border-color:#cdd4de;background:repeating-linear-gradient(135deg,#eef1f5,#eef1f5 8px,#e4e8ef 8px,#e4e8ef 16px)}
+  .box.frozen .h{color:var(--frozenink)}
+  .box.train{border-color:#cdb8ee;box-shadow:0 0 0 1px rgba(140,79,196,.12) inset}
+  .box.video{border-left:3px solid var(--video)}
+  .box.prop{border-left:3px solid var(--proprio)}
+  .box.tac{border-left:3px solid var(--tactile)}
+  .box.act{border-left:3px solid var(--action)}
+  .flowlbl{text-align:center;color:var(--muted);font-size:12px;margin:2px 0}
+  .arrow{align-self:center;font-size:20px;color:#67707f}
+  .down{text-align:center;color:#67707f;font-size:18px;line-height:1;margin:-2px 0}
+  .pathnote{font-size:12.5px;border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:10px 0;color:#444b57}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;background:var(--panel)}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:#eef1f5;color:#2b313c;font-weight:600}
+  td{color:#3a414d}
+  td .mono{color:#2f5bb0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:780px){.grid2{grid-template-columns:1fr}}
+  .callout{border-left:3px solid var(--good);background:rgba(95,208,138,.06);padding:10px 14px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14px}
+  .warn{border-left:3px solid var(--accent);background:rgba(240,106,139,.06);padding:10px 14px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14px}
+  .foot{margin-top:50px;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12.5px}
+  .pill{display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:#4b5563;margin:2px 4px 2px 0}
+  b.k{color:#0f1115}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Compositional Multimodal Adapter</h1>
+  <p class="sub">Action-conditioned multi-stream world model on a <b>frozen</b> DynamiCrafter video prior &nbsp;·&nbsp; build → train → per-component denoising</p>
+  <p class="lead">One frozen video diffusion model. A small trainable adapter that makes it also predict <span class="tag t-prop">proprioception</span> and <span class="tag t-tac">tactile/depth</span> — and lets those extra senses <i>improve</i> the video prediction in return. Nothing in the base is touched.</p>
+
+  <div class="legend">
+    <span class="pill"><span class="tag t-frozen">frozen</span> = pretrained, no gradient</span>
+    <span class="pill"><span class="tag t-train">trainable</span> = the adapter (12.8M params)</span>
+    <span class="pill"><span class="tag t-video">video</span></span>
+    <span class="pill"><span class="tag t-prop">proprio</span></span>
+    <span class="pill"><span class="tag t-tac">tactile</span></span>
+    <span class="pill"><span class="tag t-act">action</span></span>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2><span class="num">1</span> How we build it</h2>
+  <p>The base predicts the future <span class="tag t-video">video</span>. Everything else is the adapter. Two ideas wire the extra modalities to the video without changing the base:</p>
+
+  <div class="panel" style="padding:14px 18px">
+    <p style="margin:4px 0"><b class="k">Compositional</b> = <b>one adapter per modality</b>. Each modality has its own AVID adapter emitting its own video adjustment <code>Δ_m</code>; a single <b>learned mask <code>m ∈ ℝ<sup>n+2</sup></code></b> blends them with the base and the action adapter. The mask <i>is</i> the contribution — its softmax weights show exactly how much each modality is used.</p>
+    <p style="margin:8px 0 4px"><b class="k">video ← m</b> &nbsp;(modalities help the video): each noised modality → a few <i>tokens</i>, injected into <b>only its own adapter's</b> cross-attention context. No modality attends to another (that edge is reserved for the <i>fused</i> variant).</p>
+    <p style="margin:8px 0 4px"><b class="k">m ← video</b> &nbsp;(video helps the modalities): the frozen base's video prediction is <b>pooled into a conditioning vector</b> fed to each modality head, so each modality is denoised with knowledge of the video.</p>
+  </div>
+
+  <div class="eq">
+    <span class="c"># compositional fusion — learned mask m = softmax(·) ∈ ℝ^{n+2}, sums to 1:</span><br>
+    ε_video  =  m<sub>0</sub>·<b>ε_pre</b>  +  m<sub>1</sub>·<b>ε_adj</b>  +  Σ<sub>i</sub> m<sub>i+1</sub>·<b>Δ_i</b><br>
+    <span class="c">#   ε_pre = frozen base · ε_adj = action adapter · Δ_i = per-modality adapter (context += modality_i tokens)</span>
+  </div>
+
+  <div class="diagram">
+
+    <!-- inputs -->
+    <div class="flowlbl">noised inputs — each at its <b>own</b> timestep (independent denoising)</div>
+    <div class="row">
+      <div class="box video"><div class="h">z<sub>t</sub><sup>video</sup> @ t<sub>v</sub></div><div class="d">latent (B,4,T,16,16)</div></div>
+      <div class="box prop"><div class="h">z<sub>t</sub><sup>proprio</sup> @ t<sub>p</sub></div><div class="d">(B,T,7)</div></div>
+      <div class="box tac"><div class="h">z<sub>t</sub><sup>tactile</sup> @ t<sub>τ</sub></div><div class="d">(B,T,2,16,16)</div></div>
+      <div class="box act"><div class="h">action a&nbsp;+&nbsp;init-frame</div><div class="d">CLIP context (text 77 + image 16)</div></div>
+    </div>
+    <div class="down">▼</div>
+
+    <!-- encoders + frozen base -->
+    <div class="row">
+      <div class="box frozen video" style="min-width:200px"><div class="h">Frozen DynamiCrafter base</div><div class="d">ε<sub>pre</sub> = base(z<sub>t</sub><sup>video</sup>, t<sub>v</sub>, cond) &nbsp;·&nbsp; no grad</div></div>
+      <div class="box train prop"><div class="h">ModalityEncoder<sub>prop</sub></div><div class="d">z<sub>t</sub><sup>p</sup>,t<sub>p</sub> → tokens (B,T,<b>1024</b>)</div></div>
+      <div class="box train tac"><div class="h">ModalityEncoder<sub>tac</sub></div><div class="d">z<sub>t</sub><sup>τ</sup>,t<sub>τ</sub> → tokens (B,T,<b>1024</b>)</div></div>
+    </div>
+
+    <div class="pathnote"><b>video ← m.</b> Each adapter's context = base tokens + <b>only its own</b> modality tokens, e.g. <span class="mono">[ text(77)·image(16)·prop(T) ]</span> for the proprio adapter. <b>Appending</b> (not inserting) preserves the UNet's fixed 77-token text/image split — modality tokens ride the image cross-attn stream.</div>
+    <div class="down">▼</div>
+
+    <!-- per-modality adapters -->
+    <div class="row">
+      <div class="box train video" style="min-width:200px">
+        <div class="h">AVID adapter · <span class="tag t-act">action</span></div>
+        <div class="d">in = [z<sub>t</sub><sup>video</sup> · <b>ε<sub>pre</sub></b>] &nbsp;·&nbsp; context = [CLIP] &nbsp;→&nbsp; <b>ε<sub>adj</sub></b></div>
+      </div>
+      <div class="box train prop" style="min-width:200px">
+        <div class="h">AVID adapter · <span class="tag t-prop">proprio</span></div>
+        <div class="d">in = [z<sub>t</sub><sup>video</sup> · <b>ε<sub>pre</sub></b>] &nbsp;·&nbsp; context = [CLIP, prop tokens] &nbsp;→&nbsp; <b>Δ<sub>prop</sub></b></div>
+      </div>
+      <div class="box train tac" style="min-width:200px">
+        <div class="h">AVID adapter · <span class="tag t-tac">tactile</span></div>
+        <div class="d">in = [z<sub>t</sub><sup>video</sup> · <b>ε<sub>pre</sub></b>] &nbsp;·&nbsp; context = [CLIP, tac tokens] &nbsp;→&nbsp; <b>Δ<sub>tac</sub></b></div>
+      </div>
+    </div>
+    <div class="flowlbl">…one 11M AVID adapter per stream (separate weights). Every adapter ingests the <b>base prediction ε<sub>pre</sub></b> channel-concatenated to the noised video (<code>condition_on_base_outputs</code>) — so each learns a <i>correction</i> on the frozen prior, plus its modality via cross-attention.</div>
+    <div class="down">▼</div>
+
+    <!-- learned mask fusion -->
+    <div class="row">
+      <div class="box train video" style="min-width:420px;border-style:solid;border-width:2px">
+        <div class="h">LearnedMaskFusion &nbsp;·&nbsp; mask <code>m = softmax ∈ ℝ<sup>n+2</sup></code> &nbsp;<span class="tag t-train">the contribution</span></div>
+        <div class="d">ε<sub>video</sub> = m<sub>0</sub>·ε<sub>pre</sub> + m<sub>1</sub>·ε<sub>adj</sub> + m<sub>2</sub>·Δ<sub>prop</sub> + m<sub>3</sub>·Δ<sub>tac</sub><br>base-biased init (frozen prior dominates at step 0); weights are the "modalities-used" readout</div>
+      </div>
+    </div>
+    <div class="down">▼</div>
+    <div class="row"><div class="box video" style="min-width:240px;border-style:dashed"><div class="h">→ <span class="tag t-video">video prediction</span></div><div class="d">(B,4,T,16,16)</div></div></div>
+
+    <div class="pathnote"><b>m ← video.</b> <span class="mono">VideoReadout</span>: pool ε<sub>pre</sub> over space+time → project → add to each modality head's conditioning.</div>
+    <div class="down">▼</div>
+
+    <!-- heads -->
+    <div class="row">
+      <div class="box train prop"><div class="h">ModalityHead<sub>prop</sub></div><div class="d">→ <span class="tag t-prop">proprio prediction</span> (B,T,7)</div></div>
+      <div class="box train tac"><div class="h">ModalityHead<sub>tac</sub></div><div class="d">→ <span class="tag t-tac">tactile prediction</span> (B,T,2,16,16)</div></div>
+    </div>
+  </div>
+
+  <p class="sub">Shapes/values are the <code>configs/multimodal_dynamicrafter.yaml</code> defaults; <code>context_dim=1024</code>, <code>text_context_len=77</code> from the DynamiCrafter UNet. With <i>n</i> modalities there are <i>n</i>+1 AVID adapters (action + one per modality) blended by the <i>n</i>+2-slot mask.</p>
+
+  <!-- ============================================================ -->
+  <h2><span class="num">2</span> How we train the adapter</h2>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3 style="margin-top:2px">Frozen <span class="tag t-frozen">no gradient</span></h3>
+      <p style="margin:4px 0">• DynamiCrafter UNet (the video prior)<br>• First-stage VAE (video ↔ latent)<br>• OpenCLIP image/text encoders (context)</p>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:2px">Trainable <span class="tag t-train">35.2M params</span></h3>
+      <p style="margin:4px 0">• AVID adapter <b>per stream</b> (action + 1 per modality ≈ 11M each)<br>• <b>LearnedMaskFusion</b> mask m ∈ ℝ<sup>n+2</sup> (the contribution)<br>• ModalityEncoder per modality (video←m)<br>• VideoReadout (m←video)<br>• ModalityHead per modality<br>• action conditioning encoder</p>
+    </div>
+  </div>
+
+  <h3>The objective — one summed, weighted denoising loss</h3>
+  <p>Each output stream is its own denoising problem; the adapter is trained on the <b>weighted sum</b> of the per-stream losses (the UWM scheme).</p>
+  <div class="eq">
+    L  =  Σ<sub>m</sub>  w<sub>m</sub> · L<sub>m</sub><sup>denoise</sup>
+    &nbsp;&nbsp;<span class="c">=  1.0·L<sub>video</sub> + 0.5·L<sub>proprio</sub> + 0.2·L<sub>tactile</sub></span>
+  </div>
+
+  <div class="callout"><b>Why joint training matters.</b> Every part learns because all losses flow at once: each modality's <b>encoder + adapter</b> (video←m) gets gradient through its context tokens (from <code>L<sub>video</sub></code> via the mask), the <b>m←video</b> readout gets gradient through the modality heads (from <code>L<sub>proprio</sub>/L<sub>tactile</sub></code>), and the <b>learned mask <code>m</code></b> gets gradient directly (it decides how much each Δ counts). Training the modality streams stops them collapsing to noise — which is what makes them informative for the video correction.</div>
+
+  <h3>Independent per-modality timesteps (UWM)</h3>
+  <p>Crucially, the streams are <b>not</b> noised at a shared <code>t</code>. Each draws its own <code>t<sub>m</sub> ~ U(0,T)</code>. At inference this single trained model gives — for free — policy (action | states), forward/inverse dynamics, and pure video prediction, by choosing which streams start from noise.</p>
+
+  <!-- ============================================================ -->
+  <h2><span class="num">3</span> How each component trains through denoising</h2>
+  <p>Every stream — video, proprio, tactile — is supervised by the same diffusion recipe, just at its own timestep. One forward pass predicts all streams; one backward updates the whole adapter.</p>
+
+  <div class="eq">
+    <span class="c">for each stream m, per step:</span><br>
+    &nbsp; t<sub>m</sub> ~ U(0,T) , &nbsp; ε ~ 𝒩(0,I)<br>
+    &nbsp; x<sub>t</sub><sup>m</sup> = √ᾱ<sub>t<sub>m</sub></sub> · x<sub>0</sub><sup>m</sup> + √(1−ᾱ<sub>t<sub>m</sub></sub>) · ε &nbsp;&nbsp;<span class="c"># q_sample: noise the clean target</span><br>
+    &nbsp; target<sub>m</sub> = v = √ᾱ<sub>t<sub>m</sub></sub>·ε − √(1−ᾱ<sub>t<sub>m</sub></sub>)·x<sub>0</sub><sup>m</sup> &nbsp;&nbsp;<span class="c"># velocity parameterisation</span><br>
+    &nbsp; L<sub>m</sub> = ‖ pred<sub>m</sub> − target<sub>m</sub> ‖²
+  </div>
+
+  <table>
+    <thead><tr><th>Stream</th><th>Clean target x₀</th><th>Denoiser</th><th>Sees (conditioning)</th><th>Schedule · weight</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="tag t-video">video</span></td>
+        <td>VAE latent of the future clip</td>
+        <td>frozen base + (action + per-modality) AVID adapters, blended by learned mask <code>m</code></td>
+        <td>action · init-frame · <b>+ per-adapter modality tokens</b> (video←m)</td>
+        <td>base's own schedule · <b>1.0</b></td>
+      </tr>
+      <tr>
+        <td><span class="tag t-prop">proprio</span></td>
+        <td>raw 7-D state (identity codec)</td>
+        <td>ModalityHead (from scratch, no prior)</td>
+        <td>action · <b>+ pooled video</b> (m←video)</td>
+        <td>shared diffusion · <b>0.5</b></td>
+      </tr>
+      <tr>
+        <td><span class="tag t-tac">tactile</span></td>
+        <td>resized map (resize codec)</td>
+        <td>ModalityHead (from scratch, no prior)</td>
+        <td>action · <b>+ pooled video</b> (m←video)</td>
+        <td>shared diffusion · <b>0.2</b></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The difference that matters: the <span class="tag t-video">video</span> stream is a <b>correction on a frozen prior</b> (<code>m·ε_pre + …</code> with the base-biased mask) — the base already knows how to denoise video, the adapters only nudge it. The <span class="tag t-prop">modality</span> streams have <b>no prior</b>; their heads predict the whole denoising target from scratch. Both are trained by the identical MSE-on-velocity loss, summed.</p>
+
+  <div class="warn"><b>Status.</b> The compositional path runs <b>end-to-end on the real DynamiCrafter UNet</b> (contract tests + a random-weight / synthetic-batch smoke run, <b>35.2M trainable params</b> = 3 AVID adapters + mask + encoders + readout + heads). It is <b>not</b> a training result yet — a real run needs the pretrained checkpoint + a MetaWorld loader emitting the modality streams. The three "works" criteria (modalities predicted · video improves · modalities demonstrably used) are untested.</div>
+
+  <div class="foot">
+    Source: <code>generative_flow_adapters/multimodal/</code> — <code>modality_encoder.py</code> (ModalityEncoder, VideoReadout), <code>fusion.py</code> (LearnedMaskFusion), <code>model.py</code> (<code>_forward_compositional</code>), <code>builders.py</code>, <code>trainer.py</code>; <code>configs/multimodal_dynamicrafter.yaml</code>; DynamiCrafter context split in <code>backbones/dynamicrafter/modules/attention.py</code>.
+    Design: <code>50_Decisions/open/multimodal-adapter-broadening.md</code> (converged design 2026-06-19; build status 2026-06-26). Diagram values are config defaults / code constants — not measured results.
+  </div>
+
+</div>
+</body>
+</html>

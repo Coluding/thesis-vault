@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-06-10
+last_updated: 2026-07-21
 status: living
 ---
 
@@ -38,6 +38,9 @@ hand-edited.
 
 | Date | Deck | For meeting |
 |---|---|---|
+| 2026-06-30 | [presentations/2026-06-30.html](presentations/2026-06-30.html) · [source](presentations/2026-06-30.slides.md) | first samples on the flow-matching base (loss ok · samples poor · flow faster) |
+| 2026-06-27 | [presentations/2026-06-27-project-summary.html](presentations/2026-06-27-project-summary.html) · [source](presentations/2026-06-27-project-summary.slides.md) | project summary (AVID adapter · shortcut geometry · multimodal) |
+| 2026-06-19 | [presentations/2026-06-19.html](presentations/2026-06-19.html) · [source](presentations/2026-06-19.slides.md) | 2026-06-19 |
 | 2026-06-09 | [presentations/2026-06-09.html](presentations/2026-06-09.html) · [source](presentations/2026-06-09.slides.md) | 2026-06-09 |
 | 2026-06-01 | [presentations/2026-06-01.html](presentations/2026-06-01.html) · [source](presentations/2026-06-01.slides.md) | 2026-06-01 |
 | 2026-05-25 | [presentations/2026-05-25.html](presentations/2026-05-25.html) · [source](presentations/2026-05-25.slides.md) | — |
@@ -46,6 +49,19 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-07-21 | finding | D2 | [[entries/2026-07-21-replace-eval-bug-fixed-adapter-action-blind]] |
+| 2026-07-11 | finding | D4 | [[entries/2026-07-11-adapter-beats-base-on-prediction-accuracy]] |
+| 2026-07-01 | added | D2 | [[entries/2026-07-01-quality-metrics-activated]] |
+| 2026-07-01 | added | D2 | [[entries/2026-07-01-wan22-i2v-eval-loader]] |
+| 2026-06-30 | added | D2 | [[entries/2026-06-30-wan22-variable-cond-frames]] |
+| 2026-06-30 | change | D2 | [[entries/2026-06-30-wan22-stride1-121frames]] |
+| 2026-06-29 | finding | D3 | [[entries/2026-06-29-flow-base-much-faster-train-sample]] |
+| 2026-06-29 | finding | D3 | [[entries/2026-06-29-flow-base-first-samples-loss-ok-quality-poor]] |
+| 2026-06-19 | finding | D3 | [[entries/2026-06-19-shortcut-v-averaging-bias-resolved]] |
+| 2026-06-19 | decision | D3 | [[entries/2026-06-19-pivot-flow-matching-base]] |
+| 2026-06-19 | finding | D1 | [[entries/2026-06-19-attention-grid-overflow-not-oom]] |
+| 2026-06-17 | finding | D3 | [[entries/2026-06-17-shortcut-overfit-larger-data-volatile-loss]] |
+| 2026-06-17 | progress | exploratory | [[entries/2026-06-17-multimodal-real-backbone-smoke]] |
 | 2026-06-10 | progress | exploratory | [[entries/2026-06-10-multimodal-substrate-landed]] |
 | 2026-06-05 | finding | D3 | [[entries/2026-06-05-anchor-baseline-confirms-shortcut-fewstep-gain]] |
 | 2026-06-04 | added | T1 | [[entries/2026-06-04-training-run-io]] |

@@ -95,7 +95,7 @@ Vault and tooling that [[../CLAUDE]] assumes exist but don't yet:
 
 This list is **non-experiment work that should happen in parallel with
 running the actual experiments**. The experimental backlog itself lives in
-`20_Tickets/exp-*.md` as it gets prioritised.
+`20_Tickets/experiments/exp-*.md` as it gets prioritised.
 
 1. **Backfill the related-work notes.** Eight papers in `docs/paper/`,
    one vault note each in `30_Knowledge/related-work/`. The `_MOC.md`

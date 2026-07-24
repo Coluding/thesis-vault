@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shortcut target fixes — inversion (A) vs displacement (B)</title>
+<style>
+  :root{
+    --ink:#1c2230; --muted:#667085; --line:#e4e7ec; --bg:#fbfcfe;
+    --A:#2563eb; --A-bg:#eff4ff; --B:#d97706; --B-bg:#fff7ec; --bad:#b42318;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 64px}
+  h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 28px;font-size:15px}
+  .lede{background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:16px 20px;margin:0 0 28px;font-size:15.5px}
+  .lede b{color:var(--ink)}
+  .tag{display:inline-block;font-weight:700;padding:1px 8px;border-radius:6px;font-size:13px}
+  .tagA{color:var(--A);background:var(--A-bg)} .tagB{color:var(--B);background:var(--B-bg)}
+  .panels{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 28px}
+  .card{flex:1 1 300px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+  .card h2{font-size:16px;margin:0;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .card.A h2{background:var(--A-bg);color:var(--A)}
+  .card.B h2{background:var(--B-bg);color:var(--B)}
+  .card .body{padding:14px 18px}
+  .card svg{display:block;width:100%;height:auto;background:#fff}
+  .formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:13.5px;background:#f6f8fb;border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;margin:10px 0 0;color:#27324a}
+  .pt{margin:10px 0 0;font-size:14px;color:#39435a}
+  table{width:100%;border-collapse:collapse;margin:6px 0 24px;font-size:14.5px;background:#fff;
+    border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  thead th.cA{color:var(--A)} thead th.cB{color:var(--B)}
+  tbody td:first-child{color:var(--muted);font-weight:600;width:24%}
+  tr:last-child td{border-bottom:none}
+  .yes{color:#067647;font-weight:700}
+  .bottom{border-left:3px solid var(--ink);padding:4px 0 4px 16px;margin:8px 0 0;font-size:15.5px}
+  .legend{font-size:13px;color:var(--muted);padding:0 18px 14px}
+  mono,code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;
+    background:#f1f4f8;padding:.5px 5px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Fixing the shortcut target: rotate vs. translate</h1>
+  <p class="sub">Two exact, endpoint-consistent fixes for the biased v-averaging shortcut target — and where they actually differ.</p>
+
+  <div class="lede">
+    Both fixes reach the <b>same destination</b> — the true two-step landing point
+    <code>x₂d</code> — so both are exact. They differ in the <b>route</b>:
+    <span class="tag tagA">A · inversion</span> keeps the velocity head and the curved DDIM step
+    (<b>rotate</b>, stay on the arc); <span class="tag tagB">B · displacement</span> switches the head to
+    secants and adds them (<b>translate</b>, cut across as chords). The biased baseline averages two
+    tangents and lands <i>inside</i> the arc.
+  </div>
+
+  <div class="panels">
+
+    <!-- ============ PANEL A ============ -->
+    <div class="card A">
+      <h2>A — Endpoint inversion · <span style="font-weight:500">rotate</span></h2>
+      <svg viewBox="0 0 340 360" role="img" aria-label="A single curved DDIM step rotating along the arc onto x-2d">
+        <defs>
+          <marker id="arrA" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/>
+          </marker>
+        </defs>
+        <!-- faint manifold arc (context) -->
+        <path d="M103.4,83.8 A250,250 0 0,1 295,244.5" fill="none" stroke="#c9d3e4" stroke-width="2" stroke-dasharray="2 5"/>
+        <text x="300" y="250" font-size="11" fill="#9aa6bd">arc = VP manifold</text>
+        <!-- bold 2d rotation arc x_t -> x_2d -->
+        <path d="M145.5,95 A250,250 0 0,1 276.5,205" fill="none" stroke="#2563eb" stroke-width="3.4" marker-end="url(#arrA)"/>
+        <!-- internal sub-step waypoint -->
+        <circle cx="220.7" cy="138.5" r="3" fill="#9aa6bd"/>
+        <text x="226" y="134" font-size="11" fill="#9aa6bd">x_d (internal)</text>
+        <!-- endpoints -->
+        <circle cx="145.5" cy="95" r="5" fill="#2563eb"/>
+        <text x="108" y="92" font-size="13" fill="#1c2230" font-weight="600">xₜ</text>
+        <circle cx="276.5" cy="205" r="5.5" fill="#2563eb"/>
+        <text x="250" y="226" font-size="13" fill="#1c2230" font-weight="600">x₂d</text>
+        <text x="155" y="172" font-size="12.5" fill="#2563eb">one 2d step</text>
+        <text x="153" y="188" font-size="12.5" fill="#2563eb">bends onto x₂d</text>
+      </svg>
+      <div class="legend">The step is a rotation <code>x₂d = cos(2δ)·xₜ + sin(2δ)·v</code>, so it stays on the manifold for any jump size.</div>
+      <div class="body">
+        <div class="formula">target&nbsp;v = (x₂d − cos(2δ)·xₜ) / sin(2δ)</div>
+        <p class="pt"><b>Touches:</b> the target only. Head still predicts a velocity; DDIM sampler unchanged.</p>
+        <p class="pt"><b>Catch:</b> <code>invert_ddim_v</code> must mirror the stepper exactly, incl. <code>scale_arr</code>.</p>
+      </div>
+    </div>
+
+    <!-- ============ PANEL B ============ -->
+    <div class="card B">
+      <h2>B — Displacement · <span style="font-weight:500">translate</span></h2>
+      <svg viewBox="0 0 340 360" role="img" aria-label="Two secant displacements adding tip to tail to the full secant">
+        <defs>
+          <marker id="arrB" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#d97706"/>
+          </marker>
+          <marker id="arrBsum" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#b45309"/>
+          </marker>
+        </defs>
+        <!-- faint manifold arc (context) -->
+        <path d="M103.4,83.8 A250,250 0 0,1 295,244.5" fill="none" stroke="#c9d3e4" stroke-width="2" stroke-dasharray="2 5"/>
+        <text x="300" y="250" font-size="11" fill="#9aa6bd">arc = VP manifold</text>
+        <!-- two sub-chords (tip to tail) -->
+        <line x1="145.5" y1="95" x2="220.7" y2="138.5" stroke="#d97706" stroke-width="3" marker-end="url(#arrB)"/>
+        <line x1="220.7" y1="138.5" x2="276.5" y2="205" stroke="#d97706" stroke-width="3" marker-end="url(#arrB)"/>
+        <!-- full chord = the sum -->
+        <line x1="145.5" y1="95" x2="276.5" y2="205" stroke="#b45309" stroke-width="3.4" stroke-dasharray="7 5" marker-end="url(#arrBsum)"/>
+        <!-- points -->
+        <circle cx="145.5" cy="95" r="5" fill="#d97706"/>
+        <text x="108" y="92" font-size="13" fill="#1c2230" font-weight="600">xₜ</text>
+        <circle cx="220.7" cy="138.5" r="4.5" fill="#d97706"/>
+        <text x="226" y="134" font-size="12" fill="#1c2230">x_d</text>
+        <circle cx="276.5" cy="205" r="5.5" fill="#d97706"/>
+        <text x="250" y="226" font-size="13" fill="#1c2230" font-weight="600">x₂d</text>
+        <text x="120" y="160" font-size="12.5" fill="#d97706">Δ(d)</text>
+        <text x="255" y="165" font-size="12.5" fill="#d97706">Δ′(d)</text>
+        <text x="150" y="135" font-size="12.5" fill="#b45309" font-weight="600" transform="rotate(28 150 135)">Δ(2d) = sum</text>
+      </svg>
+      <div class="legend">Secants add tip-to-tail; the intermediate point cancels, regardless of curvature or schedule.</div>
+      <div class="body">
+        <div class="formula">target&nbsp;Δ(2d) = Δ(d) + Δ′(d) = x₂d − xₜ</div>
+        <p class="pt"><b>Touches:</b> the head (predicts Δ) <i>and</i> the sampler (adds displacements).</p>
+        <p class="pt"><b>Catch:</b> bigger change; <code>d→0</code> grounds on <code>≈ d·v_true</code>.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Dimension</th><th class="cA">A — Endpoint inversion</th><th class="cB">B — Displacement</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Head predicts</td><td>velocity <code>v</code> (unchanged)</td><td>displacement <code>Δ</code></td></tr>
+      <tr><td>Target is</td><td>reproducing velocity (invert the DDIM rotation)</td><td>the secant / chord <code>x₂d − xₜ</code></td></tr>
+      <tr><td>Composition</td><td>DDIM rotation</td><td>additive — secants telescope</td></tr>
+      <tr><td>Sampler</td><td>DDIM-recompose (unchanged)</td><td>add displacements (new path)</td></tr>
+      <tr><td>Geometry</td><td>stays on the arc (maps back via rotation)</td><td>honest off-manifold secants that compose exactly</td></tr>
+      <tr><td>Code footprint</td><td><b>target-only</b> — lands first</td><td>head + sampler reparam</td></tr>
+      <tr><td>Schedule</td><td>uses real φ; must mirror <code>scale_arr</code></td><td>schedule-independent</td></tr>
+      <tr><td>Exact?</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+    </tbody>
+  </table>
+
+  <p class="bottom">
+    <b>Bottom line.</b> Same endpoint, different coordinate: <b style="color:var(--A)">A rotates</b> (keep velocity + DDIM, swap only the target),
+    <b style="color:var(--B)">B translates</b> (move to displacement space, add the steps). Both are exact fixed points of the
+    self-consistency rule; the discarded <span style="color:var(--bad);font-weight:600">v-average baseline</span> is not — it lands inside the arc by the sagitta.
+    Shipping both, config-selectable, gives the D3 ablation axis: <i>average vs. inversion vs. displacement</i>.
+  </p>
+
+</div>
+</body>
+</html>
