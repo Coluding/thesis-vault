@@ -86,7 +86,7 @@ dataset gets the purest possible chance first.
 |---|---|---|---|---|
 | **gate_cap** | {off, 0.9} | clamp σ(gate) ≤ 0.9 so the adapter branch keeps ≥10% gradient | implemented | validated on MetaWorld (gate held 0.9, grad-norm alive 0.027 vs 0.005) but did not unlock action-use there |
 | **σ-shift** | {off, 5.0} | concentrate training noise at high σ (where actions carry signal); matches Wan pretraining | implemented | its own axis (2026-07-24) — not baked into the workhorse |
-| **AVID warmup** (`pretrain_steps`) | {0, N} | force mask=0 (pure adapter) for the first N steps so the pred head is competent *before* the gate is learnable — a **different** escape from gate-saturation than the cap | **NEEDS WIRING** (thread `global_step` into `AdaptedModel`, force gate→0 while step<N; ref `external_repos/avid/.../avid.py::pretrain_steps`) | AVID's own mechanism |
+| **AVID warmup** (`pretrain_steps`) | {0, N} | force mask=0 (pure adapter) for the first N steps so the pred head is competent *before* the gate is learnable — a **different** escape from gate-saturation than the cap | **implemented** (2026-07-24): `AdapterConfig.pretrain_steps`; the trainer feeds `global_step` via `AdaptedModel.set_train_step`; while step<N `_compose` returns the standalone adapter prediction (gate gets no gradient, stays at init). Off by default (0) | AVID's own mechanism |
 
 **The clean test (the run-now ACWM baseline):** mask_mix + cross-attn +
 base-input, **no cap, no σ-shift, no warmup**. Rationale: if the adapter
@@ -162,8 +162,15 @@ shuffle-gap), then that config becomes the D2/D4 workhorse.
 
 ## Metric per cell (identical everywhere, so any outcome is a result)
 
-1. **Action-sensitivity** — shuffled/zeroed-action loss gap (the "does it use
-   actions" number). *The primary readout.*
+1. **Action-sensitivity** — two readouts, both *primary*:
+   - **Action Error Ratio** (AVID §4.2, added 2026-07-26): train an action
+     predictor on *real* videos; report its error on generated videos ÷ its
+     error on real videos. **AVID-comparable**, so the D2 table can carry an
+     AVID-replica row against their published baselines (ControlNet,
+     ControlNet-Small, action-conditioned-from-scratch, Product-of-Experts,
+     action-CFG). See [[../related-work/avid]] §Evaluation protocol.
+   - **Shuffled/zeroed-action loss gap** — cheaper, no auxiliary model, good
+     for fast screening across cells.
 2. **Prediction accuracy** — masked-MSE / PSNR vs GT.
 3. **Generation quality** — FID / FVD.
 4. **Base-parity** — pred-vs-base cosine (how much it clones).
@@ -182,6 +189,9 @@ The axes are built so the study is a contribution either way:
   banked (§5.1.x, the σ-sweep + action probe).
 
 ## Related
+- [[thesis-storyline]] — the narrative these axes serve; §7 turns this axis
+  list into the **hypothesis-first** framing the ablation chapter needs, and
+  §8 states the boundary-condition ending
 - [[../experiments/20260724-metaworld-cap-shift-triangle-base-parity]] — the MetaWorld result these axes respond to
 - [[../../50_Decisions/open/second-dataset-action-informativeness]] — the dataset decision
 - [[../../20_Tickets/bug-adapter-gate-saturation-mask-mix]] — gate trap; cap + AVID-warmup are the two escapes

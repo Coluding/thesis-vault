@@ -2,7 +2,6 @@
 section: method
 status: drafting
 deliverable: D1
-last_updated: 2026-05-28
 sources:
   - "[[../../10_now/architecture]]"
   - "[[../../30_Knowledge/tech/structural-encoder]]"
@@ -10,6 +9,8 @@ sources:
   - "[[../../30_Knowledge/tech/shortcut-training-modes]]"
   - "[[../../50_Decisions/decided/shortcut-anchor-schedule]]"
   - "[[../../50_Decisions/decided/per-sample-frame-stride-sampling]]"
+  - "[[../../60_Updates/entries/2026-07-24-online-vae-encode-6x-training-step]]"
+last_updated: 2026-07-24
 ---
 
 # 3. Method (D1 — Framework)
@@ -113,3 +114,47 @@ base call at the same `t`, which we have since removed
 in the codebase still simplifies in that way). Documenting this here so
 the eventual D3 claim — that we evaluate against the paper-faithful
 target — is unambiguous.
+
+## 3.5 Computational profile of the composition
+
+The composition rule `f_base(x_t, t) + g(d)·Δ_φ(·)` has a direct
+consequence for training cost that shapes two framework-level design
+choices: the frozen base is evaluated **on every optimiser step**, and
+the pixel→latent VAE encode is factored **out** of the loop. Both are
+justified empirically below. The numbers are from the WAN-2.2 TI2V-5B
+base with the output adapter on the ACWM push_block geometry
+(768²-pixel windows, 65 frames → latent 17×48×48, batch size 1),
+profiled with CUDA-synchronised per-phase timers (`GFA_PROFILE`), and
+they should be read as **operating-point characterisation for this
+base/geometry**, not architecture-independent constants.
+
+**The frozen base dominates the step.** Because `Δ_φ` is a *residual*
+on `f_base`, the frozen base forward cannot be cached across steps — it
+depends on the freshly sampled `(x_t, t)` — so it is recomputed every
+step under `no_grad`. Measured per step (cached-latent path, run
+`8cug8wfq`): frozen 5B base forward ≈ 480 ms, adapter forward ≈ 28 ms,
+backward ≈ 54 ms, optimiser ≈ 3 ms, for a total step of ≈ 580 ms. The
+frozen base is thus ≈ **83 %** of the step while the *trainable* adapter
+— the only part carrying gradients — is well under a fifth. This is the
+defining cost signature of plug-and-play adaptation on a large frozen
+prior: parameter efficiency (here 34.97 M trainable of 5.03 B total,
+0.69 %) does **not** translate into a proportionally cheap step, because
+the frozen forward is on the critical path. The practical implication —
+that the throughput ceiling lives on the base side, so any speedup must
+target the frozen forward (kernel / compilation) rather than the
+adapter — is taken up in the Discussion.
+
+**Latent precompute is a throughput decision, not a memory one.** The
+online pixel→latent VAE encode at this geometry costs ≈ 3.66 s per
+clip (run `hswppa8s`, `--no-latent-cache`), against the ≈ 0.58 s
+training step — i.e. the encode alone is ≈ **6×** the entire step, and
+online encoding runs at ≈ 0.24 steps/s versus ≈ 1.44 steps/s from a
+warm latent cache (≈ 6× wall-clock). The encode transient coexists
+comfortably in memory with the resident 5B (peak ≈ 26 GB reserved on an
+80 GB device), so — unlike the earlier native-resolution regime, where
+precompute was an out-of-memory workaround — the justification here is
+purely wall-clock. We therefore keep an offline latent-precompute stage
+as the framework default and treat online encoding as a fallback for
+cases a static cache cannot cover (e.g. unbounded random-window
+sampling). Full numbers and run provenance:
+[[../../60_Updates/entries/2026-07-24-online-vae-encode-6x-training-step]].

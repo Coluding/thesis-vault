@@ -61,6 +61,30 @@ documentation pass.**
 
 ### D2 — Action-conditioned world models (empirical contribution)
 
+> **Correction 2026-07-26 — the novelty claim was wrong.** This section (and
+> the AVID bullet under "The category we're claiming") previously treated
+> action conditioning on a frozen video base as an axis AVID does not cover.
+> **It is AVID's own contribution** — the paper is literally *"AVID: Adapting
+> Video Diffusion Models to World Models"* (Rigter, Gupta, Hilmkil & Ma,
+> arXiv:2410.12822v2), and it trains an action-conditioned adapter on a frozen
+> base using only its noise predictions. See the Correction section of
+> [[../30_Knowledge/related-work/avid]].
+>
+> **The corrected D2 delta vs AVID** is therefore *not* "we add action
+> conditioning" but:
+> - **the conditions under which it works** — the base-strength ×
+>   action-informativeness boundary and the mechanism of base-parity collapse
+>   ([[../30_Knowledge/writing/ablation-axes]]);
+> - **generality beyond AVID's setting** — backbone-agnostic, flow matching as
+>   well as diffusion, several adapter families behind one interface (D1);
+> - **planning**, which AVID names as future work and does not do;
+> - **step-size conditioning (D3)**, which AVID does not touch at all — this
+>   one *is* an uncovered axis.
+>
+> Narrative consequence: AVID is the **working starting point** the thesis
+> builds on, not a gap it fills. See
+> [[../30_Knowledge/writing/thesis-storyline]].
+
 **What:** Use adapters to learn action-conditioned dynamics
 `f(x_t, t, a_t)`. Analyse the trade-off between adapter classes on:
 
@@ -204,9 +228,13 @@ lightweight, action-conditioned, step-size-conditioned trainable adapter,
 all under one composition rule. The closest neighbours in the
 related-work neighbourhood:
 
-- [[../30_Knowledge/related-work/avid|AVID]] — adapter-style residual for
-  pretrained video diffusion. Closest in *form* to the framework, but
-  output-level and not action / step-size-aware.
+- [[../30_Knowledge/related-work/avid|AVID]] — output-level residual adapter
+  turning a frozen video diffusion model into an **action-conditioned world
+  model**, using only the base's noise predictions. Closest neighbour by a
+  wide margin: closest in *form* to the framework **and** the source of the
+  action-conditioning result itself. Not step-size-aware — that is the one
+  axis genuinely left open (D3). The thesis builds *on* AVID rather than
+  around it (see the D2 correction above).
 - [[../30_Knowledge/related-work/hyperalign|HyperAlign]] — hypernetwork
   that produces task-specific LoRA weights. Closest in *method* on the
   hypernetwork adapter side. Vendored as a starting point in the repo.

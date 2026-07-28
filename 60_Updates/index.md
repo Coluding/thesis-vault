@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-21
+last_updated: 2026-07-25
 status: living
 ---
 
@@ -49,6 +49,8 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-07-25 | finding | D2 | [[entries/2026-07-25-base-parity-is-flat-visuals-robotarm-residual]] |
+| 2026-07-24 | finding | D1 | [[entries/2026-07-24-online-vae-encode-6x-training-step]] |
 | 2026-07-21 | finding | D2 | [[entries/2026-07-21-replace-eval-bug-fixed-adapter-action-blind]] |
 | 2026-07-11 | finding | D4 | [[entries/2026-07-11-adapter-beats-base-on-prediction-accuracy]] |
 | 2026-07-01 | added | D2 | [[entries/2026-07-01-quality-metrics-activated]] |
