@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-15
-updated: 2026-07-15
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -67,3 +67,9 @@ its trend clearly.
 
 - [[exp-adapter-xattn-gatelow-metaworld-run]] — the cross-attention sibling run
 - [[../../10_now/training-hyperparameters]] — full hyperparameter reference
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+See `exp-adapter-xattn-gatelow-metaworld-run` — injection mechanism is not the cause.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

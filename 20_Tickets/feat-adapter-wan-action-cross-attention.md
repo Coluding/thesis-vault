@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-11
-updated: 2026-07-14
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -97,3 +97,9 @@ hypothesis...~~ — **retracted pending a clean re-run.**
 WAN base) remains worth pursuing on its own merits; it just isn't validated *by
 this run* as the answer to a resolved "capacity vs. mechanism" question, since
 mechanism was never cleanly tested.
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Cross-attention injection is built and *works* (transports 44-56% action-driven signal). Not the bottleneck.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

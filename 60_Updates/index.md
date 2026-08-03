@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-25
+last_updated: 2026-07-31
 status: living
 ---
 
@@ -49,6 +49,10 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-07-31 | finding | D2 | [[entries/2026-07-31-wan-blindness-located-and-the-scale-calibration-principle]] |
+| 2026-07-30 | finding | D2 | [[entries/2026-07-30-action-embedding-is-a-learned-pedestal]] |
+| 2026-07-30 | finding | D2 | [[entries/2026-07-30-avid-follows-actions-on-our-data-its-our-implementation]] |
+| 2026-07-29 | finding | D2 | [[entries/2026-07-29-avid-rt1-follows-actions-blindness-is-data]] ⚠ *superseded by 2026-07-30* |
 | 2026-07-25 | finding | D2 | [[entries/2026-07-25-base-parity-is-flat-visuals-robotarm-residual]] |
 | 2026-07-24 | finding | D1 | [[entries/2026-07-24-online-vae-encode-6x-training-step]] |
 | 2026-07-21 | finding | D2 | [[entries/2026-07-21-replace-eval-bug-fixed-adapter-action-blind]] |

@@ -1,0 +1,129 @@
+---
+type: writing
+status: living
+last_updated: 2026-08-03
+sources:
+  - "[[thesis-storyline]]"
+  - "[[ablation-axes]]"
+  - "[[rubric/_index]]"
+  - "[[../experiments/_index]]"
+  - "[[../../70_Thesis/outline]]"
+---
+
+# Open experiments for the thesis
+
+> **The single tracker for what is still needed while writing proceeds in
+> parallel.** Supersedes the status half of
+> [[storyline-experiment-requirements]] (dated 2026-08-01, written before
+> the 08-02 results landed — it still records D3 as having no clean
+> positive and wall-clock as unmeasured; both are now done).
+>
+> **Governing rule** ([[rubric/10-keeping-to-schedule]]): a new result may
+> change a *number* in a section that exists. It may not change the *shape*
+> of the thesis. Anything that would restructure chapters after drafting
+> begins goes to `50_Decisions/open/` and becomes future work — unless it
+> invalidates a claim already written.
+
+## Status of the evidence base
+
+| Area | State |
+|---|---|
+| **D1** framework | ✅ 3 backbone families + the AVID-repo port. LoRA comparison in flight |
+| **D2** Wan mechanism campaign | ✅ **the contribution** — 13 axes, depth trace, decomposition, clean-room A/B |
+| **D2** DC positive control | ✅ 3 readouts. Quality metrics + control measurement outstanding |
+| **D3** shortcut | ✅ one clean positive (9×, disjoint CIs); cross-base confound unresolved |
+| **D4** combined | ❌ descoped — state the descope explicitly |
+| Rollout wall-clock | ✅ measured (linear in N; DC 2.8×/step faster, *model size not objective*) |
+
+## Open experiments
+
+Ordered by what they unblock in the draft.
+
+### A — Blocking a written claim
+
+| # | Experiment | Unblocks | Status |
+|---|---|---|---|
+| A1 | **Quality metrics on the DC cell** | §5.2 — currently *no* DC run logs quality metrics (all 18 checked), so the positive cell's output quality is unknown | 🔄 **support landing soon** (reported 2026-08-03) |
+| A2 | **DC control measurement** — rollout-swap + per-dimension ablation, both generation-only | §5.2 upgrade from *structured response* → *action-following/control*; and the DC-vs-Wan contrast with the **same** probe on both sides | ☐ [[../../20_Tickets/experiments/exp-eval-rollout-action-swap-dc-arme]] |
+| A3 | **RT-1 held-out re-eval** | every RT-1 number is quarantined as in-sample until this lands | ☐ [[../../00_Inbox/2026-08-01-rt1-heldout-split]] |
+| A4 | **Shortcut target 2×2 — `v_average` vs `endpoint_inversion` within ONE base at ONE depth** | ⭐ **config-only, no code** (`training.shortcut_consistency_target` supports both). Decides whether the D3 result is about **geometry** (curvature) or about the **target construction**. Currently the confound runs *against* the curvature story: the DC arm used the theoretically exact `endpoint_inversion` and learned nothing. Until this runs, "shortcut works on flow because κ=0" is a hypothesis, not a result | ☐ **highest-value D3 run** |
+
+### B — Strengthening a claim that already stands
+
+| # | Experiment | Moves | Status |
+|---|---|---|---|
+| B1 | **Seeds on the headline clean-room A/B** | Technical skills → 9; the multiple-comparison exposure across 13 axes | 🔄 **planned** — see the seed policy below |
+| B2 | **LoRA vs output adapter** | D1 from complexity-analysis to an *empirical* family claim | 🔄 in flight — [[../../20_Tickets/experiments/exp-adapter-lora-vs-output-comparison]] |
+| B3 | **Action Error Ratio** (AVID §4.2) | an external, published readout so the D2 table is AVID-comparable — replaces reliance on our own `effect_rel` | ☐ |
+| B4 | **Structure triad on the binned RT-1 checkpoint** (`0fqjrqjl`) | never run, and it is the intervention most likely to change the Wan verdict | ☐ |
+| B5 | **IDM ceiling on DC latents** — `(z_t, z_{t+1}) → a_t` on ground-truth transitions | calibrates *every* number in the campaign: is action information present in the data at all? No world model, no new labels, minutes of GPU | ☐ carried over from [[storyline-experiment-requirements]] |
+
+### A0 — Evidence that EXISTS but is not in the vault (collect, don't re-run)
+
+| # | Evidence | Why it matters | Status |
+|---|---|---|---|
+| A0.1 | **Shortcut loss curves** (going down) | the basic learnability signal for D3 | ⚠️ reported 2026-08-03, **not in the vault** |
+| A0.2 | ~~Spearman velocity-magnitude vs step size ≈ 1~~ | ✅ **ALREADY IN THE VAULT — and it is not what it looked like.** `spearman vs ladder = +1.0000` for **all three arms** (Wan treated, Wan control, DC), listed under *Nulls and controls*: a **monotonicity sanity check**, not evidence of learning. The control scores identically, so it cannot discriminate | ✅ found — [[../experiments/20260802-shortcut-works-on-flow-not-diffusion]] |
+| A0.2b | **The gain ladder `\|dpred\|/\|dtarget\|` per rung** | ✅ **the discriminating magnitude evidence, already sourced.** Wan treated flat and O(1) across the ladder (0.440→0.334); Wan control **collapses** (0.483→0.026); DC **explodes** 4–5 orders (0.973→40950) at exactly the large `d` few-step rollout uses. Not a cosine — it is the scale the cosine normalises away | ✅ in the vault |
+| A0.3 | **Step-size input sensitivity experiments** | the D3 analogue of the action-sensitivity probe — does perturbing `d` change the prediction? | ⚠️ reported, **not in the vault** |
+
+> ⚠ **EVIDENCE PENDING, NOT MISSING.** Lukas reports these exist and will
+> supply them (2026-08-03). Needed before any of it is written: run ids,
+> checkpoints, the probe invocation, and the `n` behind the Spearman. **No
+> D3 number enters the draft until they land.**
+
+**Note the overlap with existing tooling.** A **step-size blindness probe
+suite** was built and unit-tested on 2026-08-02 —
+`evaluation/stepsize_structure.py`, `scripts/eval_stepsize_blindness.py`,
+`scripts/probe_stepsize_embedding_standalone.py`, 21 CPU tests with
+closed-form oracles for both model classes, plus a 2×2 Slurm job over
+{DC diffusion, Wan flow} × {shortcut, matched control} — and **never
+submitted** ([[../../00_Inbox/2026-08-02-stepsize-blindness-probe-suite]]).
+If A0.1–A0.3 came from ad-hoc analysis rather than this suite, submitting it
+would put D3's evidence on the *same instrument footing* as D2's, which is
+worth more to the thesis than the numbers alone: it makes the probe
+methodology a general contribution rather than an action-specific one
+([[rubric/02-technical-skills]]).
+
+⚠ Its `base_null_violation` on DC was root-caused to the frozen base running
+in `train()` mode (dropout firing), **not** a conditioning leak — resolved
+2026-08-01, [[../../00_Inbox/2026-08-01-stepsize-null-violation-rootcause]].
+Confirm the fix is in before quoting DC step-size nulls.
+
+### C — Future work / candidates (not blocking)
+
+| # | Item | Note |
+|---|---|---|
+| C1 | **Exploration / mean-regression fixes on Wan** | Wan's action signal is measurable in the *prediction* but does not manifest in the *video*. Read as mean regression. Fix family Lukas calls **exploration** — action-CFG, rollout/multi-step losses, action-conditional consistency. ⚠ the mean-regression reading is currently *inferred* from the RT-1 metric split, not directly probed — measure the render-vs-prediction gap before writing it. [[../../00_Inbox/2026-08-03]], [[../../50_Decisions/open/wan-action-following-needs-objective-change]] |
+| C2 | **Planning through the DC world model** | the natural follow-on once A2 lands — control is the precondition for planning. [[../../20_Tickets/experiments/exp-eval-planning-through-dc-world-model]] |
+| C3 | **Structural repairs** from the bag analysis | enforced px→latent binning (done for the simple head), a localisable gate |
+
+### Explicitly NOT running
+
+| Item | Why |
+|---|---|
+| **ControlNet on Wan** | **AVID already published ControlNet and ControlNet-Small baselines on this problem** — cite theirs. ControlNet is a UNet construct (encoder copy + zero-convs into skips); porting it to a DiT invents a variant, so any result would be confounded by our port rather than testing ControlNet. The pathway axis is already settled causally by the clean-room A/B. ⚠ **`related-work/controlnet.md` is still required** for Ch2/Ch3 — the *note* is not optional, only the run |
+| **The full FLOPs-matched family grid** | 39–48 runs, blocked since May on the estimator. [[../../20_Tickets/experiments/exp-adapter-param-matched-comparison]] |
+| **Hypernetwork / hidden-state empirical arms** | stay in the complexity-analysis argument (D1) |
+
+## Seed policy (noted 2026-08-03)
+
+**Not treated as a blocker.** Additional experiments are running over the
+coming days while the thesis is written, and those runs supply the extra
+seeds. Consequences for writing:
+
+- Draft against **single-seed** numbers now, with the caption or sentence
+  saying so explicitly — silence about a single seed reads as concealment
+  ([[rubric/03-experimental-evaluation]]).
+- When multi-seed numbers land, they replace the number and the caption; no
+  section is restructured.
+- **Prioritise seeds on the headline clean-room A/B** — the one comparison
+  carrying the pathway claim — over breadth across cells.
+- State the **multiple-comparison exposure** honestly: 13 axes, and which
+  claims were pre-registered vs exploratory.
+
+## Related
+
+- [[rubric/_index]] — the rubric queue these feed
+- [[storyline-experiment-requirements]] — the 07-26 reasoning, kept as background
+- [[../experiments/_index]] — the results ledger

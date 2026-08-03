@@ -30,6 +30,17 @@ framework supporting four kinds of adapter (LoRA-style, hidden-state,
 output-level, hypernetwork), spanning both diffusion and flow matching,
 suitable for planning workloads.
 
+> **⭐ REFRAME 2026-08-02 — read [[../30_Knowledge/writing/thesis-storyline]]
+> §REFRAME first.** The thesis is now framed as an **empirical study**, working
+> title *"On the Adaptability of Video Foundation Models to World Models"*. The
+> four deliverables below still describe the *work*; the *claims* are the eight
+> rows in the storyline's claim set. Two consequences for this doc:
+>
+> - **D1 is a major contribution**, demonstrated not asserted (see the D1 box).
+> - **Planning is a claimed contribution**, scoped as "we extend AVID to the use
+>   case it names as future work" — still not a control/RL contribution, so the
+>   anti-positioning below stands unchanged.
+
 ## The four deliverables
 
 The proposal commits to four deliverables. The contribution per
@@ -52,12 +63,37 @@ plug-and-play adapters covering the full taxonomy.
 
 **Current state:** taxonomy is mapped 1-to-1 onto
 [[architecture#Adapter families|the codebase]]. Output, hidden-state,
-hypernetwork, and LoRA families are all present. Diffusers and DynamiCrafter
-backbones are wired; OpenSora vendored but provider wiring _needs
-verification_. Tests cover HyperAlign architecture, DynamiCrafter
+hypernetwork, and LoRA families are all present. Diffusers, DynamiCrafter,
+Wan2.2 and SkyReels backbones are wired; OpenSora vendored but provider wiring
+_needs verification_. Tests cover HyperAlign architecture, DynamiCrafter
 integration, batch preprocessor, MetaWorld dataset. **Status: mostly
 landed; needs a clean diagram for the thesis chapter + a final
 documentation pass.**
+
+> **Upgraded 2026-08-02 — D1 is a MAJOR contribution, and it is now
+> demonstrated rather than asserted.** The extensibility claim previously rested
+> on "the taxonomy maps onto the code". It now has a direct demonstration:
+>
+> - The same adapter/composition interface runs across **DynamiCrafter
+>   (diffusion, UNet)**, **Wan2.2 (flow, DiT, 4x-temporally-compressed latents)**
+>   and **SkyReels** — i.e. it survives both a diffusion→flow and a UNet→DiT
+>   boundary, which is exactly what "base-agnostic composition" has to mean.
+> - In a single session a **new backbone family was added to the *official AVID
+>   repository*** as a third branch alongside their pixel- and latent-diffusion
+>   ones (`external_repos/avid/wan_diffusion/`), running AVID's own recipe,
+>   composition, optimiser and data pipeline unchanged, and reproducing their
+>   behaviour on the new base
+>   ([[../30_Knowledge/experiments/20260802-avid-wan-cleanroom-perframe-causal]]).
+>
+> The second point is the strong form: *adding a new base model and training an
+> adapter on it is cheap, and the result is reproducible by anyone.* It also
+> supplies the positive control the ablation needed — a cell where the adapter
+> provably learns something the frozen base cannot produce.
+>
+> **Framing note:** state D1 as *"a framework that makes swapping the frozen base
+> a configuration change, demonstrated across three backbone families and by
+> porting a published method to a new one"* — concrete and checkable, rather than
+> the generic "modular and extensible" claim that every software chapter makes.
 
 ### D2 — Action-conditioned world models (empirical contribution)
 
@@ -114,14 +150,37 @@ the headline deliverable and is **not yet evidence-backed**.
 **Evidence strategy (decided 2026-07-21, grilling session):** the target D2
 claim is **(a) "adapters can make a frozen video model action-following on
 at least one benchmark"** — one clean positive result. Fallback if (a)
-fails after the current intervention round: shift to **(b) the comparative
-trade-off analysis** plus **(c) the diagnostic contribution** (base-parity
-convergence, copy-through traps, action-blindness measurement — already
-banked, see
-[[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]]).
-Context: the current Wan2.2 xattn adapter is measured fully action-blind on
-MetaWorld scripted demos; whether the benchmark itself rewards actions is an
-open dataset decision (ACWM-Phys candidate).
+fails: **(b) the comparative trade-off analysis** plus **(c) the diagnostic
+contribution**.
+
+> **✅ TARGET (a) IS SATISFIED — 2026-08-03.** The DynamiCrafter × ACWM
+> Robot Arm cell is action-following on three independent readouts:
+> `effect_rel` **0.11479** (3.9× the AVID reference of 0.0295); **all three
+> structure probes above chance on held-out `ind_test`** (steering +0.117
+> vs 0.000; temporal alignment 1.000 vs 0.313; spatial concentration 0.470
+> vs 0.100; frozen-base null 0); and the action-following solution has a
+> **lower denoising loss** than the untreated control (0.0357 vs 0.0433).
+> The untreated control reaches 1.55× the reference *unaided*, so the cell
+> works natively and `condition_center` is a ~6× accelerator, not an
+> enabler. Sources:
+> [[../30_Knowledge/experiments/20260731-dc-condition-center-accelerates-escape]],
+> [[../30_Knowledge/experiments/20260802-adapter-is-a-domain-adapter-not-an-action-conditioner]].
+>
+> **This also supplies the positive control the ablation needed** — a cell
+> where the adapter provably learns something the frozen base cannot
+> produce — which was an open gate in
+> [[../30_Knowledge/writing/thesis-storyline]].
+>
+> **(b) and (c) are no longer fallbacks; they are the contribution
+> surface.** With (a) in hand, the thesis is *a positive result plus a
+> matched architectural negative control plus the causal variable that
+> discriminates them* — see
+> [[../30_Knowledge/writing/rubric/01-originality]].
+>
+> ⚠ **Limits that must travel with the claim:** no DC run logs quality
+> metrics (all 18 checked), so the cell's perceptual quality is unknown;
+> the runs were cancelled before convergence, so quote the acceleration and
+> never a level; rollout-level control has not been tested on DC.
 
 ### D3 — Shortcut adapters (methods contribution)
 
@@ -215,8 +274,15 @@ Anti-positioning matters for the related-work section. The thesis is **not**:
   [[../30_Knowledge/related-work/consistency-models]] and
   [[../30_Knowledge/related-work/shortcut-models]].
 - **Not a control / RL paper.** The output is a *world model usable for
-  planning*. Demonstration via planning is a sanity check, not the
-  contribution.
+  planning*. **Updated 2026-08-03:** planning *is* a claimed contribution,
+  but strictly scoped as **"we extend AVID to the use case AVID itself names
+  as future work"** — not as a planning or RL methods contribution. The
+  anti-positioning holds at that scope: we contribute no planner, no
+  controller and no RL algorithm. (Reconciles this bullet with
+  [[../30_Knowledge/writing/thesis-storyline]] §2, which elevated the node;
+  the two layers previously disagreed.) ⚠ Evidence still pending — the
+  planning demo is reported but has no run id, checkpoint or numbers in the
+  vault.
 - **Not an architecture-search paper.** The four adapter families are
   fixed up-front by the taxonomy; the contribution is unifying them, not
   discovering new architectures.

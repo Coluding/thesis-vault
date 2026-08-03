@@ -1,0 +1,54 @@
+% =====================================================================
+%  Macros.  Two jobs:
+%   (1) fix the notation once, so no symbol is ever redefined ad hoc;
+%   (2) make the sourcing rules (CLAUDE.md hard rules 7--8) mechanical.
+%  Full conventions: 30_Knowledge/writing/thesis-formal-rules.md
+% =====================================================================
+
+% --- notation ---------------------------------------------------------
+% The composition rule:  f(x_t,t,a_t,d) = f_base(x_t,t) + g(d) Delta_phi(x_t,t,a_t,d)
+\newcommand{\fbase}{f_{\mathrm{base}}}          % the frozen base
+\newcommand{\fadapted}{f}                        % the adapted model
+\newcommand{\adapter}{\Delta_{\phi}}             % the trainable adapter
+\newcommand{\gate}{g}                            % the gate g(d)
+\newcommand{\xt}{x_t}                            % state at diffusion time t
+\newcommand{\at}{a_t}                            % action
+\newcommand{\dstep}{d}                           % step size
+\newcommand{\params}{\phi}                       % adapter parameters
+\newcommand{\vel}{v}                             % velocity (flow / v-pred)
+\newcommand{\noisepred}{\epsilon}                % noise prediction
+\newcommand{\curv}{\kappa}                       % curvature of the probability-flow arc
+
+\newcommand{\composition}{%
+  \fadapted(\xt, t, \at, \dstep) = \fbase(\xt, t) + \gate(\dstep)\cdot\adapter(\xt, t, \at, \dstep)}
+
+% --- identifiers (code, config keys, run names) ----------------------
+% Always use these for code objects so prose vs code never blur, and so
+% American spellings inside identifiers are visibly not prose.
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\cfg}[1]{\texttt{#1}}
+
+% --- provenance -------------------------------------------------------
+% EVERY measured number carries one of these.  A numeral in the body with
+% no \prov / no provenance-carrying table caption is a rule-8 violation.
+%   \prov{wandb id}{checkpoint}{git sha}
+\newcommand{\prov}[3]{\footnote{Run \code{#1}; checkpoint \code{#2}; commit \code{#3}.}}
+% Compact form for table captions / repeated references to one run.
+\newcommand{\provshort}[1]{{\small(run \code{#1})}}
+
+% --- evidence rungs (thesis-style-guide.md §2) -----------------------
+% Visible only in drafts; make them no-ops before submission.
+\newcommand{\provisional}[1]{\textcolor{orange}{[provisional: #1]}}
+\newcommand{\inflight}[1]{\textcolor{orange}{[in flight, snapshot #1]}}
+\newcommand{\estimate}[1]{\textcolor{blue}{[analysed estimate: #1]}}
+
+% --- drafting markers (must be empty at submission) ------------------
+\newcommand{\nv}[1]{\textcolor{red}{#1\,[needs verification]}}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\fig}[1]{\textcolor{red}{[FIGURE PENDING: #1]}}
+
+% --- deliverables -----------------------------------------------------
+\newcommand{\Done}{D1}   % framework
+\newcommand{\Dtwo}{D2}   % action-conditioned world models
+\newcommand{\Dthree}{D3} % shortcut adapters
+\newcommand{\Dfour}{D4}  % combined

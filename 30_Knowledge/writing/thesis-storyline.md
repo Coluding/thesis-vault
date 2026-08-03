@@ -1,23 +1,111 @@
 ---
 type: writing
 status: living
-last_updated: 2026-07-26
+last_updated: 2026-08-02
 sources:
   - "[[../related-work/avid]]"
   - "[[../theory/shortcut-v-averaging-bias]]"
   - "[[ablation-axes]]"
   - "[[../experiments/20260715-avid-metaworld-native-gate-healthy]]"
   - "[[../experiments/20260724-metaworld-cap-shift-triangle-base-parity]]"
+  - "[[../experiments/20260730-avid-robotarm-follows-actions-recipe-not-data]]"
+  - "[[../experiments/20260730-dc-parity-arms-null-action-embedding-pedestal]]"
+  - "[[../experiments/20260731-wan-action-trace-value-pathway-drowns]]"
+  - "[[../experiments/20260731-why-wan-copies-the-base-decomposed]]"
+  - "[[../experiments/20260731-wan-action-signal-is-a-global-bag]]"
+  - "[[../experiments/20260731-dc-condition-center-accelerates-escape]]"
+  - "[[../experiments/20260801-wan-rt1-indistribution-plateau]]"
+  - "[[../experiments/20260802-avid-wan-cleanroom-perframe-causal]]"
+  - "[[../experiments/20260802-shortcut-works-on-flow-not-diffusion]]"
+  - "[[../../20_Tickets/experiments/exp-adapter-wan-rt1-action-token-binning]]"
+  - "[[../../20_Tickets/chore-writing-attach-pending-evidence]]"
   - "[[../../10_now/positioning]]"
 ---
 
 # Thesis storyline — the narrative spine
+
+## ⭐ REFRAME 2026-08-02 — an empirical study, not a systems build
+
+**Working title: _On the Adaptability of Video Foundation Models to World
+Models_.**
+
+Decided in conversation 2026-08-02. The thesis is framed as an **empirical
+study of when and why adapter-based adaptation works**, rather than as the
+construction of a working system. This matches what the evidence actually
+supports, and it turns the campaign's negative results from a liability into the
+substance: each is a *matched-control* negative with a null battery, which is
+what makes a diagnostic claim citable rather than a postmortem.
+
+### The claim set
+
+| # | Claim | Evidence | Status |
+|---|---|---|---|
+| 1 | Adapting a frozen video FM into an action-conditioned world model is possible, and **the injection pathway decides whether it works** | clean-room A/B, 2.49x @12000, Welch t=10.5, matched adapter contribution + mask | ✅ measured |
+| 2 | **Cross-attention injection fails** even with correctly binned per-frame tokens | binned RT-1 run: no benefit at any depth to 2800 steps, declines from 1600 | ✅ measured |
+| 3 | **The backbone is not the limit** — flow/DiT with 4x-compressed latents beats the published UNet baseline at matched depth | 0.0175 vs 0.0125 @step 5000; 25.3% vs 24.4% action-driven @12000 | ✅ measured |
+| 4 | **Shortcut is learnable on flow, not on a curved diffusion arc** | 0.302 vs control 0.034 (9x, disjoint CIs); DC 0.084 vs 0.083; gain flat O(1) vs 4e4 blow-up | ✅ measured |
+| 5 | **Horizon**: flow + a stronger base gives multi-second single rollouts vs ~1 s | ~241 frames / ~35-40 s vs ~9-10 s | ⚠️ pending |
+| 6 | **The framework makes base-swapping a configuration change** | 3 backbone families behind one interface; a published method ported to a new base family inside its own repo | ✅ demonstrated |
+| 7 | **Planning through the world model works, and is slow** — which motivates 4-5 | planning demo + wall-clock | ⚠️ pending |
+| 8 | Few-step rollouts **improve over the no-shortcut control but are not competitive**; more training and tuning needed | qualitative | ⚠️ pending |
+
+### The central mechanistic finding, stated precisely
+
+> Adapters **can** make a video foundation model action-conditioned — but only
+> when the conditioning enters through **per-frame modulation of normalised
+> activations**. Supplying the same per-frame action as **cross-attention
+> tokens** does not work, however well-scaled (`action_token_norm`) and however
+> well-aligned to the latent grid (`action_seq_len`): the signal survives the
+> attention and **drowns at the residual add**.
+
+Do **not** write this as "Wan adapters cannot incorporate actions". That is
+contradicted by our own clean-room result and is the weaker, less interesting
+claim. The finding is about *the pathway*, not about the backbone or the family.
+
+Supporting chain: cross-attention output RMS ~0.01 against a stream of 1.8-3.0
+([[../experiments/20260731-wan-action-trace-value-pathway-drowns]]) → scale fixes
+buy 6-10x but never control → binning buys nothing → per-frame AdaLN concat, on
+the *same* base and data, buys 2.49x with genuine frame localisation
+(0.409 vs chance 0.200). AdaLN multiplies a *normalised* activation and is
+scale-free by construction; cross-attention adds into an unnormalised residual
+stream and is not.
+
+### What the thesis explicitly does NOT claim
+
+- Competitive few-step video generation. Rollouts are directionally better than
+  the no-shortcut control and **not** competitive; compute for the full training
+  runs was not available.
+- A planning or RL methods contribution. Planning is included as the use case
+  AVID names as future work, not as a control contribution
+  ([[../../10_now/positioning]] anti-positioning).
+- State-of-the-art video quality on any benchmark.
+- That the objective-level limit is solved. Actions are worth ~0.45% of a
+  teacher-forced denoising loss; nothing here changes that.
+
+### Why this framing is defensible
+
+Every ✅ row above has a **matched control** and a **null that was verified, not
+assumed** (`base_null_violation` exactly 0 throughout; frozen-base invariance
+checked before every run). The negative results are therefore *discriminating*
+rather than *inconclusive* — which is the difference between an empirical
+contribution and a list of things that did not work.
+
+---
+
+
 
 The chain the thesis argues, in order, and which chapter carries each link.
 Settled in conversation 2026-07-26. This doc is the **narrative** layer;
 [[../../10_now/positioning]] remains the **contribution/deliverable** layer and
 [[ablation-axes]] the **experimental-design** layer. They must stay consistent
 with each other — if this doc changes, check the other two.
+
+> **⚠ UPDATED 2026-08-01 — the arc now has an ending.** Everything below
+> through §7 stands. §8 ("the ending") was written when the ablation was still
+> running and predicted a *phase boundary* in (base strength × dataset
+> action-informativeness). The 07-30/08-01 campaign **replaced that guess with
+> a measured three-part answer** — see the new §8 and §9. Ch1 should tell the
+> arc through §7 and then land on §8/§9, not on the old boundary framing.
 
 **Design constraint:** the arc is chronological (each step's limitation forces
 the next), but the chapters stay **deliverable-separated** (D1–D4, CLAUDE.md
@@ -29,18 +117,53 @@ their evidence separated and merely **order** themselves along the arc.
 ## The chain
 
 ```
-AVID works                        [action conditioning on a frozen video base]
-  → planning on it                [AVID's own stated future work]
-  → too slow                      [rollout cost = NFE × per-step]
-  → shortcut models
-  → v-averaging is biased on curved paths        ← the proven node
-  → flow matching (κ = 0)
-  → Wan
-  → D2 on Wan collapses to base-parity           ← what we actually measured
-  → D3 on Wan is gated on D2 having a working cell
-  → ablation: which hypothesis explains the D2 collapse
-  → the boundary condition                       ← ends on a claim
+ESTABLISH  (DynamiCrafter — the baseline cell, and where planning is contributed)
+
+  DC + adapter works                [AVID-style action conditioning on a frozen
+                                     DC base; our condition_center fix gives a
+                                     ~6x faster escape from the blind basin]
+    → PLANNING on it                [CONTRIBUTION: plan through the learned world
+                                     model — AVID names this as its own future
+                                     work and does not do it]
+    → two limits, not one           [(a) SPEED: rollout cost = horizon x NFE x
+                                     per-step; (b) HORIZON: ~16 frames / ~1 s is
+                                     too short a future to plan over at all]
+
+CONTRIBUTE  (Wan-5B flow — where the thesis's technical contributions live)
+
+    → flow matching + a stronger base
+      → HORIZON: ~241 frames / ~35-40 s in ONE rollout vs ~9-10 s        [sec 10]
+      → CURVATURE: kappa=0 makes the shortcut target exact               [sec 4]
+        → shortcut works on flow, NOT on diffusion  (0.302 vs 0.034;
+          DC 0.084 vs 0.083)                                       [D3, measured]
+      → the D2 mechanism study: what makes an adapter use actions   [sec 8-9, 12]
+      → the framework itself: a new base family added to the official
+        AVID repo in one session                                    [D1, sec 11]
 ```
+
+**Both cells carry weight, and they carry different weight.** DC is the
+*working baseline* and the host for the **planning contribution** — it is where
+the thesis shows a learned world model is actually usable for selection. Wan is
+where the *technical contributions* live: the horizon argument, the curvature
+result, the D2 mechanism study, and the extensibility evidence.
+
+**This replaces the earlier "DC is the spine, Wan is a generality test that
+collapses" framing (superseded 2026-08-02).** That reading no longer matches the
+evidence: shortcut is learnable on Wan and not on DC
+([[../experiments/20260802-shortcut-works-on-flow-not-diffusion]]); Wan conditions
+on actions fine given frame-addressable conditioning, beating the AVID/DC
+reference at matched depth
+([[../experiments/20260802-avid-wan-cleanroom-perframe-causal]]); and the horizon
+advantage is Wan's alone. Writing Wan as the failure branch would now understate
+every technical result in the thesis.
+
+> ⚠️ **Positioning check.** [[../../10_now/positioning]] anti-positions the thesis
+> as "not a control / RL paper", and this doc previously called planning "a
+> demonstration, not a claimed contribution". Elevating planning to a
+> contribution is consistent with that **only** if framed as *"we extend AVID to
+> the planning use case AVID itself names as future work"* — not as a planning /
+> RL methods contribution. Keep the claim scoped to that. ➜ check
+> [[../../10_now/positioning]] stays consistent.
 
 ### 1. AVID works — the starting point, not a gap we fill
 
@@ -69,11 +192,40 @@ AVID evaluates video-prediction quality only. Its conclusion names planning as
 future work: it aims *"to explore the use of synthetic data generated by AVID
 adapters for planning tasks."*
 
-So: train a small reward model on rollout states, plan through the AVID world
-model. This is a **demonstration**, not a claimed contribution — consistent
+So: train a small reward model on rollout states, plan through the world model.
+**Updated 2026-08-02: this IS a claimed contribution** — AVID names planning as
+future work and does not do it, so doing it is a contribution *relative to
+AVID*. It is not a planning/RL methods contribution, which keeps it consistent
 with the anti-positioning in [[../../10_now/positioning]] ("Not a control / RL
-paper"). Time-box it. The motivation chain must survive without it (step 3
-stands on cost arithmetic alone).
+paper"). Scope the claim to "we extend AVID to the use case it names".
+
+> **⚠ STATUS 2026-08-02 — EVIDENCE PENDING, NOT MISSING.** Lukas reports the
+> planning demo **was run elsewhere** and will supply the artefacts. Treat the
+> node as supported for drafting purposes, but it is **not yet in the vault**:
+> no run id, no checkpoint, no numbers. **Do not put a figure or a number in the
+> draft until the data lands.** ➜ ACTION: attach run id + outputs, then convert
+> this flag into an experiment note and a ledger row.
+>
+> *(Prior status, kept for context:)* **NOT YET RUN — and it is now spine-critical.** With DC
+> confirmed as the main story (and `condition_center` giving a DC cell that
+> follows actions at 3.6x the AVID reference —
+> [[../experiments/20260731-dc-condition-center-accelerates-escape]]), planning
+> is the **second link of the main chain** and the only one with no evidence
+> behind it. It is the highest-value remaining experiment for the thesis:
+> higher than further Wan fixes, because it converts a working D2 cell into the
+> motivation for D3/D4.
+>
+> Minimum viable version (time-boxed): a short-horizon planner (CEM or random
+> shooting, ~10-20 candidate action sequences, horizon 4-8) over the DC arm-E
+> checkpoint on ACWM Robot Arm, scored by a simple state/goal distance — enough
+> to (a) show the world model is *usable* for selection, and (b) produce the
+> wall-clock number that motivates few-step. Even a negative planning result is
+> usable: it would bound what a 0.106-effect_rel world model supports.
+>
+> The cost arithmetic in step 3 stands on its own, so the *motivation* chain
+> survives without it — but the *demonstration* is what makes the spine a
+> system rather than a sequence of components. Ticket:
+> [[../../20_Tickets/experiments/exp-eval-planning-through-dc-world-model]].
 
 ### 3. Too slow — the motivation for few-step
 
@@ -176,20 +328,231 @@ Lead with the hypothesis column. Axes are from [[ablation-axes]]:
 Every row ends in a **mechanism claim**, not a result row. That is what makes
 a negative outcome a contribution rather than a postmortem.
 
-### 8. The ending — a boundary, not an absence
+### 8. The ending — three measured mechanisms, not a guessed boundary
 
-Do not end on "and then it did not work." The two axes varied throughout are
-**base strength** and **dataset action-informativeness**, and they form a map:
+The 2026-07-30 → 08-01 campaign answered the ablation. The ending is no longer
+"a phase boundary in base-strength × data" — it is a **mechanism stack**, each
+layer measured, each with a matched control.
 
-| | MetaWorld (redundant) | ACWM (informative) |
-|---|---|---|
-| **DynamiCrafter** (weak) | healthy gate (`pg3x72uc`) | — |
-| **Wan-5B** (strong) | base-parity (`hvxlbfjx`) | running |
+**(i) The failure was ours, not the data's.** The unmodified AVID recipe
+follows actions on *our* ACWM Robot Arm (effect_rel 0.0295, null 0) where our
+three adapters were blind (0.0013–0.0056) — same frozen weights, same data,
+same probe ([[../experiments/20260730-avid-robotarm-follows-actions-recipe-not-data]]).
+This kills the "our data is too hard" reading and turns the thesis question
+into a diffable engineering gap.
 
-The thesis result is a **phase boundary**: adapter-based action conditioning
-works when the base is weak enough relative to how much the data rewards
-actions. The ablation locates that boundary and names the mechanism. That is a
-positive claim assembled entirely out of negative results.
+**(ii) Two opposite scale failures at the injection interface.** The
+conditioning must arrive *informative* AND *stream-commensurate*:
+- **DynamiCrafter:** a **learned pedestal** — the embedding grows 106× during
+  training into a 99.7%-constant vector, 14× the time embedding, carrying
+  0.5% action-driven variance vs the reference's 24%
+  ([[../experiments/20260730-dc-parity-arms-null-action-embedding-pedestal]]).
+  Fix (`condition_center`): 0.003 → **0.106**, 3.6× the reference.
+- **Wan:** the mirror image — faithful but **250× too quiet**; the action
+  survives cross-attention (44–56% action-driven) and drowns at the residual
+  add ([[../experiments/20260731-wan-action-trace-value-pathway-drowns]]).
+  Fix (`action_token_norm`): 6–10×.
+Both are *scale calibration*, in opposite directions, at the same interface.
+Neither is visible in loss, gate, FID or sample quality.
+
+**(iii) The adapter corrects the base rather than using the actions — and the
+objective is why.** Decomposed ([[../experiments/20260731-why-wan-copies-the-base-decomposed]]):
+~87% of the pred–base cosine is unavoidable shared-target convergence (present
+with *no* base input); the removable part is **oracle-reading** — with
+`condition_on_base_outputs` the adapter's function is ~100× more sensitive to
+the base's prediction than to the actions. Underneath both sits the economics:
+**actions explain 0.45% of the teacher-forced denoising loss**, so appearance
+correction always pays more per unit of gradient. What action signal survives
+is a **global bag** — arbitrary in direction (steering cos ≈ 0.00), unaligned
+in time (px→latent correspondence at chance), uniform in space
+([[../experiments/20260731-wan-action-signal-is-a-global-bag]]).
+
+### 9. The result: it works on DC, fails on Wan, and the pathway is why
+
+> **⚠ REWRITTEN 2026-08-03.** The previous version of this section stated a
+> "two-factor law" over a table that **contained retracted numbers** — the
+> SkyReels × RT-1 cell (0.0450 peak, the "35×") was voided when its
+> `dataset_size` turned out to be 76 rather than 5000, *and* it was
+> evaluated in-sample ([[methods-integrity]] I1, I2). It also stated the
+> honest limit **globally**, which the DC evidence contradicts. Both are
+> corrected below.
+
+### DC is not action-blind — it is the working cell
+
+Three independent readouts, all on ACWM Robot Arm
+([[../experiments/20260731-dc-condition-center-accelerates-escape]],
+[[../experiments/20260802-adapter-is-a-domain-adapter-not-an-action-conditioner]]):
+
+| | arm E (`condition_center`) | arm 0 (untreated) | reference / chance |
+|---|---|---|---|
+| `effect_rel` @3500 | **0.11479** | **0.04564** | AVID reference 0.0295 |
+| steering cosine | **+0.117** | +0.106 | chance 0.000 |
+| temporal alignment | **1.000** | 1.000 | chance 0.313 |
+| spatial concentration | **0.470** | 0.489 | chance 0.100 |
+| frozen-base null | 0.000 | 0.000 | — |
+| adapted loss | **0.0357** | 0.0433 | — |
+
+Read this carefully, because it is the thesis's positive result:
+
+1. **All three structure axes clear chance on held-out `ind_test`.** This is
+   rung 2 of the ladder, not just sensitivity — the action→output map is
+   directional, temporally placed and spatially localised.
+2. **The untreated control clears the AVID reference unaided** (1.55×), and
+   arm F — AVID's exact 9,344-parameter encoder with no centering — reaches
+   1.71×. The cell works *natively*; `condition_center` is an accelerator,
+   not an enabler.
+3. **Action-following wins on the denoising objective itself** — arm E's
+   adapted loss is ~18% *below* the untreated control's. The
+   action-following solution is not a trade against prediction quality; it
+   is better on the very objective the blind basin optimises.
+4. **Blindness on DC is a long transient, not a state.** Both controls sat
+   at ≤0.005 through step 2000 and then rose sharply. This was *predicted
+   in advance* by the 0.45% loss-share economics — escape pressure appears
+   only once the easy variance is exhausted
+   ([[../experiments/20260731-why-wan-copies-the-base-decomposed]] §3).
+
+**Consequence for the thesis:** the D2 target claim from
+[[../../10_now/positioning]] — *"adapters can make a frozen video model
+action-following on at least one benchmark"* — **is satisfied**, and the
+positive control the ablation needed exists.
+
+### Wan fails on structure while succeeding on quality
+
+Same adapter family, same data. Wan × ACWM beats its frozen base on **6/6**
+quality metrics (FVD 1118 → 406, −64%) with all three structure probes **at
+chance**. A 2.75× FVD improvement carrying no action information is a
+**domain correction**.
+
+> **The same adapter design is a domain adapter on Wan and an action
+> conditioner on DC — never both on either.**
+
+### What discriminates them: the pathway
+
+Not the data (AVID follows actions on our data), not capacity (a clean 7.5M
+arm sits below the DiT-clone arms), not the family (DC uses the same one),
+not the objective term (no consistency loss present). **The injection
+pathway.** Per-frame modulation of normalised activations carries the
+action; cross-attention tokens survive the attention and drown at the
+residual add — and the clean-room A/B shows this is *causal* at matched
+adapter contribution and matched mask.
+
+### The honest limits — per cell, not global
+
+- **Rollout-level control (rung 3) is not demonstrated on either cell.**
+  Null on Wan; **not measured on DC**. The quantitative rollout-swap probe
+  exists only on the Wan path (`scripts/generate_wan22_i2v_compare.py`).
+  Never write "control is demonstrated nowhere" either — the DC structure
+  probes pass, which is rung 2. Ticket:
+  [[../../20_Tickets/experiments/exp-eval-rollout-action-swap-dc-arme]].
+
+  > ⚠ **The DC rollout videos (arm E `6oyu1inq`, arm F `86kb01su`) compare
+  > *adapted vs frozen base*, not *true vs swapped actions* — so they
+  > cannot support a control claim.** **Qualitative video gains — the
+  > adapted model looking distinct from the base, with better motion
+  > timing — are temporal-prior improvements, not action-following.** The
+  > Wan cell is the standing counterexample: it beats its frozen base on
+  > 6/6 quality metrics while sitting at chance on all three structure
+  > probes. Re-generating the *same clips and seeds* with wrong-clip and
+  > zero actions would convert this into control evidence, and it is a
+  > generation pass, not a training run.
+
+  **What the videos *do* support** — and it fills a gap flagged as
+  blocking: **no DC run logs quality metrics at all** (all 18 checked), so
+  these rollouts are currently the *only* evidence about the DC cell's
+  output quality. As a qualitative quality demonstration on the cell that
+  carries the positive D2 result, they belong in the draft — labelled
+  qualitative, and making no claim about actions.
+- **No DC run logs quality metrics** (all 18 checked), so whether the
+  working cell improves or degrades perceptual quality is **unknown** —
+  while the RT-1 cells are known to degrade it. This must be measured before
+  the DC cell is written up as a success.
+- **The runs were cancelled before convergence**, so no asymptotic level
+  claim is supported, and `condition_center`'s level advantage (3.7× → 2.5×
+  and still closing) **must not be quoted as a fixed number**. Quote the
+  ~6× acceleration only.
+- **`effect_rel` is monotone in gain**, so the sensitivity column is a
+  screen; the structure triad is what carries the DC claim.
+- **The economics bound stands** — actions are worth ~0.45% of a
+  teacher-forced denoising loss. That is why escape is *late* on DC and why
+  it never happens on Wan through a pathway that attenuates the signal.
+
+**Why this is a result.** It is a positive claim with a matched negative
+control at architecture level: adapter-based action conditioning on a frozen
+video model **works**, and the condition on which it works is a property of
+the injection pathway that no standard readout can see. The failure case is
+not a failure to make it work — it is the measurement that isolates *what
+makes it work*.
+
+**Why this is a result and not a failure.** It is a *positive, mechanistic*
+claim assembled from negative outcomes: plug-and-play action conditioning fails
+twice — mechanically (scale mis-calibration at the interface; oracle-reading
+when the base's answer is in the input) and economically (a teacher-forced
+denoising objective prices actions at ~0.5% of the loss). The mechanical
+failures are diagnosable with cheap probes and fixable with two normalisation
+changes; the economic one is not fixable by architecture at all and bounds what
+any adapter of this family can do. Naming that boundary — with the probes that
+locate it — is the contribution.
+
+**What would move it (future work, scoped honestly):** an objective that pays
+for actions — action-CFG, rollout/multi-step losses, or action-conditional
+consistency — plus the two structural repairs the bag-analysis implies
+(enforced px→latent temporal binning; a gate that can localise). Open decision:
+[[../../50_Decisions/open/wan-action-following-needs-objective-change]].
+
+---
+
+## 10. Why flow + a more capable base: the horizon argument (added 2026-08-02)
+
+A practical claim that the chain above did not previously make, and which is
+independent of the curvature argument:
+
+**Flow matching plus a stronger base buys *horizon*, and horizon is what planning
+actually needs.** DynamiCrafter's usable window is ~16 frames (~1 s at its fps);
+the Wan cell trains on far longer windows — Lukas reports **241 frames on an
+H100, decoding to ~35–40 s of video** versus ~9–10 s for the DC baseline.
+
+Why that matters for the thesis's spine, in order:
+
+1. **Longer planning horizons.** A planner can only evaluate futures the world
+   model can generate. A ~1 s window bounds the horizon regardless of planner
+   quality.
+2. **One rollout instead of many.** Simulating several seconds in a *single*
+   rollout removes the compounding-error and wall-clock cost of chaining short
+   rollouts.
+3. **Compounds with the few-step argument.** Fewer sampling steps (flow) x more
+   simulated seconds per rollout (capacity) is a multiplicative reduction in
+   planning cost — a sharper motivation for D3 than step count alone.
+
+**State it honestly as two factors, not one.** This is *flow matching* **and**
+*a more capable 5B base*; the storyline already flags that the pivot changes two
+variables (§5). The horizon benefit is largely the second factor. The curvature
+result ([[../experiments/20260802-shortcut-works-on-flow-not-diffusion]]) is what
+isolates the first.
+
+> ⚠️ **EVIDENCE PENDING.** The 241-frame figure is **not in the vault** — the
+> largest `temporal_length` in any committed Wan config is 97. Needed before it
+> is written: run id, frames, resolution, VRAM, decoded seconds, and the matched
+> DC number. ➜ ACTION: locate and record.
+
+## 11. The framework itself is a contribution (D1), and it is demonstrable
+
+The repository is not scaffolding for the experiments — it *is* deliverable D1,
+and 2026-08-02 produced direct evidence for the extensibility claim rather than
+an assertion of it:
+
+- The framework already composes the same adapter interface across
+  **DynamiCrafter (diffusion/UNet)**, **Wan2.2 (flow/DiT)**, **SkyReels** and
+  **OpenSora**.
+- In one session, a **new backbone family was added to the *official AVID repo***
+  as a third branch (`external_repos/avid/wan_diffusion/`) — AVID's recipe,
+  unchanged, running on a rectified-flow DiT with a 4x-temporally-compressed
+  latent space, reproducing their behaviour
+  ([[../experiments/20260802-avid-wan-cleanroom-perframe-causal]]).
+
+The second point is the strong form of the claim: *adding a new base model and
+training an adapter on it is cheap, and the result is reproducible by anyone.*
+It also doubles as the D1 evidence that the composition interface really is
+base-agnostic, since it survived a diffusion→flow and UNet→DiT boundary.
 
 ---
 

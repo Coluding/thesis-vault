@@ -1,0 +1,100 @@
+% =====================================================================
+%  Adapting Pretrained Generative Models into Action-Conditioned World
+%  Models via Plug-and-Play Adapters  (working title under review —
+%  see 30_Knowledge/writing/thesis-storyline.md §REFRAME)
+%
+%  UvA MSc Artificial Intelligence — Master Thesis
+%  Built on the faculty template (TEMPLATE-original.tex, kept verbatim
+%  for reference). DO NOT change documentclass, geometry or font size:
+%  the 40-page limit is enforced against these settings.
+%
+%  Conventions: 30_Knowledge/writing/thesis-formal-rules.md
+%  Style/rhetoric: 30_Knowledge/writing/thesis-style-guide.md
+% =====================================================================
+\documentclass[12pt]{report}
+
+\input{preamble}
+\input{macros}
+
+\begin{document}
+
+% ---------------------------------------------------------------------
+% Title page — faculty template, values still to fill (\nv{} = unknown)
+% ---------------------------------------------------------------------
+\begin{titlepage}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\center
+
+\textsc{\Large MSc Artificial Intelligence}\\[0.2cm]
+\textsc{\Large Master Thesis}\\[0.5cm]
+
+\HRule \\[0.4cm]
+{\huge \bfseries \nv{Title --- undecided.
+Candidates: ``On the Adaptability of Video Foundation Models to World
+Models'' (empirical-study framing, 2026-08-02 reframe) vs.\ the proposal
+title. Settle before submission.}}\\[0.4cm]
+\HRule \\[0.5cm]
+
+by\\[0.2cm]
+\textsc{\Large Lukas Bierling}\\[0.2cm]
+\nv{student number}\\[1cm]
+
+{\Large \today}\\[1cm]
+
+\nv{Number of Credits}\\
+\nv{Period in which the research was carried out}\\[1cm]
+
+\begin{minipage}[t]{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Supervisor:} \\
+\nv{Dr A \textsc{Person}}
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}[t]{0.4\textwidth}
+\begin{flushright} \large
+\emph{Examiner:} \\
+\nv{Dr A \textsc{Person}}\\
+\vspace{0.5cm}
+\emph{Second reader:} \\
+\nv{Dr A \textsc{Person}}\\
+\end{flushright}
+\end{minipage}\\[2cm]
+
+\includegraphics[width=10cm]{figures/uvalogo_regular_p_nl.eps}
+
+\vfill
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+
+\begin{abstract}
+\todo{Write last. Must contain, in this order: the question (when and why
+does adapter-based adaptation of a frozen video model work), the framework,
+the pathway result, and --- explicitly --- the control limit. See
+\texttt{rubric/05-reflection.md}.}
+\end{abstract}
+
+\pagenumbering{arabic}
+
+% ---------------------------------------------------------------------
+% Body.  6-chapter structure for the 40-page limit --- SIGNED OFF
+% 2026-08-03.  Page budget in the comment after each \include; balance is
+% graded (rubric 7), so treat these as commitments, not suggestions.
+% ---------------------------------------------------------------------
+\include{chapters/10-introduction}   % budget:  4--5 pp
+\include{chapters/20-related-work}   % budget:  5    pp
+\include{chapters/30-method}         % budget: 10    pp  (D1: framework + families + shortcut/curvature)
+\include{chapters/40-experiments}    % budget:  7    pp  (protocol, probe suite, ablation design)
+\include{chapters/50-results}        % budget: 10    pp  (D2 mechanism study, D3, blindness)
+\include{chapters/60-discussion}     % budget:  4    pp  (boundary, limitations, conclusion)
+%                                       total:  40    pp
+
+\appendix
+\include{chapters/90-appendix}       % additional pages, outside the 40
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

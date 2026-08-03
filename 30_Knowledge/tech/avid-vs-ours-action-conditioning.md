@@ -1,7 +1,7 @@
 ---
 type: tech
 status: living
-last_updated: 2026-07-27
+last_updated: 2026-07-30
 sources: ["[[../../20_Tickets/experiments/exp-backbone-dc-robotarm-run]]", "[[ablation-axes]]"]
 ---
 
@@ -59,6 +59,23 @@ consequence is the concat→add semantic change above.
 
 Both bases are `action_conditioned=False` (action enters only through the
 adapter); both use action dropout 0.0; neither trains a null-action CFG.
+
+## Status 2026-07-30 — this hypothesis is now the prime suspect, and still untested
+
+[[../experiments/20260730-avid-robotarm-follows-actions-recipe-not-data]] showed
+the **unmodified AVID recipe follows actions on ACWM Robot Arm** (effect_rel
+0.029475, null 0) where our adapters are blind (DC `c3pcewxk` 0.0034) — same
+frozen base weights, same episodes, same probe. That removes the data/OOD
+explanation which displaced this note between 07-28 and 07-29, and promotes the
+concat-vs-add divergence below to the leading candidate.
+
+**The `concat` config has never been launched** (verified 2026-07-30: the
+`dc-acwm-robotarm` wandb project holds only `kjgt3z0f`, `u9u7kxia`, `c3pcewxk` —
+all `action_time_combine: add`, all crashed). Ticket:
+[[../../20_Tickets/experiments/exp-adapter-our-framework-avid-replication-robotarm]]
+(arm 1). ⚠ `diffusion_dc_acwm_robotarm_concat.yaml` as shipped also flips
+`use_step_level_conditioning` and `shortcut_anchor_prob` — flip **only**
+`action_time_combine` for a clean read.
 
 ## Implication → testable experiment (IMPLEMENTED 2026-07-27)
 

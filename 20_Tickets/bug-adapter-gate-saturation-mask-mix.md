@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-14
-updated: 2026-07-21
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -153,3 +153,9 @@ comparison against the paper's config values — it's a matching real run on our
 task, on the composition mechanism we're diagnosing. Materially raises
 confidence that `gate_bias: 4.0` (not something more fundamental about the
 adapter approach) is the dominant confound in our own runs.
+
+## Cleanup 2026-08-01 — **RESOLVED-BY**
+
+The gate story is now complete: saturation is real (uxrst2k5) AND the `gate_cap` countermeasure was itself a freeze trap ([[bug-adapter-gate-cap-equals-init-freezes-gate]], fixed + guarded).
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

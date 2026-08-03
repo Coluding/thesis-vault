@@ -1,0 +1,130 @@
+<title>Reference — PDD cheat sheet</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+
+<div class="wrap">
+
+<p class="eyebrow">Reference · Parallel Decoding Distillation</p>
+<h1>PDD cheat sheet</h1>
+<p class="subtitle">Shaul, Liu, Vahdat &amp; Berner — <a href="https://arxiv.org/abs/2607.26004">arXiv:2607.26004</a>, 28 Jul 2026. Equation numbers are the paper's. Quoted verbatim from the PDF.</p>
+
+<h2>Setup</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>v<sub>t</sub>(x)</code></td><td>Teacher's instantaneous velocity field. Frozen.</td></tr>
+<tr><td><code>u<sub>n</sub>(X<sub>n</sub>)</code></td><td>Mean velocity over interval [t<sub>n</sub>, t<sub>n+1</sub>]. What PDD predicts.</td></tr>
+<tr><td><code>N</code></td><td>Grid size — number of intervals in the time discretisation 0 = t<sub>0</sub> &lt; … &lt; t<sub>N</sub> = 1.</td></tr>
+<tr><td><code>L</code></td><td>Block size — intervals skipped per network call. NFE = N/L.</td></tr>
+<tr><td><code>n, k</code></td><td>Block start index; intra-block index, k ∈ {n, …, n+L−1}.</td></tr>
+<tr><td><code>X̄<sub>k</sub></code></td><td>State reached by the <em>student's own</em> predictions — the parallelized process.</td></tr>
+<tr><td><code>θ</code></td><td>Student parameters. Convention: t = 0 is noise, t = 1 is data.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Equations</h2>
+
+<div class="eq"><span class="tag">Eq. 3 — exact step</span>
+X<sub>n+1</sub> = X<sub>n</sub> + (t<sub>n+1</sub> − t<sub>n</sub>) u<sub>n</sub>(X<sub>n</sub>)
+<span class="gloss">Exact, not approximate — because u<sub>n</sub> is defined as the integral average.</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 4 — mean velocity</span>
+u<sub>n</sub>(X<sub>n</sub>) = 1/(t<sub>n+1</sub> − t<sub>n</sub>) ∫<sub>t<sub>n</sub></sub><sup>t<sub>n+1</sub></sup> v<sub>t</sub>(X<sub>t</sub>) dt
+</div>
+
+<div class="eq"><span class="tag">Eq. 5 / 6 — teacher targets</span>
+Euler:&nbsp;&nbsp;&nbsp;&nbsp;u<sub>n</sub>(X<sub>n</sub>) ≈ v<sub>t<sub>n</sub></sub>(X<sub>n</sub>)&nbsp;&nbsp;&nbsp;&nbsp;<em>(1 teacher call)</em><br>
+Midpoint: u<sub>n</sub>(X<sub>n</sub>) ≈ v<sub>t<sub>mid</sub></sub>(X<sub>mid</sub>),&nbsp;&nbsp;X<sub>mid</sub> = X<sub>n</sub> + ((t<sub>n+1</sub>−t<sub>n</sub>)/2)·v<sub>t<sub>n</sub></sub>(X<sub>n</sub>),&nbsp;&nbsp;t<sub>mid</sub> = (t<sub>n+1</sub>+t<sub>n</sub>)/2&nbsp;&nbsp;<em>(2 calls)</em>
+<span class="gloss">Midpoint consistently outperforms Euler in the paper's ablations (Fig. 6, Tables 3–5).</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 8 — parallel decoder</span>
+ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>) ≈ u<sub>k</sub>(X<sub>k</sub>),&nbsp;&nbsp;&nbsp;k = n, …, n+L−1
+<span class="gloss">Well-defined because the whole block is determined by X<sub>n</sub> alone.</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 9 — parallelized process</span>
+X̄<sub>k+1</sub> = X̄<sub>k</sub> + (t<sub>k+1</sub> − t<sub>k</sub>) ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>),&nbsp;&nbsp;&nbsp;X̄<sub>n</sub> = X<sub>n</sub>
+<span class="gloss">Simulated from a <em>single</em> decoder evaluation — ū depends only on X<sub>n</sub>.</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 10 — block step (sampling)</span>
+X̄<sub>n+L</sub> = X<sub>n</sub> + Σ<sub>k=n</sub><sup>n+L−1</sup> (t<sub>k+1</sub> − t<sub>k</sub>) ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>)
+</div>
+
+<div class="eq"><span class="tag">Eq. 11 — the PD loss</span>
+ℒ<sub>PD</sub>(θ) = 𝔼 ‖ ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>) − u<sub>k</sub>( sg( X̄<sub>k</sub> ) ) ‖²
+<span class="gloss">n ~ U{0, L, …, N−L}; k ~ U{n, …, n+L−1}; X<sub>n</sub> from the interpolant (Eq. 2); u<sub>k</sub> from one RK step. <b>Proposition 1:</b> the minimiser satisfies Eq. 8 — i.e. the student reproduces the teacher's trajectory up to RK error.</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 12–13 — architecture</span>
+Teacher:&nbsp;v<sub>t</sub>(x) = W H<sub>t</sub>(x)&nbsp;&nbsp;&nbsp;→&nbsp;&nbsp;&nbsp;Student:&nbsp;ū<sup>θ</sup><sub>n</sub>(k | x<sub>n</sub>) = W<sup>θ</sup><sub>k</sub> H<sup>θ</sup><sub>t<sub>n</sub></sub>(x<sub>n</sub>)
+<span class="gloss">Shared backbone; N replicated final linear layers, each initialised from the teacher's W. N heads (not L) ⇒ one model serves several block sizes with no second time coordinate.</span>
+</div>
+
+<div class="eq"><span class="tag">Eq. 14–15 — layer fusion</span>
+X̄<sub>n+L</sub> = X̄<sub>n</sub> + (t<sub>n+L</sub> − t<sub>n</sub>) W<sup>θ</sup><sub>n:n+L</sub> H<sup>θ</sup><sub>t<sub>n</sub></sub>(X̄<sub>n</sub>)<br>
+W<sup>θ</sup><sub>n:n+L</sub> = Σ<sub>k=n</sub><sup>n+L−1</sup> Δ<sub>k</sub> W<sup>θ</sup><sub>k</sub>,&nbsp;&nbsp;&nbsp;Δ<sub>k</sub> = (t<sub>k+1</sub> − t<sub>k</sub>) / (t<sub>n+L</sub> − t<sub>n</sub>)
+<span class="gloss">At generation only the block average is needed ⇒ store one fused layer per block ⇒ zero extra inference cost vs. the teacher.</span>
+</div>
+
+<h2>Algorithm 2 — the loss, verbatim</h2>
+
+<pre><code>N = len(t) - 1                                  # grid size
+n = L_min * randint(0, N//L_min)                # sample block index
+x_n = (1-t[n]) * randn_like(x) + t[n] * x       # sample the probability path
+u = student(x_n, t[n])                          # parallel predictions
+h = diff(t, dim=0)                              # step sizes
+k = randint(n, clip(n+L_max, max=N))            # sample index in the block
+x_k = x_n + einsum('l,l...', h[n:k], u[n:k])    # step from n to k  &lt;- on-policy
+u_k = runge_kutta(teacher, x_k, t[k], h[k])     # teacher mean velocity
+loss = mse_loss(u[k], u_k.detach())</code></pre>
+
+<p><strong>Data-free variant (Alg. 3):</strong> skip the interpolant entirely — sample X<sub>0</sub> ∼ p<sub>0</sub>
+and alternate solver steps with gradient steps, reusing the decoder output both to train and to advance
+the state (with stop-gradient), for N/L − 1 iterations.</p>
+
+<h2>Where PDD sits</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th></th><th>Flow maps</th><th>Pi-Flow</th><th>PDD</th></tr></thead>
+<tbody>
+<tr><td>NFE</td><td>Variable</td><td>Fixed</td><td>Variable</td></tr>
+<tr><td>JVP / finite-diff.</td><td>Required</td><td>Free</td><td>Free</td></tr>
+<tr><td>Head at inference</td><td>Linear</td><td>Gaussian mixture</td><td>Fused-linear</td></tr>
+</tbody>
+</table>
+<p style="font-size:.85rem;color:var(--ink-soft);margin-top:-.6rem">Paper's Table 1. Distribution-based methods (DMD2, VSD, ADD/LADD/APT) are a separate family — stronger at scale historically, but mode-collapse-prone and hyperparameter-sensitive; PDD's diversity claim is aimed at them.</p>
+</div>
+
+<h2>Divergence: PDD vs. our <code>teacher_rollout</code> target</h2>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Dimension</th><th>PDD</th><th><code>compute_teacher_rollout_target_v_flow</code></th></tr></thead>
+<tbody>
+<tr><td>Target state</td><td>X̄<sub>k</sub> — on-policy, student-reached</td><td>Teacher rollout path from x<sub>t</sub> — off-policy</td></tr>
+<tr><td>Teacher calls / loss</td><td>1–2</td><td><code>substeps=4</code></td></tr>
+<tr><td>Jump-size addressing</td><td>Head index k (no 2nd time coord.)</td><td><code>log2(d)</code> step-level conditioning</td></tr>
+<tr><td>Velocities per pass</td><td>L</td><td>1</td></tr>
+<tr><td>Trained parameters</td><td>Full backbone from teacher init</td><td>Frozen base + ~34M adapter</td></tr>
+<tr><td>Bootstrapped?</td><td>No (teacher target)</td><td>No (teacher target)</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="note warn"><strong>Claim discipline.</strong> "A mean-velocity teacher-rollout target, in the
+spirit of PDD" is supportable. "We ran PDD" is not — the parallel decoder, the on-policy state
+distribution, and the fused-head inference path are all absent.</p>
+
+<div class="footer">
+<p><a href="../lessons/0001-pdd-the-loss-and-what-we-borrowed.html">← Lesson 1</a> ·
+<a href="../MISSION.md">Mission</a> · <a href="../RESOURCES.md">Resources</a></p>
+<p>Prints to two pages. Equations transcribed from <code>pdftotext</code> of the v1 PDF, 2026-08-03.</p>
+</div>
+
+</div>

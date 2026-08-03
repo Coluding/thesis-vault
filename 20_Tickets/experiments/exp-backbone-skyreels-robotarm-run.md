@@ -4,7 +4,7 @@ scope: backbone
 status: in-progress
 priority: medium
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -80,3 +80,9 @@ style-drift confound). Base-family peers: Wan
 ([[exp-backbone-wan-robotarm-run]]), DynamiCrafter
 ([[exp-backbone-dc-robotarm-run]]). Axis 5 in
 [[../../30_Knowledge/writing/ablation-axes]].
+
+## Cleanup 2026-08-01 — **DELIVERED**
+
+Run as `8zjjn7wl` (0.0013) — [[../../30_Knowledge/experiments/20260728-acwm-robotarm-matrix-action-blind]]; the same backbone reaches 0.045 on RT-1 ([[../../30_Knowledge/experiments/20260801-wan-rt1-indistribution-plateau]]).
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

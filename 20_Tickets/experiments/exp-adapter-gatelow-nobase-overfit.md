@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-21
-updated: 2026-07-21
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -69,3 +69,9 @@ pooled-AdaLN → none) is an open design surface — decision note pending.
   usage. Don't report as D2/D4 evidence.
 - Prerequisite: 2026-07-20/21 code fixes committed + pulled on the training
   box (same as the replace-nobase sibling).
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Targeted the copy-through trap on ACWM. The mechanism is now measured (learned pedestal on DC; value-pathway scale + oracle on Wan) and fixed directly — these optimisation countermeasures test a superseded hypothesis. Paused by [[../../50_Decisions/decided/reproduce-avid-on-dc-before-scaling-to-wan]].
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

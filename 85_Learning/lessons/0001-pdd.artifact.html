@@ -1,0 +1,684 @@
+<title>PDD — the loss, and what we actually borrowed</title>
+
+<style>
+:root {
+  --paper:      #f7f8fb;
+  --paper-2:    #eef0f6;
+  --ink:        #14161f;
+  --ink-2:      #565d70;
+  --rule:       #dcdfe8;
+  --accent:     #4239c9;
+  --accent-bg:  #e9e8fa;
+  --signal:     #a8571f;
+  --signal-bg:  #f8efe6;
+  --ok:         #1c6b4a;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+  --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --measure: 36rem;
+  --rail: 7rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:     #0e1016;
+    --paper-2:   #171a23;
+    --ink:       #e2e5ee;
+    --ink-2:     #949bb0;
+    --rule:      #2a2e3b;
+    --accent:    #8b86ff;
+    --accent-bg: #1b1a35;
+    --signal:    #e0a049;
+    --signal-bg: #262017;
+    --ok:        #5fc99a;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0e1016; --paper-2:#171a23; --ink:#e2e5ee; --ink-2:#949bb0;
+  --rule:#2a2e3b; --accent:#8b86ff; --accent-bg:#1b1a35;
+  --signal:#e0a049; --signal-bg:#262017; --ok:#5fc99a;
+}
+:root[data-theme="light"] {
+  --paper:#f7f8fb; --paper-2:#eef0f6; --ink:#14161f; --ink-2:#565d70;
+  --rule:#dcdfe8; --accent:#4239c9; --accent-bg:#e9e8fa;
+  --signal:#a8571f; --signal-bg:#f8efe6; --ok:#1c6b4a;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  margin: 0;
+  padding: 3.5rem 1.5rem 7rem;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.sheet {
+  max-width: calc(var(--measure) + var(--rail) + 2.5rem);
+  margin: 0 auto;
+}
+
+/* ---- the index rail --------------------------------------------------- */
+/* Each block carries its true index: section ordinal, or the paper's own
+   equation number. Nothing here is decorative numbering. */
+
+.block {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, var(--measure));
+  column-gap: 2.5rem;
+  align-items: start;
+}
+.block > .idx {
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: right;
+  padding-top: .55rem;
+  border-right: 1px solid var(--rule);
+  padding-right: .8rem;
+  align-self: stretch;
+  font-variant-numeric: tabular-nums;
+}
+.block > .body { min-width: 0; }
+
+@media (max-width: 999px) {
+  .block { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+  .block > .idx {
+    text-align: left; border-right: 0; padding: 0 0 .3rem;
+    border-bottom: 1px solid var(--rule); margin-bottom: .9rem;
+  }
+}
+
+/* ---- masthead --------------------------------------------------------- */
+
+.masthead { margin-bottom: 3.5rem; }
+.masthead .idx { padding-top: .3rem; }
+
+.kicker {
+  font-family: var(--sans);
+  font-size: .7rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 1rem;
+}
+
+h1 {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: clamp(1.65rem, 4.4vw, 2.35rem);
+  letter-spacing: -.035em;
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0 0 .9rem;
+}
+
+.standfirst {
+  color: var(--ink-2);
+  font-size: 1.08rem;
+  line-height: 1.55;
+  margin: 0 0 1.4rem;
+  text-wrap: pretty;
+}
+
+.tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+.tags li {
+  font-family: var(--sans);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: .2rem .5rem;
+}
+
+/* ---- prose ------------------------------------------------------------ */
+
+h2 {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 1.16rem;
+  letter-spacing: -.02em;
+  margin: 0 0 .9rem;
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: .82rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 2rem 0 .6rem;
+}
+p { margin: 0 0 1.05rem; text-wrap: pretty; }
+ul { margin: 0 0 1.05rem; padding-left: 1.1rem; }
+li { margin-bottom: .55rem; }
+em { font-style: italic; }
+strong { font-weight: 600; }
+
+.block + .block { margin-top: 3.2rem; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+a:hover { border-bottom-color: var(--accent); }
+a:focus-visible, .opt:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: .84em;
+  background: var(--paper-2);
+  padding: .1em .32em;
+  border-radius: 2px;
+}
+
+/* ---- equation plates -------------------------------------------------- */
+
+.eq {
+  font-family: var(--mono);
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--rule));
+  border-radius: 3px;
+  padding: 1rem 1.1rem;
+  margin: 1.5rem 0;
+  font-size: .92rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+.eq .gloss {
+  display: block;
+  margin-top: .8rem;
+  padding-top: .7rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, var(--rule));
+  font-family: var(--sans);
+  font-size: .8rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.eq .gloss b { color: var(--ink); font-weight: 600; }
+.eq sub, .eq sup { font-size: .72em; }
+
+pre {
+  font-family: var(--mono);
+  background: var(--paper-2);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 3px 3px 0;
+  padding: .95rem 1.1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  font-size: .79rem;
+  line-height: 1.6;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---- callouts --------------------------------------------------------- */
+
+.aside {
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+  margin: 1.6rem 0;
+  color: var(--ink-2);
+  font-size: 1rem;
+}
+.aside strong { color: var(--ink); }
+.aside.caution { border-left-color: var(--signal); background: var(--signal-bg); padding: .8rem 1rem; border-radius: 0 3px 3px 0; }
+
+/* ---- tables ----------------------------------------------------------- */
+
+.scroll { overflow-x: auto; margin: 1.5rem 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 34rem;
+  font-family: var(--sans);
+  font-size: .84rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+th, td { text-align: left; padding: .55rem .7rem; vertical-align: top; border-bottom: 1px solid var(--rule); }
+thead th {
+  font-size: .68rem; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--ink-2);
+}
+tbody tr:last-child td { border-bottom: none; }
+td strong { color: var(--signal); font-weight: 600; }
+td .keep { color: var(--ok); font-weight: 600; }
+
+/* ---- quiz ------------------------------------------------------------- */
+
+.quiz {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--paper-2);
+  padding: 1.1rem 1.2rem;
+  margin: 1.4rem 0;
+}
+.quiz .q { font-size: 1rem; margin: 0 0 .85rem; }
+.quiz .opts { display: flex; flex-direction: column; gap: .35rem; }
+.opt {
+  font-family: var(--sans);
+  font-size: .88rem;
+  padding: .5rem .7rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .14s ease, background .14s ease;
+}
+.opt:hover:not(.locked) { border-color: var(--accent); }
+.opt.locked { cursor: default; }
+.opt.correct { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 13%, var(--paper)); }
+.opt.wrong   { border-color: var(--signal); background: color-mix(in srgb, var(--signal) 13%, var(--paper)); }
+.opt.locked:not(.correct):not(.wrong) { opacity: .5; }
+
+.fb {
+  display: none;
+  margin-top: .8rem;
+  font-family: var(--sans);
+  font-size: .84rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.fb.show { display: block; }
+.fb b { color: var(--ink); }
+
+.recall {
+  border: 1px dashed var(--rule);
+  border-radius: 3px;
+  padding: 1.1rem 1.2rem;
+  margin: 1.6rem 0;
+}
+.recall textarea {
+  width: 100%; box-sizing: border-box; min-height: 6rem;
+  font-family: var(--serif); font-size: 1rem; line-height: 1.5;
+  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 2px; padding: .6rem .7rem;
+  resize: vertical;
+}
+.recall textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button {
+  margin-top: .7rem;
+  font-family: var(--sans); font-size: .82rem; letter-spacing: .03em;
+  padding: .45rem 1rem;
+  border: 1px solid var(--ink-2); border-radius: 2px;
+  background: var(--paper); color: var(--ink); cursor: pointer;
+  transition: border-color .14s ease, color .14s ease;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+.model { display: none; margin-top: 1rem; font-size: .97rem; color: var(--ink-2); }
+.model.show { display: block; }
+.model p { margin-bottom: .8rem; }
+.model p:last-child { margin-bottom: 0; }
+
+/* ---- colophon --------------------------------------------------------- */
+
+.colophon { margin-top: 3.5rem; padding-top: 1.3rem; border-top: 1px solid var(--rule); }
+.colophon p { font-size: .92rem; color: var(--ink-2); }
+.colophon h3 { margin-top: 1.6rem; }
+.colophon h3:first-child { margin-top: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="sheet">
+
+  <header class="block masthead">
+    <div class="idx">Lesson 01</div>
+    <div class="body">
+      <p class="kicker">Parallel Decoding Distillation</p>
+      <h1>The PD loss, and what we actually borrowed</h1>
+      <p class="standfirst">One equation, one architecture trick, and an honest audit of the
+      target already sitting in <code>shortcut_targets.py</code>.</p>
+      <ul class="tags">
+        <li>~12 min</li><li>Deliverable D3</li><li>Decision-relevant</li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="block">
+    <div class="idx">§1<br>the idea</div>
+    <div class="body">
+      <h2>One call, L steps</h2>
+      <p>Classical ODE sampling walks one interval per network call. PDD trains a network
+      that, from a <em>single</em> call at state <code>X_n</code>, emits the mean velocities of
+      the next <em>L</em> intervals at once — so one call advances <em>L</em> steps. Everything
+      else in the paper follows from making that idea trainable and cheap.</p>
+
+      <div class="aside">
+        <strong>Why this lesson first.</strong> A PDD-inspired target is already implemented and
+        a run is queued against the last of the compute. Before it burns, you should be able to
+        say exactly which parts of PDD it contains. That is the whole win here.
+      </div>
+
+      <h3>The quantity being predicted</h3>
+      <p>Not the instantaneous velocity <code>v_t</code>. The <strong>mean velocity</strong> over
+      an interval:</p>
+
+      <div class="eq">
+        u<sub>n</sub>(X<sub>n</sub>) &nbsp;=&nbsp; 1/(t<sub>n+1</sub> − t<sub>n</sub>) &nbsp;·&nbsp; ∫<sub>t<sub>n</sub></sub><sup>t<sub>n+1</sub></sup> v<sub>t</sub>(X<sub>t</sub>) dt
+        <span class="gloss">This is the velocity that makes one Euler-sized jump land <b>exactly</b>
+        where fine integration lands: <b>X<sub>n+1</sub> = X<sub>n</sub> + (t<sub>n+1</sub> − t<sub>n</sub>)·u<sub>n</sub>(X<sub>n</sub>)</b>
+        is exact, not an approximation (Eq. 3). The whole difficulty of few-step generation is that
+        u is expensive to know and v is cheap.</span>
+      </div>
+
+      <p>The teacher supplies <code>u</code> with one solver step — Euler (1 evaluation) or
+      Midpoint (2 evaluations). That is the entire teacher cost per loss term.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="idx">§2<br>Eq. 11</div>
+    <div class="body">
+      <h2>The loss</h2>
+
+      <div class="eq">
+        ℒ<sub>PD</sub>(θ) &nbsp;=&nbsp; 𝔼 ‖ ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>) &nbsp;−&nbsp; u<sub>k</sub>( sg( X̄<sub>k</sub> ) ) ‖²
+        <span class="gloss">
+          <b>ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>)</b> — the student's prediction for interval k, from one call at X<sub>n</sub>.<br>
+          <b>n</b> — block start, uniform on {0, L, …, N−L}. &nbsp;<b>k</b> — an interval inside that block, uniform on {n, …, n+L−1}.<br>
+          <b>X<sub>n</sub> ∼ p<sub>t<sub>n</sub></sub></b> — drawn cheaply from data with the interpolant.<br>
+          <b>X̄<sub>k</sub></b> — the state reached by following the <b>student's own</b> predictions from X<sub>n</sub>. This is the load-bearing symbol.<br>
+          <b>u<sub>k</sub>(·)</b> — the teacher's mean velocity there, one Runge–Kutta step. &nbsp;<b>sg</b> — stop-gradient.
+        </span>
+      </div>
+
+      <p>Read it once more slowly. The student is asked: <em>from where you are now, what will the
+      velocity be at interval k?</em> — and it is graded at the state <strong>its own predictions
+      actually reach</strong>, not at a state some reference trajectory reaches. That is what
+      on-policy means here, and it is the difference between a model accurate on the teacher's path
+      and one accurate on the path it will actually walk at inference.</p>
+
+      <p>Proposition 1 states that the minimiser of this loss satisfies the parallel-decoder
+      condition — up to Runge–Kutta error, the student's trajectory <em>is</em> the teacher's.
+      No adversary, no score network, no JVP.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="idx">§3<br>Eq. 12–15</div>
+    <div class="body">
+      <h2>The architecture trick</h2>
+
+      <p>Given a teacher of the form <code>v_t(x) = W·H_t(x)</code> — backbone, then one final
+      linear layer — PDD keeps the backbone and replicates <em>only the final linear layer</em>,
+      once per grid point:</p>
+
+      <div class="eq">
+        ū<sup>θ</sup><sub>n</sub>(k | x<sub>n</sub>) &nbsp;=&nbsp; W<sup>θ</sup><sub>k</sub> &nbsp;H<sup>θ</sup><sub>t<sub>n</sub></sub>(x<sub>n</sub>)
+        <span class="gloss">One shared backbone pass, N cheap heads, each initialised from the
+        teacher's W. N is the <b>grid</b> size, not the block size — which is why one trained model
+        serves many NFEs.</span>
+      </div>
+
+      <p>Two consequences worth internalising:</p>
+      <ul>
+        <li><strong>No second time coordinate.</strong> Flow-map and shortcut-style methods
+        condition the network on <em>both</em> where you are and how far you're jumping. PDD indexes
+        the jump by <em>which head you read</em>. The paper is explicit that this is the point: it
+        "allows us to learn a single model that can predict any block size without the need to
+        introduce a second time coordinate."</li>
+        <li><strong>Free at inference.</strong> Generation needs only the block-average direction, so
+        the heads collapse into one: <code>W_{n:n+L} = Σ_k Δ_k W_k</code> with
+        <code>Δ_k = (t_{k+1}−t_k)/(t_{n+L}−t_n)</code>. One fused layer per block. Zero extra
+        inference compute versus the teacher.</li>
+      </ul>
+
+      <div class="aside">
+        <strong>Where "no JVPs" comes from.</strong> Learning a mean velocity usually forces you to
+        regress a derivative of the velocity field — via a JVP or a finite difference, both expensive
+        or unstable at video scale. PDD instead <em>decomposes</em> the mean velocity into L
+        sub-interval predictions, and gradients through the shared backbone recover the full-interval
+        signal in expectation. The derivative is never formed.
+      </div>
+
+      <h3>The loss, as the paper writes it</h3>
+      <pre><code>N   = len(t) - 1                              # grid size
+n   = L_min * randint(0, N//L_min)            # sample block index
+x_n = (1-t[n]) * randn_like(x) + t[n] * x     # sample the probability path
+u   = student(x_n, t[n])                      # parallel predictions
+h   = diff(t, dim=0)                          # step sizes
+k   = randint(n, clip(n+L_max, max=N))        # sample index in the block
+x_k = x_n + einsum('l,l...', h[n:k], u[n:k])  # step from n to k   &lt;- on-policy
+u_k = runge_kutta(teacher, x_k, t[k], h[k])   # teacher mean velocity
+loss = mse_loss(u[k], u_k.detach())</code></pre>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="idx">§4<br>the audit</div>
+    <div class="body">
+      <h2>What we actually borrowed</h2>
+
+      <p><code>compute_teacher_rollout_target_v_flow</code> describes itself as "the
+      plug-and-play-adapter transposition" of PDD. That is fair — but the transposition drops three
+      of the four load-bearing pieces. Being precise about which:</p>
+
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr><th>Dimension</th><th>PDD (paper)</th><th>Ours (<code>teacher_rollout</code>)</th><th>Does it matter?</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Target evaluated at</td>
+              <td>X̄<sub>k</sub> — reached by the <em>student's</em> own steps</td>
+              <td>States along a <em>teacher</em> rollout from x<sub>t</sub></td>
+              <td><strong>Yes.</strong> The piece Eq. 11 is built around. Ours never composes student steps, so it is never graded where it will actually be.</td>
+            </tr>
+            <tr>
+              <td>Teacher evaluations per loss</td>
+              <td>1 (Euler) or 2 (Midpoint)</td>
+              <td><code>substeps=4</code>, Euler</td>
+              <td><strong>Yes, on cost.</strong> We pay 2–4× PDD's teacher budget for a target PDD argues you needn't resolve finely.</td>
+            </tr>
+            <tr>
+              <td>How jump size is addressed</td>
+              <td>Which head W<sub>k</sub> you read</td>
+              <td>Conditioning on <code>log2(d)</code></td>
+              <td><strong>Yes, conceptually.</strong> Exactly the second time coordinate PDD positions itself against.</td>
+            </tr>
+            <tr>
+              <td>Velocities per forward pass</td>
+              <td>L, by construction</td>
+              <td>One</td>
+              <td><strong>Yes</strong> — "parallel decoding" is the name of the method, and we don't do it.</td>
+            </tr>
+            <tr>
+              <td>What is trained</td>
+              <td>Full backbone, teacher-initialised</td>
+              <td>Frozen base + small adapter</td>
+              <td><span class="keep">By design</span> — this is the thesis. But Prop. 1 assumes the student <em>can</em> represent u<sub>k</sub>; a 34M adapter over a frozen base may not, and that is open.</td>
+            </tr>
+            <tr>
+              <td>Bootstrapped?</td>
+              <td>No — teacher target</td>
+              <td>No — teacher target</td>
+              <td><span class="keep">Shared.</span> Neither can drift the way self-consistency can.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>The honest summary:</strong> what we implemented is <em>mean-velocity regression
+      against a finely-integrated teacher target</em>. That is a real and defensible objective — but
+      it is not PDD. It shares PDD's <em>quantity</em> (mean velocity) and its <em>spirit</em>
+      (regression, no JVP, no adversary), and none of its <em>mechanism</em>.</p>
+
+      <div class="aside caution">
+        <strong>Claim discipline.</strong> "A mean-velocity teacher-rollout target, in the spirit of
+        PDD" is supportable in the thesis. "We ran PDD" is not — the parallel decoder, the on-policy
+        state distribution, and the fused-head inference path are all absent.
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="idx">§5<br>retrieval</div>
+    <div class="body">
+      <h2>Check yourself</h2>
+      <p>Answer before scrolling back. One attempt each — getting one wrong is more useful than
+      getting it right easily.</p>
+
+      <div class="quiz" data-answer="0">
+        <p class="q">In the PD loss, where is the teacher's mean velocity evaluated?</p>
+        <div class="opts">
+          <div class="opt">On states the student itself produced</div>
+          <div class="opt">On states the teacher itself produced</div>
+          <div class="opt">On states the dataset itself provides</div>
+          <div class="opt">On states the sampler itself cached</div>
+        </div>
+        <div class="fb"
+          data-correct="X̄<sub>k</sub> is the parallelized process — the student's own predictions followed forward from X<sub>n</sub>. The stop-gradient applies to it, so it supplies a state but no gradient path."
+          data-wrong="It is X̄<sub>k</sub>, the state the <b>student's</b> own predictions reach. X<sub>n</sub> comes from the data interpolant, but everything after it inside the block is the student's doing — that is what makes the scheme on-policy."></div>
+      </div>
+
+      <div class="quiz" data-answer="2">
+        <p class="q">How many teacher evaluations does one PD loss term require?</p>
+        <div class="opts">
+          <div class="opt">Eight for Euler, sixteen for Midpoint</div>
+          <div class="opt">Four for Euler, but eight for Midpoint</div>
+          <div class="opt">One for Euler, but two for Midpoint</div>
+          <div class="opt">Two for Euler, but four for Midpoint</div>
+        </div>
+        <div class="fb"
+          data-correct="Euler is a single teacher call; Midpoint needs one call to build X<sub>mid</sub> and one at the midpoint. Cheapness is the point — it is what makes the loss tractable on a 14B video model."
+          data-wrong="One (Euler) or two (Midpoint). Our <code>substeps=4</code> rollout costs strictly more than either."></div>
+      </div>
+
+      <div class="quiz" data-answer="3">
+        <p class="q">What does PDD replicate N times to decode in parallel?</p>
+        <div class="opts">
+          <div class="opt">The whole transformer backbone block</div>
+          <div class="opt">The cross attention conditioning head</div>
+          <div class="opt">The first patch embedding layer</div>
+          <div class="opt">The final linear projection layer</div>
+        </div>
+        <div class="fb"
+          data-correct="Backbone shared, final layer replicated once per grid point and initialised from the teacher's W — then fused back into one layer at generation, so inference costs nothing extra."
+          data-wrong="Only the final linear layer. Replicating anything larger would defeat the purpose; the backbone pass is shared, which is why one call yields L velocities."></div>
+      </div>
+
+      <div class="quiz" data-answer="1">
+        <p class="q">Which PDD ingredient does our <code>teacher_rollout</code> target lack?</p>
+        <div class="opts">
+          <div class="opt">Any frozen pretrained teacher model</div>
+          <div class="opt">On policy student generated states</div>
+          <div class="opt">Any mean velocity regression target</div>
+          <div class="opt">Any stopgradient on the target</div>
+        </div>
+        <div class="fb"
+          data-correct="It regresses to a teacher-integrated mean velocity from the teacher's own path. The student never composes its own steps, so it is never supervised where it will actually be."
+          data-wrong="We do have a frozen teacher, a mean-velocity target, and a detached target. What is missing is the on-policy part — the target is evaluated on the teacher's path, not on X̄<sub>k</sub>."></div>
+      </div>
+
+      <div class="recall">
+        <p class="q"><strong>Free recall.</strong> Without looking up: write the PD loss and name every
+        symbol. Then, in one sentence, say what would change in our implementation to make it
+        genuinely on-policy.</p>
+        <textarea placeholder="L_PD(θ) = …" aria-label="Your recall answer"></textarea>
+        <button type="button">Show a model answer</button>
+        <div class="model">
+          <p><code>ℒ_PD(θ) = E‖ ū<sup>θ</sup><sub>n</sub>(k|X<sub>n</sub>) − u<sub>k</sub>(sg(X̄<sub>k</sub>)) ‖²</code>,
+          with <em>n</em> a uniformly sampled block start, <em>k</em> a uniformly sampled interval inside
+          the block, X<sub>n</sub> from the interpolant, X̄<sub>k</sub> the state reached by the student's
+          own predictions, u<sub>k</sub> the teacher's mean velocity from one RK step, sg the stop-gradient.</p>
+          <p><strong>To make ours on-policy:</strong> instead of integrating the frozen base from
+          x<sub>t</sub> to form the target, step the <em>adapted</em> model forward across part of the
+          interval (detached) to reach an intermediate state, and evaluate the frozen base's single-step
+          mean velocity <em>there</em>. Same teacher cost or less; a different — and, per Eq. 11, more
+          relevant — state distribution.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="block">
+    <div class="idx">colophon</div>
+    <div class="body colophon">
+      <h3>Primary source</h3>
+      <p>Read §3 of Shaul, Liu, Vahdat &amp; Berner,
+      <a href="https://arxiv.org/abs/2607.26004"><em>Parallel Decoding Distillation for Fast Image and
+      Video Generation</em></a> (arXiv:2607.26004, 28 Jul 2026) — pages 3–6. Four pages, and the loss is
+      fifteen lines of pseudo-PyTorch. Skip the experiments for now.</p>
+
+      <h3>Ask your teacher</h3>
+      <p>If any symbol, claim, or table row above is unclear or looks wrong, say so in the session and
+      we'll take it apart. Disagreeing with the audit table is a particularly good use of ten minutes.</p>
+
+      <h3>Provenance</h3>
+      <p>Every equation and quoted phrase was transcribed from the v1 PDF, 2026-08-03 — not recalled.
+      The paper postdates the assistant's training data. Companion cheat sheet and mission live in
+      <code>85_Learning/</code>.</p>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.quiz[data-answer]').forEach(function (root) {
+    var answer = parseInt(root.getAttribute('data-answer'), 10);
+    var opts = Array.prototype.slice.call(root.querySelectorAll('.opt'));
+    var fb = root.querySelector('.fb');
+    var done = false;
+
+    opts.forEach(function (opt, i) {
+      opt.setAttribute('role', 'button');
+      opt.setAttribute('tabindex', '0');
+
+      function choose() {
+        if (done) return;
+        done = true;
+        opts.forEach(function (o, j) {
+          o.classList.add('locked');
+          o.removeAttribute('tabindex');
+          o.removeAttribute('role');
+          if (j === answer) o.classList.add('correct');
+        });
+        if (i !== answer) opt.classList.add('wrong');
+        if (fb) {
+          var right = i === answer;
+          var txt = fb.getAttribute(right ? 'data-correct' : 'data-wrong') || '';
+          fb.innerHTML = (right ? '<b>Correct.</b> ' : '<b>Not quite.</b> ') + txt;
+          fb.classList.add('show');
+        }
+      }
+
+      opt.addEventListener('click', choose);
+      opt.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); }
+      });
+    });
+  });
+
+  document.querySelectorAll('.recall').forEach(function (root) {
+    var btn = root.querySelector('button');
+    var model = root.querySelector('.model');
+    if (!btn || !model) return;
+    btn.addEventListener('click', function () {
+      model.classList.add('show');
+      btn.disabled = true;
+      btn.textContent = 'Compare yours to this';
+    });
+  });
+})();
+</script>

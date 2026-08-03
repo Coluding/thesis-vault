@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: medium
 created: 2026-07-21
-updated: 2026-07-21
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -54,3 +54,9 @@ than the ACWM-Phys port. Prerequisite: 2026-07-20/21 code commit pulled
   the train/eval σ distributions now differ by design.
 - Don't compare this run's train-loss magnitude to unshifted runs (different
   σ mix ⇒ different loss scale); compare eval losses and probe deltas only.
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Same superseded hypothesis; note also that `gate_cap` itself turned out to be a freeze trap ([[../bug-adapter-gate-cap-equals-init-freezes-gate]]).
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

@@ -4,7 +4,7 @@ scope: shortcut
 status: open
 priority: medium
 created: 2026-07-09
-updated: 2026-07-14
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -81,3 +81,9 @@ gate_bias=0.0 + grad_accum + warmup baseline —
 never fires, matching the original config's own disabling mechanism). This is
 now the config to run for this ticket — genuinely matched to its shortcut-ON
 sibling on everything except the shortcut term itself.
+
+## Cleanup 2026-08-01 — **SUPERSEDED**
+
+Replaced by [[exp-shortcut-d3-fewstep-vs-noshortcut-control]], which runs the zero-weight control as a *matched pair* with the shortcut arm on the working DC cell and reads it per-N.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

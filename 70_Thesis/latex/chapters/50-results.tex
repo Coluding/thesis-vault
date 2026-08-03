@@ -1,0 +1,171 @@
+% Budget: 10 pp.  Function: what we found.  Every number carries \prov{}{}{}.
+% ORDER MATTERS: the positive result comes BEFORE the negative one.  A
+% positive cell + a matched architectural negative + the causal variable
+% that discriminates them is a FINDING; the reverse order reads as a
+% post-mortem with a footnote.  See rubric/01-originality.md.
+\chapter{Results}
+\label{ch:results}
+
+\section{The framework across backbones (D1)}
+\label{sec:res-d1}
+\todo{Three backbone families behind one interface + the port of AVID's own
+recipe into AVID's own repository on a new base family. Plus the
+LoRA-vs-output comparison once it lands.}
+
+\section{A working action-conditioned cell (D2)}
+\label{sec:res-working-cell}
+\todo{THE POSITIVE RESULT. DC x ACWM Robot Arm, three independent readouts:
+effect_rel at 3.9x the AVID reference; all three structure probes above
+chance on held-out ind_test; and the action-following solution has a LOWER
+denoising loss than the untreated control -- it is not a trade against
+prediction quality. The untreated control clears the reference unaided, so
+the cell works natively and condition_center is a ~6x accelerator, not an
+enabler. This is also the ablation's positive control.
+
+LIMITS THAT TRAVEL WITH THE CLAIM: runs cancelled pre-convergence, so quote
+the acceleration and never a level; rollout-level control is NOT measured on
+this cell (the swap probe exists only on the Wan path).}
+
+\subsection{Output quality on the working cell (qualitative)}
+\label{sec:res-dc-quality}
+\fig{DC rollouts, adapted vs frozen base -- arm E \code{6oyu1inq}, arm F
+\code{86kb01su}. Fixed seed, identical initial frame, held-out clips.
+Provenance \nv{artefact path + step}.}
+\todo{This is the ONLY evidence about the DC cell's output quality: no DC
+run logs quality metrics (all 18 checked in dc-acwm-robotarm-avid-parity),
+so the gap is otherwise open on the cell that carries the positive result.
+
+STRICT SCOPE -- label qualitative, claim nothing about actions. An
+adapted-vs-base comparison cannot separate action-following from a better
+temporal prior, and our own Wan cell is the counterexample: it beats its
+frozen base on 6/6 quality metrics while every structure probe sits at
+chance. The action claim in this section rests on the probes above, NOT on
+these videos.}
+
+\section{The injection pathway decides (D2)}
+\label{sec:res-pathway}
+\todo{THE MECHANISM. The Wan contrast against \cref{sec:res-working-cell}:
+6/6 quality metrics beaten (FVD 1118 -> 406) with all three structure probes
+at chance -- a domain adapter, not an action conditioner. Then the clean-room
+A/B at matched adapter contribution and matched mask, and the temporal
+control that resolves gain-vs-information.}
+
+\section{Two scale failures at the same interface (D2)}
+\label{sec:res-scale}
+\todo{DC's learned pedestal; Wan's drowning at the residual add. Both are
+scale calibration, in opposite directions, at the same interface.}
+
+\section{What the adapter learns instead (D2)}
+\label{sec:res-decomposition}
+\todo{Shared-target convergence vs oracle-reading vs the 0.45% economics.
+The global-bag structure result. The economics also PREDICTED the late
+escape on DC before it was observed -- say so; a prediction that lands is
+worth more than a post-hoc explanation.}
+
+\section{Standard metrics are blind to whether the conditioning is used}
+\label{sec:res-blindness}
+
+The preceding sections separated two behaviours that a conventional
+evaluation reports identically. We now state that observation directly,
+because it is the finding with the widest reach beyond this thesis: \emph{no
+standard readout used to monitor a conditional generative model can
+distinguish a model that uses its conditioning from one that does not.}
+
+\subsection{The demonstration}
+
+Consider the Wan~$\times$~ACWM cell without base-prediction injection
+\provshort{vy9tcuco}. Measured against its own frozen base on held-out
+clips, the adapted model is better on \emph{every} quality metric we
+record: FID improves by \SI{27.5}{\percent}, FVD-I3D by
+\SI{45.1}{\percent}, LPIPS by \SI{16.0}{\percent}, and PSNR, MSE and SSIM by
+\num{9.7}, \num{31.0} and \SI{1.7}{\percent} respectively.\prov{vy9tcuco}{outputs/acwm-robotarm-wan-tokennorm-nobase/checkpoints/}{\nv{commit}}
+By any measure a practitioner would normally consult, the adapter works.
+With base-prediction injection enabled the same picture is stronger still,
+FVD improving by \SI{63.7}{\percent}, from \num{1118.4} to \num{406.3}
+\provshort{52o3uxz8}.
+
+On that same checkpoint, all three structure probes of
+\cref{sec:probes} return chance. The steering cosine is \num{0.00} against a
+chance level of \num{0.000}: the direction in which an action moves the
+prediction is uncorrelated with the direction the data implies. Temporal
+alignment and spatial concentration are likewise indistinguishable from
+their chance levels, so the response is neither placed in the frames the
+action governs nor localised on the parts of the scene that move.\prov{probe job 25107536}{acwm-robotarm-wan-tokennorm-nobase}{\nv{commit}}
+The frozen-base null is exactly zero throughout, so the probes are measuring
+the adapter and not a leak.
+
+A \SI{45}{\percent} improvement in FVD that carries no recoverable action
+information is a \emph{domain} correction. The adapter has learned the
+distribution of this environment's videos, which is a genuine and useful
+thing to learn, and it is not the thing we asked it to learn.
+
+The complementary case makes the same point from the other side. The
+DynamiCrafter cell of \cref{sec:res-working-cell} does follow actions --- all
+three structure probes clear chance on held-out data --- and \emph{no run in
+that campaign logs a single quality metric}. Across eighteen runs there is
+no FID, no FVD, and no LPIPS. The cell that demonstrably uses its actions is
+the one for which we cannot report the numbers a reader would expect, and
+the cell with the strongest quality numbers is the one that ignores them.
+Had we monitored either cell in the conventional way, we would have drawn
+the opposite conclusion about both.
+
+\subsection{Why each readout fails}
+
+The blindness is not an accident of these particular runs; each readout is
+insensitive by construction.
+
+\emph{Training loss} is dominated by appearance. On this data actions
+explain approximately \SI{0.45}{\percent} of the teacher-forced denoising
+objective \provshort{25097452}, so a model that ignored actions entirely
+would forfeit less than one percent of the quantity being minimised ---
+comfortably inside the noise of a training curve.
+
+\emph{Gate and contribution statistics} measure how far the adapter moves
+the output from the frozen base, not what it moves it toward. A saturated
+gate and a healthy one are both compatible with an action-blind residual.
+
+\emph{Perceptual metrics} compare distributions of generated and real video.
+An adapter that sharpens the environment's visual statistics improves them;
+so does one that also respects the actions. FID and FVD have no term that
+depends on the conditioning at all.
+
+\emph{Pixel metrics} are worse than uninformative: they reward the
+mean-regression behaviour that action-blindness produces. The RT-1 cells
+improve on PSNR and MSE while degrading on FID and LPIPS
+\provshort{0fqjrqjl} --- the signature of a model hedging toward the
+conditional mean.
+
+\emph{Visual inspection} fails for the reason the others do. A reader
+comparing adapted samples against the frozen base sees a real improvement
+and has no access to the counterfactual --- what this model would have
+produced under a different action --- which is the only comparison that
+carries the answer.
+
+\subsection{What this cost, and what it implies}
+
+The diagnosis required instruments built for the purpose
+(\cref{sec:probes}), and building them was not sufficient on its own. Our
+first such instrument, the relative action effect, is monotone in the gain
+of the action pathway: any intervention that amplifies that pathway raises
+the metric whether or not it improves the information the adapter extracts.
+Two interventions we had characterised as mechanism repairs are themselves
+gain increases, and for a period the distinction was unavailable to us.
+Separating them required a probe whose null is a \emph{shape} rather than a
+magnitude, and the resolution came from a temporal control in which the
+pooled arm's per-frame response rows proved bit-identical --- a degeneracy
+that no amount of gain can produce (\cref{sec:integrity}).
+
+The generalisable statement is therefore narrower and more useful than
+``standard metrics are insufficient''. A scalar summary of a conditional
+model's sensitivity cannot separate \emph{more signal} from \emph{louder
+signal}; only a measurement with internal structure can. Practitioners
+adapting a frozen generative model to a new conditioning variable, and
+monitoring the adaptation through loss, gate statistics and sample quality,
+have no instrument in that set capable of reporting whether the conditioning
+is used --- and, on the evidence here, those readouts will look their best
+in precisely the case where it is not.
+
+\section{Shortcut on flow versus diffusion (D3)}
+\label{sec:res-shortcut}
+\todo{The first clean D3 positive. State the cross-base confound IN THE SAME
+PARAGRAPH as the 9x, or the number takes the claim with it.}

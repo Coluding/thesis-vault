@@ -1,7 +1,7 @@
 ---
 type: writing
 status: living
-last_updated: 2026-07-26
+last_updated: 2026-08-03
 sources:
   - "[[thesis-storyline]]"
   - "[[ablation-axes]]"
@@ -9,6 +9,84 @@ sources:
 ---
 
 # Experiment requirements for the storyline
+
+> **⚠ SUPERSEDED 2026-08-03 for status.** The live tracker of what is still
+> needed is [[open-experiments-for-thesis]]. This note is kept for its
+> 07-26 reasoning and tier derivation; its status table predates the 08-02
+> results and is wrong in at least two places (it records D3 as having no
+> clean positive, and rollout wall-clock as unmeasured — both have since
+> landed). **Do not plan from the tables below.**
+
+> **⚠ RE-SCORED 2026-08-01.** The table below (derived 07-26) is kept for its
+> reasoning, but much of it is settled and the spine has changed. Read this
+> section first; treat the older tiers as background.
+
+## Current status against the corrected spine
+
+Spine ([[thesis-storyline]] §chain): **DC works → planning → too slow → flow →
+shortcut**, with Wan as the generality branch.
+
+| spine link | evidence | status |
+|---|---|---|
+| **DC + adapter works** | arm E `condition_center` **0.106 = 3.6× the AVID reference**; mechanism (learned pedestal) measured; AVID-on-our-data control | ✅ **HAVE** |
+| **Planning on it** | — | ❌ **MISSING — the one spine link with no evidence** |
+| **Too slow** | cost arithmetic only; no measured wall-clock; no honest fast-sampler baseline | ⚠️ **ASSERTED, NOT MEASURED** |
+| **Flow matching (κ=0)** | derivation + pivot decision; the per-rung prediction test is half-done | ⚠️ **theory strong, empirics partial** |
+| **Shortcut / few-step (D3)** | June runs (poor samples), curvature signature **confounded** by the gate bug | ❌ **NO CLEAN POSITIVE RESULT** |
+| **Wan branch (mechanism)** | full campaign: scale calibration, oracle 100:1, 0.45% economics, global-bag analysis, data-axis law | ✅ **COMPLETE — stop here** |
+
+## What is actually still needed, in order
+
+**T0 — the spine's missing link (blocks Ch5's headline demonstration)**
+
+1. **IDM ceiling on DC latents** — `(z_t, z_{t+1}) → a_t` on ground-truth
+   transitions. No world model, no new labels, minutes of GPU. Tells us whether
+   action information is *present* in the data at all, and calibrates every
+   number in the campaign. **Run first** — it can reframe §9 either way.
+2. **Action recovery (inverse planning)** through DC arm E, with the three
+   baselines (random · frozen action-free base · arm E). Ground truth is the
+   true action sequence, so no reward model is needed.
+   → [[../../20_Tickets/experiments/exp-eval-planning-through-dc-world-model]]
+3. **Wall-clock per planning step** — falls out of (2) for free, and is the
+   *quantitative* motivation for the entire back half of the thesis (currently
+   asserted from arithmetic only; old **R5**).
+
+**T1 — the D3 contribution needs one positive result**
+
+4. **Few-step payoff on the working DC cell**: does the shortcut adapter
+   reproduce the base's 50-step rollout in N ∈ {1,2,4,8} steps? Tooling exists
+   ([[../../20_Tickets/experiments/exp-eval-shortcut-fewstep-videos]]) and has
+   never been run on a cell that works. **D3 currently has no clean positive
+   evidence** — this is the gap that most threatens the back half.
+5. **Honest fast-sampler baseline** (DPM-Solver / consistency sampler at
+   matched compute; old **R6**). Without it "diffusion rollout is slow" is a
+   strawman an examiner will name immediately.
+
+**T2 — repairs and strengthening**
+
+6. **D3 curvature re-run with live gates** — the 68× flow-vs-diffusion result
+   is confounded ([[../../20_Tickets/bug-adapter-gate-cap-equals-init-freezes-gate]])
+   and cannot be cited until re-run.
+7. **Per-rung v-averaging prediction test** (old **R7**) — converts the
+   derivation into a validated prediction; the strongest purely-analytical node.
+8. Resume DC arm E from step 3600 to pin peak-vs-plateau (cosmetic; the claim
+   already holds).
+
+**T3 — descope to future work if they do not land**
+
+9. D4 combined cell (now unblocked in principle, since DC's D2 cell works).
+10. Objective-level fix on Wan (action-CFG / rollout losses) —
+    [[../../50_Decisions/open/wan-action-following-needs-objective-change]].
+
+## What needs NO further experiments
+
+The Wan mechanism branch. It is complete, internally consistent, and already
+carries a methodological contribution (the probe suite + the negative results
+that make the positive claim credible). Further Wan arms would improve numbers
+inside a story that is already written.
+
+---
+
 
 What each node of [[thesis-storyline]] needs before the draft can assert it.
 Derived 2026-07-26. **Requirement ≠ ticket** — the last column says whether a

@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -52,3 +52,9 @@ Config created & validated (loads: gate_cap 0.5, pretrain_steps 500).
 Isolates Axis-3 interventions (gate_cap / warmup) from the dataset axis. If you
 want to also drop `sigma_shift` to isolate purely cap+warmup, say so — currently
 kept from the parent recipe. See [[../../30_Knowledge/writing/ablation-axes]] Axis 3.
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Same superseded hypothesis; its config carried the frozen-gate bug.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

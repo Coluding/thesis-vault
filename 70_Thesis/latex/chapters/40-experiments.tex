@@ -1,0 +1,213 @@
+% Budget: 7 pp.  Function: how we would know.  Protocol, metrics, controls,
+% thresholds.  No findings.
+\chapter{Experiments}
+\label{ch:experiments}
+
+\section{Datasets and preprocessing}
+\label{sec:datasets}
+\todo{MetaWorld (action-redundant control) x ACWM (informative) x RT-1.
+State the held-out discipline explicitly -- see the integrity section.}
+
+\section{Backbones}
+\label{sec:backbones}
+\todo{Wan2.2-5B (flow/DiT), SkyReels-1.3B, DynamiCrafter (diffusion/UNet).}
+
+\section{The probe suite}
+\label{sec:probes}
+
+The readouts normally used to monitor a conditional generative model cannot
+report whether the conditioning is used; \cref{sec:res-blindness} exhibits a
+case in which they point the wrong way. The measurements in this thesis
+therefore rest on instruments built for the question. We describe them here,
+together with their nulls and their chance levels, because a probe whose
+null is not stated is not a measurement.
+
+\subsection{Three rungs}
+
+The probes form a ladder, and the cells we study \emph{dissociate} along it,
+which is why all three rungs are reported rather than a single summary
+statistic.
+
+\begin{enumerate}
+  \item \textbf{Sensitivity.} Does perturbing the conditioning change the
+    prediction at all?
+  \item \textbf{Structure.} Does it change it in the \emph{right way} ---
+    is the response directional, placed in the frames the action governs,
+    and localised on the parts of the scene that move?
+  \item \textbf{Control.} Does that structure convert into rollout-level
+    trajectory control?
+\end{enumerate}
+
+A model can pass the first and fail the second, which is the situation we
+find on the flow backbone. Passing the second does not entail the third.
+
+\subsection{Rung 1: action sensitivity}
+
+We measure the relative movement of the prediction under a perturbation of
+the action, over predicted frames only:
+\begin{equation}
+  \label{eq:effect-rel}
+  \mathrm{effect\_rel} \;=\; \frac{\lVert \hat{y}_{\text{true}} - \hat{y}_{\text{pert}} \rVert}{\lVert \hat{y}_{\text{true}} \rVert}.
+\end{equation}
+The mask matters: diffusion-forcing batches clamp observation frames clean,
+and including them dilutes every norm toward zero, which makes an
+action-blind model appear weakly sensitive.
+
+Four perturbations are used. \cfg{shuffle} substitutes a different clip's
+actions and is the primary readout, because the actions stay on-distribution
+and only their correspondence to this clip's dynamics is broken.
+\cfg{zero} nulls the actions, but a model trained with condition dropout has
+seen zeros and may treat them as a valid token, so a small zero-gap is
+weaker evidence than a small shuffle-gap. \cfg{roll} shifts the clip's own
+actions in time, separating use of action \emph{magnitude} from use of
+action \emph{timing}. \cfg{gauss} substitutes noise matched to the batch
+statistics.
+
+Two quantities are always reported alongside, because
+\cref{eq:effect-rel} is not interpretable alone: the adapter's relative
+contribution $\lVert \hat{y} - \hat{y}_{\text{base}} \rVert / \lVert
+\hat{y}_{\text{base}} \rVert$, since an adapter that barely moves the output
+has a trivially small action effect; and the loss gap, since a model may
+move without moving usefully. We treat a relative movement below
+\SI{1}{\percent} as action-blind, applied to the bootstrap confidence
+interval rather than the mean, and report \emph{inconclusive} where the
+interval straddles it. The threshold is deliberately generous --- far below
+what could drive a planner --- so failing it is unambiguous while passing it
+establishes little.
+
+\subsection{Rung 2: the structure triad}
+
+\paragraph{Steering direction.} We place clip $B$'s actions on clip $A$'s
+noised state and ask whether the prediction moves toward what clip $B$'s
+data implies at that state,
+\[
+  \mathrm{steer} = \cos\big(\hat{y}(a_B) - \hat{y}(a_A),\; \tau(x_B \mid x_t) - \tau(x_A \mid x_t)\big),
+\]
+with chance at $0$. The target $\tau$ is parameterisation-specific and
+getting it wrong silently inverts the probe, so it is never derived locally:
+on the diffusion path it is obtained by substitution through the training
+objective's own target function, keyed off \cfg{prediction\_type}, and on
+the flow path it is the rectified-flow velocity.
+
+\paragraph{Temporal alignment.} We zero the actions in one pixel-frame bin
+and measure where the resulting change lands along the \emph{latent} frame
+axis. This targets a correspondence that must be learned rather than given:
+action tokens are indexed by pixel frame while the backbone operates on
+latent frames, which on the flow backbone are temporally compressed. Chance
+depends on the number of latent frames and is quoted per cell.
+
+\paragraph{Spatial concentration.} We ask whether the action-driven change
+falls on the moving parts of the scene or is spread uniformly; chance is the
+mask's area fraction.
+
+\subsection{Controls}
+
+Each probe carries controls, and they are the reason a null result here is
+discriminating rather than merely inconclusive.
+
+All variants share one noise draw, and this is enforced rather than assumed:
+if the backbone redraws noise per forward, the measured effect is noise
+variance, a failure that produces a plausible non-zero number, so the
+harness aborts on a mismatch. The frozen base cannot see the action, so its
+response must be invariant; we report that as an explicit null and treat any
+deviation above a tolerance for non-deterministic kernels as evidence that
+conditioning is leaking, in which case the numbers are void rather than
+merely noisy. A missing action tensor raises rather than returning zero,
+since a preprocessor emitting actions under an unexpected key would leave
+the perturbation inert and produce a confident report of action-blindness
+that measured nothing. Condition dropout is disabled for probing.
+
+Finally, each probe carries an \emph{empirical} chance estimate alongside
+its analytic one, built by breaking the correspondence while preserving the
+marginals. The frozen-base null proves the probe measures the adapter, but
+because that response is identically zero it provides no spread to compare
+against. Where empirical and analytic chance disagree, the analytic level is
+wrong and the probe is not read. One consequence is worth recording: the
+obvious mismatched pairing for the steering probe is \emph{not} at chance,
+because adjacent clip pairs share a term and correlate negatively; the
+implementation skips to a disjoint pair.
+
+\section{Metrics and baselines}
+\label{sec:metrics}
+\todo{Action Error Ratio (AVID §4.2) as the external readout; effect_rel and
+the structure triad as the internal ones; FID/FVD/LPIPS/PSNR for quality.}
+
+\section{Ablation design}
+\label{sec:ablation}
+\todo{HYPOTHESIS-FIRST, not axis-first. Lead with the candidate explanations,
+then the axis that discriminates each. The 13-axis inventory and the
+regrouping table live in rubric/03-experimental-evaluation.md.}
+
+\section{Methodological integrity}
+\label{sec:integrity}
+
+Several measurements taken during this work were invalid, and the campaign
+that produced the results in \cref{ch:results} also produced the audits that
+retracted them. We record those here rather than in an appendix, because
+which numbers were withdrawn --- and how they were caught --- is part of
+what the remaining numbers mean.
+
+\paragraph{Evaluation was in-sample.} Two dataset families were evaluated on
+the data they were trained on: the jobs pass the same directory as training
+and evaluation source, and the trainer's held-out branch does not split it.
+Because generative models memorise, a perceptual metric computed this way is
+not evidence about generalisation. Every affected number is withheld from
+this thesis pending re-evaluation on a held-out split. The environments
+carrying the results in \cref{ch:results} use explicit train and test
+partitions and are unaffected.
+
+\paragraph{A silent filter discarded most of a dataset.} One cell was
+configured for several thousand clips and trained on \num{76}. The window
+filter dropped every episode shorter than the configured temporal length,
+which on that dataset was almost all of them, and reported nothing. The
+result was noticed because it was implausibly good. The entire cell is
+retracted, including a headline ratio that had been used to argue that the
+dataset sets the level of action-following; that argument does not appear in
+this thesis. We now log the retained fraction after every filter.
+
+\paragraph{A capped gate could not move.} The gate cap was set equal to the
+gate's initialisation, so the composition weight was frozen for the whole
+run. The affected comparison --- an early flow-versus-diffusion consistency
+ratio --- was re-run with a live gate, and the re-measurement supersedes it
+(\cref{sec:res-shortcut}). We report the superseded figure as superseded
+rather than removing it, since the correction is what makes the replacement
+credible.
+
+\paragraph{Our first instrument could not distinguish gain from
+information.} The relative action effect of \cref{eq:effect-rel} is monotone
+in the gain of the action pathway: any intervention that amplifies that
+pathway raises the metric whether or not the adapter extracts more
+information. Two interventions we had described as mechanism repairs are
+themselves gain increases, so the metric could not adjudicate between the
+two readings. The resolution was a probe whose null is a \emph{shape} rather
+than a magnitude: in a temporal control, the arm without per-frame
+conditioning produced per-frame response rows that were bit-identical, a
+degeneracy no amount of gain can create. This is why the structure triad,
+not \cref{eq:effect-rel}, carries the claims in \cref{ch:results}.
+
+\paragraph{A null that fired, and was not the obvious cause.} On one
+backbone the step-size probe's frozen-base null was non-zero, which normally
+indicates a conditioning leak and would have voided the affected
+measurements. It was instead non-determinism: the frozen base was left in
+training mode, so its dropout layers redrew a mask on every forward. The
+step-size input is structurally incapable of reaching that base. A control
+that fires tells us that something is wrong, not what; diagnosing before
+discarding is part of the instrument.
+
+\paragraph{One confound we did not remove.} The cross-backbone shortcut
+comparison varies the consistency target and the training depth alongside
+the base, so it does not isolate the geometry of the base. The within-arm
+comparisons --- each against its own matched control, at matched depth ---
+are unaffected, and they are the only form in which we state that result.
+The experiment that would resolve it varies one factor and is described in
+\cref{sec:future-work}.
+
+\medskip
+
+Four of these were found by audit rather than by a failing test, and three
+produced entirely plausible numbers: a metric that moved, an arm that beat
+its reference, a ratio that matched a theoretical prediction. Plausibility
+is not a check. The practices that caught them were verifying a null rather
+than assuming it, reading the evaluation path rather than trusting the flag,
+logging what a filter discards, and asking of every metric what \emph{else}
+could move it.

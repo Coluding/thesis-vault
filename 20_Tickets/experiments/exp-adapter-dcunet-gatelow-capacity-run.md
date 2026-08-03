@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: medium
 created: 2026-07-15
-updated: 2026-07-15
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -59,3 +59,9 @@ settings) for a capacity-vs-architecture comparison, and against
 Same VRAM risk as previously flagged — watch 24GB headroom with the 11M
 tier before considering 34M/145M. Smoke-validated for wiring correctness
 already; this run is about the science, not plumbing.
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Capacity hypothesis is dead: AVID's exact 9,344-param encoder (arm F) behaves like our 792k one; centering, not capacity, is what moved the metric.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

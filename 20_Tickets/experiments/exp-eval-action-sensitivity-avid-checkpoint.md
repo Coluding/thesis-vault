@@ -4,7 +4,7 @@ scope: eval
 status: open
 priority: high
 created: 2026-07-26
-updated: 2026-07-26
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -107,3 +107,9 @@ options — **needs a decision**:
 ## Outcome
 
 _Not yet run._
+
+## Cleanup 2026-08-01 — **DELIVERED**
+
+Answered by the AVID-side probes (`probe_action_sensitivity.py`) on `rqp4s3gp`/`93qrvr5v` — R1 of the storyline requirements is satisfied.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

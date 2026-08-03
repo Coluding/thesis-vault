@@ -4,7 +4,7 @@ scope: backbone
 status: open
 priority: high
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -54,3 +54,9 @@ Base-strength axis partner runs: SkyReels-1.3B robot_arm
 ([[exp-backbone-dc-robotarm-run]]). SkyReels probe (2026-07-25) confirmed the
 frozen weak base holds the Robot-Arm domain (coherent, real articulated motion)
 once the prompt is de-branded.
+
+## Cleanup 2026-08-01 — **DELIVERED**
+
+Run as `ncztxyyo` (D2 matrix, effect_rel 0.0056) — see [[../../30_Knowledge/experiments/20260728-acwm-robotarm-matrix-action-blind]]. Mechanism fully explained by the 07-31 campaign.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

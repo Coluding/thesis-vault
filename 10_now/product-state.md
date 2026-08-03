@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-21
+last_updated: 2026-07-30
 status: pre-results
 ---
 
@@ -97,6 +97,42 @@ Channel-stack / single-joint baseline variants still not built. See
 | Wan2.2 xattn adapter, gatelow (mask_mix, gate_bias=0) + overfit (mask_mix, gate_bias=4 unfixed) + replace (2026-07-16) | `diffusion_wan22_avid_xattn_gatelow_metaworld` / `diffusion_wan22_avid_xattn_i2v_metaworld` / `diffusion_wan22_avid_xattn_replace_metaworld` | gatelow+overfit crashed, replace running | `bcipghvw` / `uea10230` / `5cxstyh4` (project `Wan2.2-avid-xattn-{i2v,replace-i2v}-metaworld`) | _nv_ | **Negative — gate_bias fix alone is insufficient.** In all three, `denoise_adapter_delta` collapses from a large initial penalty to ~0 within 60-150 steps, regardless of gate_bias (0.0 vs 4.0 give nearly identical transients) — the adapter's own prediction converges to **clone the frozen base** rather than diverge using the action signal. mask_mix runs: composed output ≈ base, eval quality is a wash (gatelow) or worse-than-base on all 6 metrics (overfit, which turned out to still be on the unfixed `gate_bias=4.0` config). replace: single-step loss also converges to ≈base, but out-of-distribution probe delta (−0.112) and decoded video quality (PSNR −5dB, SSIM 0.30 vs 0.81, FID 8× worse) reveal the clone is much weaker than training loss suggests. **Update 2026-07-18:** replace's eval-quality metrics (FID/PSNR/SSIM) are flat at the step-0 noise floor across 2400+ steps, vs. sibling gatelow's collapse from the same noise-level FID to near-base quality within 300 steps — re-analysis 2026-07-19: replace's rollout endpoint is statistically identical to the *untrained zero-init* endpoint (x never moves off the initial noise), every good metric is training-seam and every bad one generation-seam, gatelow's decent videos never certified the adapter's generation path (FID 81 vs base 66 is consistent with the adapter contributing ≈0 at generation and the mask letting base through) — plus a **verified train/inference conditioning mismatch**: the eval-video path passes only the aggregated `action` vector while the xattn adapter was trained on per-frame `action_seq` (falls back to a single OOD token, flagged by an in-code TODO). Investigation plan in [[../20_Tickets/bug-adapter-replace-generation-flat-since-init]]. See [[../30_Knowledge/experiments/20260716-wan-xattn-adapter-clones-base-not-actions]] |
 
 | **Generation-eval conditioning bug found+fixed; σ-sweep + action probe; gatelow overfit** (2026-07-20/21) | `diffusion_wan22_avid_xattn_replace_metaworld` (+ local `--sigma-sweep`/`--action-probe` diagnostics) | y1jrgxqp @1500 running→converged; uxrst2k5 crashed @342 | `y1jrgxqp` / `uxrst2k5`; local ckpt `outputs/replace-metaworld-run/checkpoints/step_00001500.pt` | see note | **Root cause of "replace generation = noise": eval paths dropped the per-frame `action_seq`** the xattn adapter trained on (silent OOD fallback, cos vs base 0.997→0.63). Fixed + validated end-to-end: `y1jrgxqp` adapted FID 518→58 ≈ base by step 600. **⚠ Generation metrics of ALL earlier action_seq-xattn runs are invalid** (5cxstyh4, ostoa19d, 81wq3lwt, bcipghvw, uea10230, likely xb76ptw2 incl. its "worse on all 6 metrics" row above) — training-seam losses stay valid. Post-fix measurements: adapter converges to a **total base-clone** (per-σ sweep: cos ≥0.996 at every σ, flat −0.002 deficit; sole exception σ=0.05 where adapter beats base +0.005) and is **fully action-blind** (shuffled/zeroed actions move loss <1e-4 at every σ). Gatelow single-clip overfit (`uxrst2k5`): gate saturated 0.5→0.99 from balanced init, grad norm 4.4→0.003 — failed to overfit ONE clip ⇒ copy-through is an optimization trap, balanced init insufficient. Countermeasures landed: `sigma_shift: 5.0` training option (enabled in replace config), no-base-input overfit config queued ([[../20_Tickets/experiments/exp-adapter-replace-nobase-overfit]]). See [[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]] |
+
+### Action-conditioning status (2026-07-30) — the fault is localised to our code
+
+The D2 storyline through July was "our adapters don't follow actions, and we
+don't know why". As of 2026-07-30 that is narrowed:
+
+- Our three adapters are action-blind on ACWM Robot Arm — Wan `ncztxyyo` 0.0056,
+  DC `c3pcewxk` 0.0034, SkyReels `8zjjn7wl` 0.0013, null-violation 0
+  ([[../30_Knowledge/experiments/20260728-acwm-robotarm-matrix-action-blind]]).
+- The **unmodified AVID recipe on the same data** reaches `action_effect_rel`
+  **0.029475** (null 0, ~42% of adapter contribution action-driven) — `rqp4s3gp`,
+  ckpt `epoch=4-step=5000`
+  ([[../30_Knowledge/experiments/20260730-avid-robotarm-follows-actions-recipe-not-data]]).
+- ⇒ **Not a data/OOD problem.** Same frozen base weights, same episodes, same
+  probe; only the implementation differs. This **supersedes** the 2026-07-29
+  read ([[../30_Knowledge/experiments/20260729-avid-rt1-follows-actions-control]]),
+  which rested on a memorization-confounded synthetic reference.
+- ⚠ **Not training-matched** (AVID @5000 vs ours @~800–1200). Gate the headline
+  on pushing our runs to ~5000 and re-probing.
+- **No single shared cause.** The two named DC divergences
+  (`action_time_combine: add` vs concat; `frame_stride: 4` stride-**summed**
+  actions vs 1) are DC-only — Wan and SkyReels already use `frame_stride: 1` and
+  inject via cross-attention, yet were blind too. Confirms the 07-28 read of
+  "3 distinct starvation signatures".
+- **Decided 2026-07-30:** reproduce AVID with our code on DC *before* scaling to
+  Wan — [[../50_Decisions/decided/reproduce-avid-on-dc-before-scaling-to-wan]].
+  Wan action-conditioning is paused until our DC adapter clears
+  `action_effect_rel` ≳0.02 with a clean null.
+- Next: [[../20_Tickets/experiments/exp-adapter-our-framework-avid-replication-robotarm]]
+  — three single-variable arms (concat-only, `frame_stride: 1`-only, both).
+
+> **Staleness warning:** the table above still stops at 2026-07-21. The
+> 2026-07-24, -07-25, -07-28, -07-29 and -07-30 results are recorded in
+> [[../30_Knowledge/experiments/_index.md]] (the results ledger) but have **not**
+> been folded into this doc's run table yet. Read the ledger, not this table, for
+> current coverage.
 
 Per [[../CLAUDE]] hard rule 8, every row in this table must cite a real
 run. Cells marked `_nv_` (needs verification) are still missing their

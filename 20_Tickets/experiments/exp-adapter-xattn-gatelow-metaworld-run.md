@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-15
-updated: 2026-07-16
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -114,3 +114,9 @@ is addressed first. Priority should shift toward
 [[exp-conditioning-action-shuffle-ablation]] and
 [[exp-shortcut-action-free-isolation]], which can actually distinguish
 "ignores the action" from "found a degenerate optimum regardless of action."
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+Injection-mechanism hypothesis is dead: the 23-depth trace shows cross-attention transports the action faithfully; the loss is scale + incentive ([[../../30_Knowledge/experiments/20260731-wan-action-trace-value-pathway-drowns]]).
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

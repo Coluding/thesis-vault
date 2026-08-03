@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: medium
 created: 2026-07-14
-updated: 2026-07-15
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -197,3 +197,9 @@ numbers + interpretation: [[../../30_Knowledge/experiments/20260715-avid-metawor
 This is the strongest evidence yet for the gate-saturation hypothesis in
 [[../bug-adapter-gate-saturation-mask-mix]] — the reference composition converges
 cleanly on our own task when the gate isn't init-saturated.
+
+## Cleanup 2026-08-01 — **DELIVERED**
+
+`pg3x72uc` (MetaWorld) + `rqp4s3gp` (Robot Arm, effect_rel 0.0295) + `93qrvr5v` (RT-1, 0.0495). The reference control that localised the fault to our implementation.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

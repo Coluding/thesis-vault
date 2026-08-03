@@ -1,0 +1,238 @@
+<title>Lesson 1 — PDD: the loss, and what we actually borrowed</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+
+<div class="wrap">
+
+<p class="eyebrow">Lesson 01 · Parallel Decoding Distillation</p>
+<h1>The PD loss, and what we actually borrowed</h1>
+<p class="subtitle">One equation, one architecture trick, and an honest audit of the target already sitting in <code>shortcut_targets.py</code>.</p>
+
+<p><span class="pill">~12 min</span><span class="pill">D3</span><span class="pill">decision-relevant</span></p>
+
+<div class="note">
+<strong>Why this one first.</strong> A PDD-inspired target is already implemented and a run is
+queued against the last of the compute. Before it burns, you should be able to say exactly
+which parts of PDD it contains. That is the whole win of this lesson.
+</div>
+
+<hr>
+
+<h2>1 · The one idea</h2>
+
+<p>Classical ODE sampling walks one interval per network call. PDD trains a network that,
+from a <em>single</em> call at state <span class="eq" style="display:inline;padding:.1em .35em;margin:0;border:0;background:var(--code-bg)">X<sub>n</sub></span>,
+emits the mean velocities of the next <em>L</em> intervals at once — so one call advances <em>L</em> steps.</p>
+
+<p>Everything else in the paper follows from making that one idea trainable and cheap.</p>
+
+<h3>The quantity being predicted</h3>
+
+<p>Not the instantaneous velocity <code>v_t</code>. The <strong>mean velocity</strong> over an interval:</p>
+
+<div class="eq">
+<span class="tag">Eq. 4</span>
+u<sub>n</sub>(X<sub>n</sub>) = 1/(t<sub>n+1</sub> − t<sub>n</sub>) · ∫<sub>t<sub>n</sub></sub><sup>t<sub>n+1</sub></sup> v<sub>t</sub>(X<sub>t</sub>) dt
+<span class="gloss">This is the velocity that makes a single Euler-sized jump land <em>exactly</em> where fine integration lands:
+X<sub>n+1</sub> = X<sub>n</sub> + (t<sub>n+1</sub> − t<sub>n</sub>)·u<sub>n</sub>(X<sub>n</sub>) is <em>exact</em>, not an approximation (Eq. 3).
+The whole difficulty of few-step generation is that u is expensive to know and v is cheap.</span>
+</div>
+
+<p>The teacher supplies <code>u</code> by one solver step — Euler (1 evaluation, Eq. 5) or
+Midpoint (2 evaluations, Eq. 6). That is the entire teacher cost per loss term.</p>
+
+<h2>2 · The loss</h2>
+
+<div class="eq">
+<span class="tag">Eq. 11</span>
+ℒ<sub>PD</sub>(θ) = 𝔼 ‖ ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>) − u<sub>k</sub>( sg( X̄<sub>k</sub> ) ) ‖²
+<span class="gloss">
+<b>ū<sup>θ</sup><sub>n</sub>(k | X<sub>n</sub>)</b> — the student's prediction for interval <em>k</em>, produced by one call at X<sub>n</sub>.<br>
+<b>n</b> — block start, sampled uniformly from {0, L, …, N−L}. <b>k</b> — an interval inside that block, sampled uniformly from {n, …, n+L−1}.<br>
+<b>X<sub>n</sub> ∼ p<sub>t<sub>n</sub></sub></b> — drawn with the interpolant (Eq. 2), i.e. cheaply, from data.<br>
+<b>X̄<sub>k</sub></b> — the state reached by following the <em>student's own</em> predictions from X<sub>n</sub> (Eq. 9). <b>This is the load-bearing symbol.</b><br>
+<b>u<sub>k</sub>(·)</b> — the teacher's mean velocity there, via one Runge–Kutta step. <b>sg</b> — stop-gradient.
+</span>
+</div>
+
+<p>Read it once more slowly. The student is asked: <em>"from where you are now, what will the
+velocity be at interval k?"</em> — and it is graded at the state <strong>its own predictions
+actually reach</strong>, not at a state some reference trajectory reaches. That is what "on-policy"
+means here, and it is the difference between a model that is accurate on the teacher's path and one
+that is accurate on the path it will actually walk at inference.</p>
+
+<p>The paper's Proposition 1 states that the minimiser of Eq. 11 satisfies the parallel-decoder
+condition (Eq. 8) — i.e. up to the Runge–Kutta error, the student's trajectory <em>is</em> the
+teacher's, X̄<sub>n</sub> = X<sub>n</sub>. No adversary, no score network, no JVP.</p>
+
+<h2>3 · The architecture trick</h2>
+
+<p>Given a teacher of the form <code>v_t(x) = W·H_t(x)</code> (Eq. 12) — backbone, then one final
+linear layer — PDD keeps the backbone and replicates <em>only the final linear layer</em>, once per
+grid point:</p>
+
+<div class="eq">
+<span class="tag">Eq. 13</span>
+ū<sup>θ</sup><sub>n</sub>(k | x<sub>n</sub>) = W<sup>θ</sup><sub>k</sub> · H<sup>θ</sup><sub>t<sub>n</sub></sub>(x<sub>n</sub>)
+<span class="gloss">One shared backbone pass, N cheap heads (each initialised from the teacher's W). N is the <em>grid</em> size, not the block size — which is why one trained model serves many NFEs.</span>
+</div>
+
+<p>Two consequences worth internalising:</p>
+
+<ul>
+<li><strong>No second time coordinate.</strong> Flow-map and shortcut-style methods need to condition
+the network on <em>both</em> where you are and how far you're jumping. PDD indexes the jump by
+<em>which head</em> you read. The paper is explicit that this is the point: it "allows us to learn a
+single model that can predict any block size without the need to introduce a second time coordinate."</li>
+<li><strong>Free at inference.</strong> Generation only needs the block-average direction, so the
+heads collapse into one (Eq. 15): <code>W_{n:n+L} = Σ_k Δ_k W_k</code>, with
+<code>Δ_k = (t_{k+1}−t_k)/(t_{n+L}−t_n)</code>. You store one fused layer per block. Zero extra
+inference compute versus the teacher.</li>
+</ul>
+
+<div class="note">
+<strong>Where "no JVPs" comes from.</strong> Learning a mean velocity usually forces you to regress a
+derivative of the velocity field — via a JVP or a finite difference, both expensive or unstable at
+video scale. PDD instead <em>decomposes</em> the mean velocity into L sub-interval predictions, and
+gradients through the shared backbone recover the full-interval signal in expectation. The
+derivative is never formed.
+</div>
+
+<h2>4 · What we actually borrowed</h2>
+
+<p><code>compute_teacher_rollout_target_v_flow</code> in <code>shortcut_targets.py</code> is described in
+its own docstring as "the plug-and-play-adapter transposition" of PDD. That is fair — but the
+transposition drops three of the four load-bearing pieces. Being precise about which:</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Dimension</th><th>PDD (paper)</th><th>Ours (<code>teacher_rollout</code>)</th><th>Does it matter?</th></tr></thead>
+<tbody>
+<tr>
+  <td>Target evaluated at</td>
+  <td>X̄<sub>k</sub> — reached by the <em>student's</em> own steps (on-policy)</td>
+  <td>States along a <em>teacher</em> rollout from x<sub>t</sub> (off-policy)</td>
+  <td><strong>Yes.</strong> This is the piece Eq. 11 is built around. Ours never composes student steps, so it is never graded on the states it will actually visit.</td>
+</tr>
+<tr>
+  <td>Teacher evaluations per loss</td>
+  <td>1 (Euler) or 2 (Midpoint)</td>
+  <td><code>substeps=4</code>, Euler</td>
+  <td><strong>Yes, on cost.</strong> We pay 2–4× PDD's teacher budget for a target PDD argues you don't need to resolve finely.</td>
+</tr>
+<tr>
+  <td>How the jump size is addressed</td>
+  <td>Which head <code>W<sub>k</sub></code> you read</td>
+  <td>Conditioning on <code>log2(d)</code> (<code>use_step_level_conditioning</code>)</td>
+  <td><strong>Yes, conceptually.</strong> This is exactly the second time coordinate PDD positions itself against.</td>
+</tr>
+<tr>
+  <td>Multiple velocities per forward pass</td>
+  <td>L, by construction</td>
+  <td>One</td>
+  <td><strong>Yes</strong> — "parallel decoding" is the name of the method, and we don't do it.</td>
+</tr>
+<tr>
+  <td>What is trained</td>
+  <td>Full backbone, initialised from teacher</td>
+  <td>Frozen base + small adapter</td>
+  <td><strong>By design</strong> — this is the thesis. But note Proposition 1 assumes the student <em>can</em> represent u<sub>k</sub>; a 34M adapter over a frozen base may not, and that is an open question, not a settled one.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>The honest summary:</strong> what we implemented is <em>mean-velocity regression against a
+finely-integrated teacher target</em>. That is a real and defensible objective — it is not
+bootstrapped, so it cannot drift the way self-consistency can — but it is <strong>not</strong> PDD.
+It shares PDD's <em>quantity</em> (mean velocity, Eq. 4) and its <em>spirit</em> (regression, no JVP,
+no adversary), and none of its <em>mechanism</em>.</p>
+
+<p>That is worth knowing before the queued run finishes, because it determines what you may claim:
+"a mean-velocity teacher-rollout target, in the spirit of PDD" is defensible; "we ran PDD" is not.</p>
+
+<h2>5 · Check yourself</h2>
+
+<p>Answer before scrolling back. Getting one wrong is more useful than getting it right easily.</p>
+
+<div class="quiz" data-answer="0">
+  <p class="q">In Eq. 11, where is the teacher's mean velocity evaluated?</p>
+  <div class="opt">On states the student itself produced</div>
+  <div class="opt">On states the teacher itself produced</div>
+  <div class="opt">On states the dataset itself provides</div>
+  <div class="opt">On states the sampler itself cached</div>
+  <div class="fb"
+    data-correct="X̄<sub>k</sub> is the parallelized process of Eq. 9 — the student's own predictions, followed forward from X<sub>n</sub>. The stop-gradient is applied to it, so it supplies a state but no gradient path."
+    data-wrong="It is X̄<sub>k</sub>, the state the <em>student's</em> own predictions reach (Eq. 9). X<sub>n</sub> comes from the data interpolant, but everything after it inside the block is the student's doing — that is what makes the scheme on-policy."></div>
+</div>
+
+<div class="quiz" data-answer="2">
+  <p class="q">How many teacher evaluations does one PD loss term require?</p>
+  <div class="opt">Eight for Euler, sixteen for Midpoint</div>
+  <div class="opt">Four for Euler, but eight for Midpoint</div>
+  <div class="opt">One for Euler, but two for Midpoint</div>
+  <div class="opt">Two for Euler, but four for Midpoint</div>
+  <div class="fb"
+    data-correct="Eq. 5 is a single teacher call; Eq. 6 (Midpoint) needs one call to build X<sub>mid</sub> and one at the midpoint. Cheapness is the point — it is what makes the loss tractable on a 14B video model."
+    data-wrong="One (Euler, Eq. 5) or two (Midpoint, Eq. 6). Our <code>substeps=4</code> rollout costs strictly more than either."></div>
+</div>
+
+<div class="quiz" data-answer="3">
+  <p class="q">What does PDD replicate N times to decode in parallel?</p>
+  <div class="opt">The whole transformer backbone block</div>
+  <div class="opt">The cross attention conditioning head</div>
+  <div class="opt">The first patch embedding layer</div>
+  <div class="opt">The final linear projection layer</div>
+  <div class="fb"
+    data-correct="Eq. 13. Backbone shared, final layer replicated once per grid point and initialised from the teacher's W — then fused back into one layer at generation (Eq. 15), so inference costs nothing extra."
+    data-wrong="Only the final linear layer (Eq. 12–13). Replicating anything larger would defeat the purpose; the backbone pass is shared, which is why one call yields L velocities."></div>
+</div>
+
+<div class="quiz" data-answer="1">
+  <p class="q">Which PDD ingredient does our <code>teacher_rollout</code> target lack?</p>
+  <div class="opt">Any frozen pretrained teacher model</div>
+  <div class="opt">On policy student generated states</div>
+  <div class="opt">Any mean velocity regression target</div>
+  <div class="opt">Any stopgradient on the target</div>
+  <div class="fb"
+    data-correct="It regresses to a teacher-integrated mean velocity from the teacher's own path. The student never composes its own steps, so it is never supervised where it will actually be."
+    data-wrong="We do have a frozen teacher, a mean-velocity target, and a detached target. What is missing is the on-policy part: the target is evaluated on the teacher's path, not on X̄<sub>k</sub>."></div>
+</div>
+
+<div class="recall">
+  <p class="q"><strong>Free recall.</strong> Without looking up: write the PD loss and name every symbol.
+  Then, in one sentence, say what would change in our implementation to make it genuinely on-policy.</p>
+  <textarea placeholder="ℒ_PD(θ) = …"></textarea>
+  <button>Show a model answer</button>
+  <div class="model">
+    <p><code>ℒ_PD(θ) = E‖ ū<sup>θ</sup><sub>n</sub>(k|X<sub>n</sub>) − u<sub>k</sub>(sg(X̄<sub>k</sub>)) ‖²</code>,
+    with <em>n</em> a uniformly sampled block start, <em>k</em> a uniformly sampled interval inside the block,
+    X<sub>n</sub> from the interpolant, X̄<sub>k</sub> the state reached by the student's own predictions,
+    u<sub>k</sub> the teacher's mean velocity from one RK step, sg the stop-gradient.</p>
+    <p><strong>To make ours on-policy:</strong> instead of integrating the frozen base from x<sub>t</sub> to
+    form the target, step the <em>adapted</em> model forward across part of the interval (detached) to reach
+    an intermediate state, and evaluate the frozen base's single-step mean velocity <em>there</em>.
+    Same teacher cost or less; different — and, per Eq. 11, more relevant — state distribution.</p>
+  </div>
+</div>
+
+<div class="footer">
+
+<h3>Primary source</h3>
+<p>Read <a href="https://arxiv.org/html/2607.26004v1">§3 of Shaul, Liu, Vahdat &amp; Berner, <em>Parallel
+Decoding Distillation for Fast Image and Video Generation</em></a> (arXiv:2607.26004, 28 Jul 2026) — pages
+3–6. It is four pages and Algorithm 2 is fifteen lines of pseudo-PyTorch; do not read the experiments yet.</p>
+
+<h3>Next to it</h3>
+<p><a href="../reference/pdd-cheatsheet.html">Reference: PDD cheat sheet</a> — the equations, the algorithm,
+and the divergence table, on one printable page. ·
+<a href="../MISSION.md">Mission</a> · <a href="../RESOURCES.md">Resources</a></p>
+
+<h3>Ask me</h3>
+<p>I'm your teacher for this — if any symbol, claim, or table row above is unclear or looks wrong,
+say so in the session and we'll take it apart. Disagreeing with the divergence table is a
+particularly good use of the next ten minutes.</p>
+
+</div>
+</div>
+
+<script src="../assets/quiz.js"></script>

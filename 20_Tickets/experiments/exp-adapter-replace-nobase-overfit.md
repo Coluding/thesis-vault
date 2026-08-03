@@ -4,7 +4,7 @@ scope: adapter
 status: open
 priority: high
 created: 2026-07-21
-updated: 2026-07-21
+updated: 2026-08-01
 resolution:
 resolution_note:
 closed_at:
@@ -63,3 +63,9 @@ threading, wan.py fail-loud raise, sigma_shift plumbing) on the training box.
 - Single-clip overfit tests capacity/optimization, NOT action usage (one
   trajectory is memorizable from the anchor frame alone) — the
   action-informativeness question is the dataset decision, not this run.
+
+## Cleanup 2026-08-01 — **OBSOLETE**
+
+See the note on `exp-adapter-gatelow-nobase-overfit` — same superseded hypothesis.
+
+*Proposed for close; awaiting confirmation (CLAUDE.md: never close without it).*

@@ -1,0 +1,108 @@
+% Budget: 4--5 pp.  Function: pose the question, tell the arc end-to-end,
+% state the contributions.  This is the ONLY place the chronological arc
+% is told; later chapters stay deliverable-separated (D1--D4).
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Motivation}
+\label{sec:motivation}
+\todo{Pretrained generative models as world-model priors. src: 10_now/positioning}
+
+\section{Problem statement}
+\label{sec:problem}
+\todo{Frame as WHEN AND WHY adaptation works, not CAN IT. See rubric/01-originality.}
+
+\section{The arc}
+\label{sec:arc}
+\todo{AVID works -> planning -> too slow -> shortcut -> curvature -> flow/Wan
+-> the pathway result -> the economics bound. src: writing/thesis-storyline}
+
+\section{Contributions}
+\label{sec:contributions}
+
+Adapting a frozen video diffusion model into an action-conditioned world
+model is not a gap in the literature: it is the contribution of
+AVID~\citep{\nv{rigter2024avid}}, which trains an action-conditioned adapter
+on a frozen base using only that base's predictions. We take that result as
+our starting point. What is not established is \emph{when} the approach
+works, \emph{why} it stops working, and whether the same composition can
+carry a second conditioning variable --- the sampling step size --- that
+would make the resulting world model fast enough to plan through. Those are
+the questions this thesis answers.
+
+\paragraph{A design principle for conditioning a frozen generative prior.}
+Our central finding is architectural, and we state it as a design rule
+rather than as a property of one system:
+
+\begin{quote}
+\emph{Conditioning must enter the network scale-free relative to the
+residual stream.} Supplied as a per-frame modulation of \emph{normalised}
+activations, an action signal survives and is used. Supplied as
+cross-attention tokens --- which add into an unnormalised residual stream
+--- the same signal survives the attention layers and is then attenuated to
+irrelevance at the residual addition, at every scale and temporal alignment
+we tested.
+\end{quote}
+
+We establish this causally rather than by correlation: a single-variable A/B
+in which the two arms are matched on adapter contribution and on the
+composition mask, so the injection pathway is the only difference
+(\cref{sec:res-pathway}).
+
+\emph{Scope of validity.} The principle is demonstrated on two backbone
+families (a U-Net diffusion model and a rectified-flow DiT), at two
+injection sites, for one conditioning modality (robot actions), on video
+prediction. We do not test it on other modalities, on architectures without
+a normalisation-modulation site, or at larger scales, and we do not claim it
+transfers there without evidence.
+
+\paragraph{A bound that architecture cannot remove.} The failures above are
+mis-calibration and are fixable. Underneath them sits one that is not: under
+a teacher-forced denoising objective the actions account for a very small
+fraction of the loss on this data, so appearance correction is always the
+cheaper gradient. This prices the conditioning out regardless of how it is
+injected, and it bounds what any adapter of this family can achieve without
+an objective that pays for actions (\cref{sec:res-decomposition}).
+
+\paragraph{Step-size conditioning through the adapter.} AVID does not
+address sampling cost. We extend the composition with a step-size argument
+and train it with the shortcut self-consistency objective, so that few-step
+behaviour is carried entirely by the adapter while the prior stays frozen
+--- unlike consistency and shortcut models, which retrain the prior. We show
+that this is learnable in the adapter setting, against a matched control, on
+two independent statistics (\cref{sec:res-shortcut}), and we derive why the
+published velocity-averaging target is exact only on a straight interpolant
+and biased on a curved diffusion arc (\cref{sec:curvature}). Few-step
+\emph{quality} is directionally better than the no-shortcut control but is
+not competitive, and we scope it as future work.
+
+\paragraph{A framework in which the frozen base is a configuration choice.}
+We implement the adapter taxonomy behind a single composition interface
+spanning diffusion and flow matching, U-Net and DiT. The claim is
+demonstrated rather than asserted: the same interface runs across three
+backbone families, and we added a new base family to the original AVID
+repository as a third branch, running their recipe unchanged
+(\cref{sec:res-d1}).
+
+\paragraph{A diagnostic methodology, and the reason it was necessary.} None
+of the above is visible in the readouts normally used to monitor such a
+model. Loss, gate statistics, sample quality and perceptual metrics are all
+blind to whether a conditioned model uses its conditioning --- we exhibit a
+cell that improves on every quality metric we record while carrying no
+recoverable action information (\cref{sec:res-blindness}). We therefore
+develop a probe suite that measures the \emph{structure} of the response
+rather than its magnitude (\cref{sec:probes}). We regard this as a
+contribution in its own right, and we report the case in which our own first
+instrument misled us and what was required to correct it
+(\cref{sec:integrity}).
+
+\paragraph{What we do not claim.} We do not demonstrate rollout-level
+control: that a swapped action sequence sends the trajectory where it should
+go is not established on any cell. We do not claim competitive few-step
+video generation, a planning or reinforcement-learning contribution, or
+state-of-the-art quality on any benchmark. Where a result rests on a single
+seed, or on a comparison whose confound we could not remove, we say so at
+that point in the text.
+
+\section{Thesis structure}
+\label{sec:structure}

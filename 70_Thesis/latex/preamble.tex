@@ -1,0 +1,49 @@
+% =====================================================================
+%  Preamble.  Faculty-template packages first (unchanged), then ours.
+%  RULE: never change geometry, font size or line spacing to gain pages.
+%  The 40-page limit is enforced against the template's settings and
+%  margin-gaming is both detectable and badly received.
+% =====================================================================
+
+% --- from the faculty template (do not modify) ------------------------
+\usepackage{graphicx, color}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}      % British spelling throughout the prose
+\usepackage[a4paper,margin=2cm]{geometry}
+
+% --- maths ------------------------------------------------------------
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{bm}
+
+% --- tables and figures ----------------------------------------------
+\usepackage{booktabs}            % \toprule \midrule \bottomrule; never \hline
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{float}
+
+% --- units and numbers ------------------------------------------------
+\usepackage{siunitx}
+\sisetup{
+  detect-weight    = true,
+  detect-family    = true,
+  group-separator  = {\,},
+  round-mode       = places,
+  round-precision  = 3,
+}
+
+% --- citations --------------------------------------------------------
+% The template says the style is free choice and ships `plain`.  We use
+% natbib so the prose can distinguish \citep (cite the concept) from
+% \citet (name the actor) --- see thesis-style-guide.md §6.
+% Swap `plainnat` -> `unsrtnat` for citation-order numbering.
+\usepackage[numbers,sort&compress]{natbib}
+
+% --- cross-references (load hyperref late) ---------------------------
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+% --- code / identifiers ----------------------------------------------
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, columns=flexible}

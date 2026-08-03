@@ -19,28 +19,45 @@ World Models via Plug-and-Play Adapters.*
 
 ## How to write into the draft
 
-- The draft is **deliberately rough Markdown** — extend it freely, no
-  compile step. Convert to LaTeX/Typst/PDF (pandoc/typst) only when mature.
-- Use `/thesis-write {section}` (e.g. `/thesis-write 40-experiments`) to
-  have an agent draft or extend a section from recent `60_Updates/` +
-  the linked sources below.
+> **⚠ CHANGED 2026-08-03 — LaTeX is now the source of truth.** The faculty
+> template (UvA MSc AI) arrived and the thesis is written in
+> `70_Thesis/latex/`. The Markdown in `draft/` is **historical**; the real
+> prose it already contains must be **ported, not rewritten** (see below).
+
+- **Write into `70_Thesis/latex/chapters/*.tex`.** Skeleton, notation
+  macros and provenance macros are in place. Conventions:
+  [[../30_Knowledge/writing/thesis-formal-rules]].
+- **⚠ 40-page upper limit** (appendices additional). The chapter structure
+  below is the **proposed** 6-chapter fit — see
+  [[../30_Knowledge/writing/rubric/07-thesis-organization]].
+- **Rhetoric and the claim ladder:**
+  [[../30_Knowledge/writing/thesis-style-guide]]. **What is graded:**
+  [[../30_Knowledge/writing/rubric/_index]].
+- Use `/thesis-write {section}` to draft or extend a chapter from recent
+  `60_Updates/` + the linked sources.
 - **Deliverable hygiene (CLAUDE.md Part 12):** D1=framework, D2=action world
-  models, D3=shortcut adapters, D4=combined. Do not mix deliverable evidence
-  across chapters.
-- **No unsourced numbers** — every metric cites a run (hard rule 8).
+  models, D3=shortcut adapters, D4=combined.
+- **No unsourced numbers** — every metric carries `\prov{run}{ckpt}{commit}`
+  (hard rule 8).
 
 ## Chapters → status → sources
 
-| # | Chapter | Draft file | Status | Primary deliverable | Source notes |
-|---|---|---|---|---|---|
-| 0 | Abstract | [[draft/00-abstract]] | stub | — | (write last) |
-| 1 | Introduction | [[draft/10-introduction]] | stub | — | [[../10_now/positioning]] |
-| 2 | Related Work | [[draft/20-related-work]] | stub | theory/baseline | `30_Knowledge/related-work/*`, [[../30_Knowledge/related-work/hyperalign]] |
-| 3 | Method | [[draft/30-method]] | drafting | D1 | [[../30_Knowledge/tech/structural-encoder]], [[../30_Knowledge/tech/shortcut-training-modes]], [[../30_Knowledge/tech/frame-stride-conditioning]], [[../50_Decisions/decided/shortcut-anchor-schedule]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]], [[../10_now/architecture]] |
-| 4 | Experiments | [[draft/40-experiments]] | drafting | D2/D3 | `30_Knowledge/experiments/*`, [[../50_Decisions/decided/param-matched-adapter-comparison-definition]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]] |
-| 5 | Results | [[draft/50-results]] | drafting | D2/D3/D4 | [[../30_Knowledge/experiments/20260724-metaworld-cap-shift-triangle-base-parity]] (§5.1.x, wandb-sourced), [[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]], other `30_Knowledge/experiments/*` (sourced runs only) |
-| 6 | Discussion | [[draft/60-discussion]] | stub | all | `50_Decisions/decided/*`, open questions |
-| 7 | Conclusion | [[draft/70-conclusion]] | stub | all | — |
+**6-chapter structure for the 40-page limit — signed off 2026-08-03.**
+
+| # | Chapter | File | Budget | Status | Deliverable | Source notes |
+|---|---|---|---|---|---|---|
+| — | Abstract | `main.tex` | — | stub | — | write last; must carry the control limit |
+| 1 | Introduction | `chapters/10-introduction` | 4–5 pp | stub | — | [[../10_now/positioning]], [[../30_Knowledge/writing/thesis-storyline]] |
+| 2 | Related work | `chapters/20-related-work` | 5 pp | stub | theory/baseline | `30_Knowledge/related-work/*` — **blocked on `lora`, `controlnet`, FiLM/adaLN notes** |
+| 3 | Method | `chapters/30-method` | 10 pp | stub | D1 (+D3 theory) | [[../30_Knowledge/tech/structural-encoder]], [[../30_Knowledge/tech/shortcut-training-modes]], [[../30_Knowledge/tech/frame-stride-conditioning]], [[../30_Knowledge/theory/shortcut-v-averaging-bias]], [[../10_now/architecture]] · **port prose from [[draft/30-method]]** |
+| 4 | Experiments | `chapters/40-experiments` | 7 pp | stub | D2/D3 | [[../30_Knowledge/writing/ablation-axes]] (**stale — rewrite first**), [[../30_Knowledge/writing/rubric/03-experimental-evaluation]] |
+| 5 | Results | `chapters/50-results` | 10 pp | stub | D1/D2/D3 | [[../30_Knowledge/experiments/_index]] (sourced runs only) |
+| 6 | Discussion & conclusion | `chapters/60-discussion` | 4 pp | stub | all | [[../30_Knowledge/writing/thesis-storyline]] §8–9, `50_Decisions/*` |
+| A | Appendix | `chapters/90-appendix` | +N | stub | — | run inventory, probe definitions |
+
+**Superseded:** the 8-chapter outline with a separate adapters chapter
+(`draft/25-adapters.md`, never created) and a separate Discussion and
+Conclusion. Both merged to fit 40 pages.
 
 ## Cross-links
 
