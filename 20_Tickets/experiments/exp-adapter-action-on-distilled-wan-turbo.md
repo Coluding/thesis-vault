@@ -13,6 +13,15 @@ related: ["[[exp-shortcut-pdd-lora-distill-dc]]", "[[exp-shortcut-parallel-decod
 
 # Action adapter on an off-the-shelf distilled Wan (D2 × D4)
 
+> **⭐ Part of the efficiency axis** —
+> [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]] (decided
+> 2026-08-04). This ticket is **L3 — free** (speed in the base itself).
+> **Requires a matched conditioning-only control** (same adapter, base, data
+> and depth, acceleration off) — without it the pre-registered comparison is
+> unmeasurable. The predicted ordering is registered in that note **before**
+> any level ran; do not restate it post hoc.
+
+
 **DEFERRED** — parked while scope is distillation-only (Lukas, 2026-08-03). Logged
 because it is the cheapest of the three routes and should not be lost.
 

@@ -16,6 +16,15 @@ related:
 
 # exp: Make action conditioning effective in the shortcut adapter
 
+> **⭐ Part of the efficiency axis** —
+> [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]] (decided
+> 2026-08-04). This ticket is **L1 — entangled** (speed in the adapter). This is also **D4**.
+> **Requires a matched conditioning-only control** (same adapter, base, data
+> and depth, acceleration off) — without it the pre-registered comparison is
+> unmeasurable. The predicted ordering is registered in that note **before**
+> any level ran; do not restate it post hoc.
+
+
 ## Context
 
 **Correction (2026-06-05): the shortcut adapter already conditions on `a_t`.** The

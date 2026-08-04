@@ -1,8 +1,8 @@
 ---
 type: decision
-status: open
+status: decided
 created: 2026-08-04
-decided_at:
+decided_at: 2026-08-04
 updated: 2026-08-04
 target_date:
 scope: shortcut
@@ -204,21 +204,59 @@ Common protocol, so the three are comparable at all:
       the one shortcut cell that exists.
 - [ ] Pre-registration of the predicted ordering **before** the runs land.
 
-## The decision
+## ✅ DECISION — adopt-with-fallback (Lukas, 2026-08-04)
 
-**Adopt the efficiency spine with three levels, and pre-register the
-predicted ordering?**
+**Adopted.** The thesis spine is **efficiency of adapted world models**, with
+three acceleration levels, and the ordering prediction is **pre-registered
+as of 2026-08-04, before any level ran**.
 
-- **Adopt** — stronger Originality, a two-axis Ch5, and a prediction that
-  makes three planned runs into a designed experiment rather than a sweep.
-- **Decline** — keep efficiency as a transition and the diagnostic as the
-  climax; lower ceiling, lower schedule risk.
-- **Adopt-with-fallback (recommended)** — build the framing and the section
-  skeletons now, pre-register the prediction, and state in the chapter how
-  many levels landed. A two-level comparison still supports the
-  entangled-versus-separable claim; a one-level result reverts to the
-  current storyline with no rewrite, because the D2 material is unchanged
-  either way.
+*Adopt-with-fallback* specifically: the framing, the section skeletons and
+the pre-registration are built **now**, because none of them depend on
+outcomes. The chapter then states how many levels landed. A two-level
+comparison still supports the entangled-versus-separable claim; a one-level
+result reverts to the previous storyline with no rewrite, since the D2
+material is unchanged either way.
 
-➜ **Derived tickets on adoption:** the four above, plus a protocol note
-fixing the common per-level measurement set.
+Options not taken: *decline* (keep the diagnostic as the climax — lower
+ceiling) and *adopt-unconditionally* (which would make the thesis hostage to
+three outstanding runs).
+
+## Consequences
+
+**Thesis structure.** Ch5 becomes two axes rather than one deliverable list:
+**conditioning** (the D2 campaign — injection pathway, scale calibration,
+economics, the LoRA family comparison) and **acceleration** (L1/L2/L3), with
+the interaction between them as the integration section. The storyline chain
+is updated in [[../../30_Knowledge/writing/thesis-storyline]]; §§1–9 there
+stand unchanged.
+
+**Contribution framing.** *An extensible framework, and step-size /
+distillation modelling through adapters for action-conditioned world models
+— because rollouts are otherwise too slow to plan through.* D1 + D3 lead;
+D2 supplies the conditions. Recorded in
+[[../../30_Knowledge/writing/rubric/01-originality]].
+
+**The economics bound changes role** — from a descriptive limit to a
+**predictive** tool (it predicts the L1/L2/L3 ordering). This is the same
+measured quantity in a materially stronger form.
+
+**The action-free D3 isolation is retroactively a design decision**, not a
+caution: it is the matched conditioning-free arm the comparison needs.
+
+**Writing discipline.** No level is written as having worked until run ids
+and checkpoints are in the vault (hard rules 7–8). Both branches of the
+pre-registration are results; §5.x must be able to hold either.
+
+**Schedule.** Three runs outstanding. This is a shape change made *before*
+Ch5 prose exists, which is the cheap moment
+([[../../30_Knowledge/writing/rubric/10-keeping-to-schedule]]).
+
+## Derived tickets
+
+- **L1 / D4 (entangled)** — [[../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]] · tracked as A6/A7 in [[../../30_Knowledge/writing/open-experiments-for-thesis]]
+- **L2 PDD / LoRA distil** — [[../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]] · [[../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]]
+- **L3 distilled base** — [[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]]
+- **Matched conditioning-only control per level** — the load-bearing
+  requirement; without it the pre-registration is unmeasurable
+- **Common measurement protocol** across levels — ➜ **still to be written**
+- **Honest fast-sampler baseline** — [[d3-positioning-vs-weaver-reflow]]

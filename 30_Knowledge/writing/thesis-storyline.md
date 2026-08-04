@@ -116,8 +116,8 @@ their evidence separated and merely **order** themselves along the arc.
 
 ## ⭐ The chain, restated 2026-08-04 — efficiency as the spine
 
-**Proposed by Lukas; open decision
-[[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].** Two nodes
+**Adopted 2026-08-04 (Lukas); decision
+[[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]].** Two nodes
 move; everything else is unchanged.
 
 ```

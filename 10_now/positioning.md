@@ -41,6 +41,15 @@ suitable for planning workloads.
 >   case it names as future work" — still not a control/RL contribution, so the
 >   anti-positioning below stands unchanged.
 
+> **⭐ SPINE DECISION 2026-08-04 —
+> [[../50_Decisions/decided/efficiency-axis-as-thesis-spine]].** The thesis
+> spine is **efficiency of adapted world models**, with three acceleration
+> levels (shortcut adapter · PDD/LoRA distillation · already-distilled
+> base). Consequences for this doc: **D1 + D3 lead and D2 supplies the
+> conditions**; Ch5 is organised as two axes (conditioning × acceleration)
+> rather than as a deliverable list. The four deliverables below still
+> describe the *work* — the *ordering* is now efficiency-first.
+
 ## The four deliverables
 
 The proposal commits to four deliverables. The contribution per

@@ -110,7 +110,7 @@ These split the two jobs rather than asking one adapter to learn both.
 
 ### ⭐ A7 — The three acceleration levels (the efficiency axis)
 
-Open decision: [[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].
+Open decision: [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]].
 **Pre-register the predicted ordering before any of these land.**
 
 | Level | Run | Status |
@@ -121,7 +121,7 @@ Open decision: [[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].
 
 **Pre-registered 2026-08-04, before any level ran** — full statement with
 both branches and the capacity discriminator in
-[[../../50_Decisions/open/efficiency-axis-as-thesis-spine]] §Pre-registration.
+[[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]] §Pre-registration.
 
 - **H-E (primary):** the deficit is a **gradient-budget** effect, not a
   parameter-budget one. L1 below its matched control; L2/L3 at control.

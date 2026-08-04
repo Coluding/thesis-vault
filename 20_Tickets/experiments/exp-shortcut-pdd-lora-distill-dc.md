@@ -13,6 +13,15 @@ related: ["[[exp-shortcut-parallel-decoding-adapter-wan]]", "[[exp-adapter-actio
 
 # PDD-distil the DynamiCrafter base with LoRA + N heads (D1 × D3)
 
+> **⭐ Part of the efficiency axis** —
+> [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]] (decided
+> 2026-08-04). This ticket is **L2 — separable** (speed in a second adapter on the base).
+> **Requires a matched conditioning-only control** (same adapter, base, data
+> and depth, acceleration off) — without it the pre-registered comparison is
+> unmeasurable. The predicted ordering is registered in that note **before**
+> any level ran; do not restate it post hoc.
+
+
 ## Idea (Lukas, 2026-08-03)
 
 Rather than asking one small adapter to learn step-size **and** action conditioning at

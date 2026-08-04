@@ -51,8 +51,8 @@ contributions in that order.
 
 ## ⭐⭐ The efficiency axis — the largest available move on this item
 
-**Proposed 2026-08-04, open decision:
-[[../../../50_Decisions/open/efficiency-axis-as-thesis-spine]].**
+**Adopted 2026-08-04, decided:
+[[../../../50_Decisions/decided/efficiency-axis-as-thesis-spine]].**
 
 Expand the single "shortcut" node into **three acceleration levels**, and
 make *where few-step behaviour should live* the thesis question:
