@@ -197,6 +197,34 @@ discarded ([[../../00_Inbox/2026-08-01-stepsize-null-violation-rootcause]]).
 **Transferable lesson:** a control that fires tells you *something* is
 wrong, not *what*. Diagnosing before discarding is part of the instrument.
 
+---
+
+## I7 — A test suite that passed vacuously
+
+**Expectation.** Five unit tests covering the new channel-concat action
+injection, all green.
+
+**Detection.** Review of what the assertions actually compared.
+
+**The defect.** With the default `predict_full=False` the output head is
+zero-initialised, so the model emits exactly `0.0` and every assertion
+compared zeros to zeros. The suite could not have failed regardless of the
+feature's correctness.
+
+**Damage.** None to any reported result — the defect was found before the
+arm was interpreted. The cost is the false assurance it provided while the
+run was being set up.
+
+**Correction.** The suite now asserts a non-zero output *first*, so a
+degenerate model fails the precondition rather than passing every check.
+
+**Transferable lesson, and a standing check:** a green test suite over a
+zero-initialised path proves nothing. Any test of a component whose output
+can legitimately be zero must first establish that the output is non-zero.
+This is the unit-test analogue of the degenerate-input problem the structure
+probes already guard against ([[../tech/probe-suite]] §5g) — the same
+failure mode at a different layer.
+
 ## What the section should conclude
 
 Not an apology. The closing move is the transferable one:

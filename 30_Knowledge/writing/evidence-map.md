@@ -166,6 +166,61 @@ evaluation (matched control, measured noise floor 0.000245) ·
 
 ---
 
+## Two cells added 2026-08-03
+
+### L-c — LoRA vs output adapter, wall-clock (D1)
+
+**Runs.** `25183721` (LoRA) vs `vy9tcuco` (output adapter), Wan × ACWM Robot
+Arm. Note: [[../experiments/20260803-lora-costs-3x-the-walltime-of-an-output-adapter]].
+
+**Number.** LoRA costs **3.1× the wall-clock per optimizer step** at matched
+effective batch — 66 vs 205 steps/h — while being the **smaller** adapter
+(26.0M vs 34.9M trainable). The cause is structural, not tuning: LoRA's
+trainables sit *inside* the frozen base, so the forward pass must be
+differentiable through all 30 blocks, and the resulting activation memory
+forces gradient checkpointing.
+
+**Why it matters to the spine.** This is the measured answer to *"why not
+just fine-tune, or use PEFT?"* — the objection every frozen-base thesis
+meets. It is a **cost** claim, not a quality claim, so it sidesteps the
+underpowered-comparison problem that ruled out a quality shoot-out
+([[../../50_Decisions/decided/param-matched-adapter-comparison-definition]]).
+Parameter count is the wrong axis: the *smaller* adapter is 3× more
+expensive because of where its parameters live.
+
+**§.** §5.1 (D1) · §3.2 (the family selection — this is the receipt for
+criterion (b), gradients through the frozen base).
+**Rubric.** 1 Originality (D1 becomes empirical, not just analytical) ·
+3 Experimental evaluation.
+**Caveats.** n=1 per arm; wall-clock is hardware- and
+geometry-specific — state the device and the batch geometry.
+
+### C-n — channel-concat injection (D2, negative)
+
+**Runs.** `6ruz55f6` vs `vy9tcuco`, single-key config diff.
+Note: [[../experiments/20260803-concat-injection-does-not-help]].
+
+**Result.** Concat is **below** cross-attention at every matched step
+(0.00975 vs 0.01056 @1200; share 0.168 vs 0.181) with identical `eval_loss`.
+Does **not** reproduce GigaWorld-1's 2.2× concat-over-xattn.
+
+**Why it is worth writing.** It is a *reasoned* negative: their concat
+carries a spatially-aligned control **video**; ours broadcasts a 7-DoF
+vector uniformly across H,W, so it adds no spatial information that
+cross-attention lacked. Their concat tells the model *where*; ours only
+tells it *when*. This sharpens the pathway principle — what matters is not
+concat-vs-attention but whether the conditioning is **spatially grounded and
+scale-commensurate**.
+
+**§.** §5.3 (a third point on the injection axis) · §6.3 (future work:
+rendering actions into image space).
+**Rubric.** 3 Experimental evaluation (a literature-motivated prediction
+tested and refuted, with the reason) · 5 Reflection.
+**Caveats.** Killed at step 1567; concat was **rising** while xattn was
+falling and they would cross around ~1500–2000 — the sign is unresolved.
+⚠ The first test suite passed **vacuously** (zero-init head, zeros compared
+to zeros) — belongs in [[methods-integrity]].
+
 ## The D3 cells
 
 | # | Cell | Verdict | § | Rubric |
