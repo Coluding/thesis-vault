@@ -120,12 +120,82 @@ property a good axis should have.
    because of the objective.** Any cross-base speed statement must say so
    ([[../../30_Knowledge/experiments/20260802-rollout-wallclock-vs-steps]]).
 
+## Pre-registration — write this down before any level lands
+
+**Timestamped 2026-08-04, before L1, L2 or L3 have been trained.** Its value
+depends entirely on preceding the results: pre-registered, three cells
+discriminate a theory-derived prediction; written afterwards, it is a
+post-hoc rationalisation of whatever happened, and the difference is
+immediately visible to a reader.
+
+### The primary account: gradient budget, not parameter budget
+
+> **H-E (entanglement).** A single adapter trained on both objectives
+> allocates a shared gradient budget between them. Actions explain ~0.45 %
+> of the teacher-forced denoising loss and are therefore already outbid by
+> appearance correction; a consistency objective adds a second and larger
+> claim on the same budget. **Predicted: L1 shows lower action-structure
+> than a matched conditioning-only control on the same base and data, while
+> L2 and L3 — where the two adaptations occupy separate parameter sets —
+> do not.**
+
+Note this is about **allocation**, not about size. That distinction is what
+keeps it consistent with the D2 findings (below).
+
+### Both branches, stated in advance
+
+| Outcome | Reading | Status as a result |
+|---|---|---|
+| **L1 below its control; L2/L3 at control** | H-E supported. Recommendation: *separate acceleration from conditioning* | ✅ the predicted result |
+| **L1 at its control** | H-E is wrong at this scale; entangling is affordable and separability is unnecessary machinery | ✅ **equally a result** — and the better outcome for D4 |
+| **All three below control** | The cost is acceleration itself, not entanglement; the recommendation becomes a cost statement about few-step adaptation in general | ✅ a result |
+| **L1 below, L2/L3 also below but less** | Partial support; report the ordering, not a binary | ✅ |
+
+**Do not pre-commit the prose to failure.** If L1 matches its control, D4 is
+delivered and the thesis has its punchline; §5.x must be written so it can
+hold that outcome. A section that can only report a negative is a structure
+that cannot accommodate success.
+
+### ⚠ The capacity account is *secondary* and must be scoped
+
+The obvious alternative explanation — *"the adapter was too small to learn
+both"* — **collides with our own H4**, which is recorded as **killed**: a
+structurally clean 7.5M adapter settled *below* the DiT-clone arms
+(~0.0025 vs 0.008–0.011), so parameter count was tested as an axis and
+eliminated as the D2 explanation
+([[../../30_Knowledge/writing/ablation-axes]] H4). Reinstating it at D4
+without scoping invites the obvious objection: *you ruled this out in the
+ablation; why is it back?*
+
+The defensible scoped form is different from the killed one and must be
+written as such:
+
+> **H-C (scoped capacity).** Capacity sufficient for one objective may be
+> insufficient for two. This is a claim about the *joint* task, not about
+> action conditioning alone, and it is therefore not the hypothesis H4
+> eliminated.
+
+**H-C is testable and must be tested rather than asserted**, or it becomes
+an explanation that absorbs any outcome — which is exactly the kind a
+committee probes. The test already exists in the arm sizes: if capacity is
+the binding constraint, the **47M** arm should recover what the **34.97M**
+arm loses. If it does not, H-C is eliminated and H-E stands alone.
+
+**Discriminator:** H-E predicts the deficit is *insensitive* to adapter size
+and *sensitive* to whether the parameter sets are shared. H-C predicts the
+reverse. L2 at fixed total parameter count separates them directly.
+
 ## What each level needs to be citable
 
 Common protocol, so the three are comparable at all:
 
-- [ ] **A matched conditioning-only control** per level — otherwise
-      "action-following degraded" has no referent.
+- [ ] **A matched conditioning-only control per level — the load-bearing
+      requirement.** Without it "action-following degraded" has no referent,
+      and the whole pre-registration above is unmeasurable. The control is
+      the *same* adapter, *same* base, *same* data, *same* depth, with the
+      consistency objective off. For L1 this is a config flag
+      (`anchor_prob: 1.0` / consistency weight 0); for L2 and L3 it is the
+      conditioning adapter without the acceleration stage.
 - [ ] **The same action-structure readout** across levels (the structure
       triad, not `effect_rel` alone — it is monotone in gain).
 - [ ] **Wall-clock and NFE** at matched quality, against an honest

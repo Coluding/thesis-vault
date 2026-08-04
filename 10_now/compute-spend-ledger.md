@@ -37,10 +37,17 @@ Rate used throughout: **192 SBU/h** per H100 at 180 GB, **384** at 360 GB.
 | 08-03 | 25185841/25186717 | action-only (blind), gated | 192 | ~9.5 | ~1,825 | ⚠ gate froze at cap — confounded, see bug ticket |
 | 08-04 | 25192286 | **action-only (blind) + `add`** | 192 | 17 (cap) | ~3,265 | 🔄 running |
 | 08-04 | 25192313 | **token-norm NOBASE + `add`** | 192 | 17 (cap) | ~3,265 | 🔄 running — tests whether the gate throttled the whole campaign |
-| 08-04 | 25192514/724/840, 25192986, 25193042, 25193194 | EasyAnimate integration smokes + NaN debug | 192 | ~0.2 | ~40 | 🔄 debugging `denoise` NaN |
-| | | | **RUNNING TOTAL (incl. committed)** | | **~8,470** | |
+| 08-04 | 25192514/724/840, 25192986, 25193042, 25193194 | EasyAnimate integration smokes + NaN debug | 192 | ~0.2 | ~40 | ⚠ NaN cause not found in this batch |
+| 08-04 | 25193772, 25193879, 25193964 | EA VAE round-trip + upstream reference trace | 192 | ~0.15 | ~29 | ✅ **falsified the VAE hypothesis**; trace revealed diffusers' pipeline is V5.1-only |
+| 08-04 | 25194191, 25194201, 25194207 | EA `inpaint_latents` layout fix + 4-way ablation | 192 | ~0.1 | ~20 | 🔄 first two died on job-script bugs (empty glob; `set -u` + unset `PYTHONPATH`) |
+| | | | **RUNNING TOTAL (incl. committed)** | | **~8,519** | |
 
-**Remaining against our 100,000 cap: ~91,530**
+**Remaining against our 100,000 cap: ~91,481**
+
+The whole EasyAnimate integration — three days of wall-clock, ~13 jobs — has cost
+**~89 SBU**, under 0.1% of the cap. Worth stating plainly when reporting: the
+integration was expensive in *time*, not in *allocation*, and the two should not be
+conflated when justifying the spend.
 
 ⚠ `accinfo` on this account also lags (and it includes the supervisor's own jobs,
 e.g. `dc-pdd-full`), so **this itemised table — not `accinfo` — is our figure against

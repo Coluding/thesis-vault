@@ -119,8 +119,20 @@ Open decision: [[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].
 | **L2** PDD / LoRA distil, adapter on top (separable) | [[../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]] · [[../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]] | ☐ ticketed |
 | **L3** action adapter on an already-distilled base (free) | [[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]] | ☐ ticketed |
 
-**Predicted (from the 0.45 % economics): L1 degrades action-following, L2
-and L3 preserve it.** Write the prediction down *before* the results.
+**Pre-registered 2026-08-04, before any level ran** — full statement with
+both branches and the capacity discriminator in
+[[../../50_Decisions/open/efficiency-axis-as-thesis-spine]] §Pre-registration.
+
+- **H-E (primary):** the deficit is a **gradient-budget** effect, not a
+  parameter-budget one. L1 below its matched control; L2/L3 at control.
+- **H-C (secondary, scoped):** capacity sufficient for one objective may be
+  insufficient for two. ⚠ Distinct from H4, which is **killed** — do not
+  reinstate the unscoped version. Testable via the 34.97M vs 47M arms.
+- **Discriminator:** H-E predicts the deficit is insensitive to adapter size
+  and sensitive to parameter-set sharing; H-C predicts the reverse.
+- **Both branches are results.** If L1 matches its control, H-E is wrong at
+  this scale, separability is unnecessary — and D4 is delivered. Do not
+  write §5.x so that it can only report a negative.
 
 **Common protocol — without it the three are not comparable:**
 - [ ] A **matched conditioning-only control** per level.

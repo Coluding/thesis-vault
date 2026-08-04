@@ -188,3 +188,42 @@ model:
    continuous path.
 2. `use_step_level_conditioning: false` — action conditioning ONLY (decided 2026-08-03).
 3. Action-sensitivity eval must run **at the grid timesteps**, not U(0,1).
+
+## DONE 2026-08-04: grid timestep sampling implemented
+
+`trainer.py::_base_timestep_grid` + the flow sampling branch. Opt-in via
+`training.extra.sample_timesteps_from_base_grid: true`; the base must expose
+`timestep_grid()` (only distilled bases do). Overrides:
+`base_grid_sampling_steps`, `base_grid_shift`.
+
+- **Raises** if the flag is set on a base with no `timestep_grid()` — it must not
+  silently fall back to continuous sampling, which would produce a plausible-looking
+  but wrong run.
+- **Caches** the grid (fixed per run) and **prints it once** at startup, so the log
+  records which grid was trained on.
+- Defaults off; 27 tests pass, every undistilled arm keeps the logit-normal draw.
+
+## ⚠️ GOTCHA: the Turbo config is NOT a one-line edit of an existing action config
+
+`provider: wan2.2` and `provider: wan2.2_turbo` are **different code paths**:
+
+| | `wan2.2` | `wan2.2_turbo` |
+|---|---|---|
+| class | `Wan22DiTWrapper` (vendored) | `Wan22TurboVideoModel` -> `WanTI2VVideoModel` (upstream) |
+| checkpoint knob | `model.extra.wan_config_path` | `model.pretrained_model_name_or_path` (ckpt DIR) |
+| `extra` surface | `latent_channels`, `temporal_length`, `max_area`, … | `dtype`, `offload_model` |
+
+So the action-only Turbo config must MERGE two sources:
+- **action/adapter setup** from `configs/wan22/diffusion_wan22_avid_xattn_gatefix_acwm_robotarm.yaml`
+  (already `use_step_level_conditioning: false` and `shortcut_direction_weight: 0.0`
+  — i.e. already action-only, no D3 machinery)
+- **external-provider surface** from `configs/wan22/diffusion_wan22_dcunet_output_metaworld.yaml`
+  (the ONLY existing `wan2.2_external` config, and it is metaworld+dcunet, not robot-arm)
+
+Not attempted — the merge needs the external provider's config surface verified
+against a real build, not guessed. Do this first and smoke it before any training.
+
+## STILL TODO
+- Action-sensitivity eval at the GRID timesteps, not U(0,1)
+  (`scripts/eval_action_sensitivity.py`). Otherwise it measures the adapter at noise
+  levels the distilled base cannot operate at.
