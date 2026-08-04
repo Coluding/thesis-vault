@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 — Why L2 hands you a ceiling</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="eyebrow">Lesson 1 · conditional variance</div>
+<h1>Why L2 hands you a ceiling you cannot out-engineer</h1>
+<p class="sub">One derivation, three lines, and the reason your injection-site experiments were
+never going to separate.</p>
+
+<h2>1. The only thing squared error can learn</h2>
+
+<p>Take any predictor <code>f</code> of a target <code>Y</code> from an input <code>X</code>.
+Add and subtract the conditional mean:</p>
+
+<div class="eq">E[(Y − f(X))²]
+  = E[( <span class="lbl">(Y − E[Y|X])</span> + <span class="lbl">(E[Y|X] − f(X))</span> )²]
+  = E[(Y − E[Y|X])²]  +  E[(E[Y|X] − f(X))²]  +  2·E[cross]</div>
+
+<p>The cross term dies. Condition on <code>X</code> first: the second factor is fixed once you
+know <code>X</code>, and the first has conditional mean zero by construction, so the inner
+expectation is <code>0</code>. Hence</p>
+
+<div class="eq">E[(Y − f(X))²]  =  <span class="lbl">E[Var[Y|X]]</span>  +  E[(E[Y|X] − f(X))²]
+                    <span class="lbl">└ irreducible ┘</span>   <span class="lbl">└ your model's error ┘</span></div>
+
+<p>The second term is the only one you control, and it is minimised at
+<code>f(X) = E[Y|X]</code>. So <strong>squared-error training cannot learn anything but the
+conditional mean</strong>, and whatever spread remains around it is a floor.</p>
+
+<div class="callout">
+<strong>This is not a diffusion fact.</strong> It is a fact about L2. Diffusion and flow
+matching are both L2 regressions onto a target (ε, v, or x₀), so both inherit it.
+That is precisely why it can compare them.
+</div>
+
+<h2>2. Splitting the floor with actions</h2>
+
+<p>Now add the action <code>A</code>. Apply the same identity <em>inside</em> the conditioning —
+this is the law of total variance:</p>
+
+<div class="eq">Var[Y | X]  =  E<sub>A</sub>[ Var[Y | X, A] ]  +  Var<sub>A</sub>( E[Y | X, A] )
+                <span class="lbl">└ still irreducible ┘</span>   <span class="lbl">└ actions explain ┘</span></div>
+
+<p>Read the two halves as budget. The left is what stays unpredictable even if you knew
+the action perfectly. The right is the part actions can account for.</p>
+
+<h2>3. The ceiling</h2>
+
+<p>Compare the two best-possible predictors. Blind: <code>E[Y|X]</code>, MSE
+<code>E[Var[Y|X]]</code>. Action-aware: <code>E[Y|X,A]</code>, MSE <code>E[Var[Y|X,A]]</code>.
+Subtract, and substitute the split above:</p>
+
+<div class="eq">best blind MSE − best action-aware MSE  =  E[ Var<sub>A</sub>( E[Y | X, A] ) ]</div>
+
+<div class="callout">
+<strong>The consequence.</strong> That quantity is the <em>entire</em> loss reduction any
+action-conditioned model can achieve. Not "with this adapter" — <em>ever</em>. It is fixed by
+the data and the representation before any architecture is chosen.
+</div>
+
+<p>Which retro-explains a campaign of null results. Cross-attention, channel concat, adaLN,
+token-norm, gain fixes — all pressed against the same bound, so all landed in the same
+<code>effect_rel</code> band. Moving <em>where</em> a signal enters cannot raise a ceiling set by
+<em>how much that signal explains</em>.</p>
+
+<h2>4. Explaining away — the part that flips the blind arm</h2>
+
+<p>The conditioning is on <code>x_t</code>. If the noisy latent already reveals the action —
+an arm mid-swing is visible under noise — then given <code>x_t</code>, the action is largely
+<em>redundant</em>. Not uninformative: pre-empted.</p>
+
+<div class="eq">Var<sub>A</sub>( E[Y | A] )     ≥     Var<sub>A</sub>( E[Y | X, A] )
+<span class="lbl">blind arm's ceiling      normal adapter's ceiling</span></div>
+
+<p>So the action-only adapter — no base prediction, no <code>x_t</code> — is <em>not</em> the
+handicapped arm. Its absolute accuracy collapses, but its <strong>action-explained share
+should rise</strong>, because nothing is explaining actions away any more.</p>
+
+<div class="quiz" id="q1">
+  <div class="q">The adapter's injection site changed from cross-attention to concat, and
+  <code>effect_rel</code> barely moved. What does the decomposition say?</div>
+  <button data-ok="0">The concat pathway was too quiet to carry the signal</button>
+  <button data-ok="1">Both were already pressed against the same data ceiling</button>
+  <button data-ok="0">The gate suppressed the action delta before it composed</button>
+  <div class="fb"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <div class="q">Blinding the adapter to <code>x_t</code> should do what to the ceiling on the
+  variance actions can explain?</div>
+  <button data-ok="0">Lower it, since the adapter now sees strictly less</button>
+  <button data-ok="1">Raise it, since x_t no longer explains actions away</button>
+  <button data-ok="0">Leave it fixed, since the target itself is unchanged</button>
+  <div class="fb"></div>
+</div>
+
+<h2>5. Your number, restated</h2>
+
+<p>The campaign measured actions worth <strong>0.45% of the teacher-forced denoising
+loss</strong>. In this language that is the ratio of the two halves of §2 — an estimate of
+<code>Var<sub>A</sub>(E[Y|X,A]) / Var[Y|X]</code>. It stops being a curious empirical number and
+becomes a structural one.</p>
+
+<p>What it is <em>not</em> yet is comparable across backbones: DC's loss lives in a 4-channel
+SD-VAE latent, Wan's in a 48-channel one. Normalising is the next lesson.</p>
+
+<hr>
+
+<h3>Read this</h3>
+<p><strong>Bishop, <em>Pattern Recognition and Machine Learning</em>, §1.5.5</strong>
+("The regression loss function") derives exactly §1 above — the decomposition of expected
+squared loss into model error plus intrinsic noise, and <code>E[t|x]</code> as the minimiser.
+Two pages, and the cleanest statement in print.
+<a href="https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf">Free PDF (Microsoft Research)</a>.</p>
+
+<div class="aside">
+<strong>Ask me things.</strong> I'm your teacher here, not just the author — if the cross-term
+argument felt like sleight of hand, or you want the version where <code>A</code> is continuous
+and high-dimensional, say so and we'll do it properly.
+</div>
+
+<div class="nav">
+  <a href="../reference/variance-decomposition.html">Reference: the decomposition, on one page →</a>
+  <a href="../MISSION.md">Mission</a>
+</div>
+
+<script>
+document.querySelectorAll('.quiz').forEach(function (quiz) {
+  var fb = quiz.querySelector('.fb');
+  var msg = {
+    q1: ['Plausible, and we tested it — the gain fixes moved the metric without moving the structure. But the decomposition says something stronger: no injection site can beat the bound.',
+         'Right. The bound is set before architecture. That is why five different injection strategies converged.'],
+    q2: ['This is the intuitive answer and it is the wrong one — it confuses total accuracy with the action-explained share.',
+         'Right. Redundancy with x_t was suppressing the action term; removing x_t removes the suppression.']
+  }[quiz.id];
+  quiz.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var ok = b.dataset.ok === '1';
+      b.classList.add(ok ? 'right' : 'wrong');
+      fb.textContent = msg[ok ? 1 : 0];
+      if (ok) quiz.querySelectorAll('button').forEach(function (x) { x.disabled = true; });
+    });
+  });
+});
+</script>
+</body>
+</html>

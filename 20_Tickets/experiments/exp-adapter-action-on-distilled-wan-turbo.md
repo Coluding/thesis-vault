@@ -1,0 +1,100 @@
+---
+type: exp
+scope: adapter
+status: open
+priority: medium
+created: 2026-08-03
+updated: 2026-08-03
+resolution:
+resolution_note:
+closed_at:
+related: ["[[exp-shortcut-pdd-lora-distill-dc]]", "[[exp-shortcut-parallel-decoding-adapter-wan]]", "[[../feat-adapter-wan-per-frame-adaln]]"]
+---
+
+# Action adapter on an off-the-shelf distilled Wan (D2 × D4)
+
+**DEFERRED** — parked while scope is distillation-only (Lukas, 2026-08-03). Logged
+because it is the cheapest of the three routes and should not be lost.
+
+## Idea (Lukas, 2026-08-03)
+
+Skip training a distillation ourselves: take a **published few-step Wan** as the frozen
+base and train the action adapter on it. Tests "does adaptation still work on a distilled
+base?" for the cost of one adapter run and **zero distillation compute**.
+
+## Repo correction
+
+Lukas linked [`lightx2v/Wan2.2-Distill-Models`](https://huggingface.co/lightx2v/Wan2.2-Distill-Models) —
+**wrong variant.** That repo is **A14B** (T2V/I2V, 14B, two-expert high/low-noise), full
+DiT weights, 4-step. Our whole pipeline is **TI2V-5B**: different architecture, different
+VAE, **16-channel latents vs our 48**. Every precomputed latent (`864x672`, 48-ch) would
+be invalid, and 2×14B frozen experts is ~56 GB of weights before activations.
+[`lightx2v/Wan2.2-Distill-Loras`](https://huggingface.co/lightx2v/Wan2.2-Distill-Loras)
+is likewise A14B-only (rank-64 I2V LoRAs).
+
+**The right artifact:**
+[`quanhaol/Wan2.2-TI2V-5B-Turbo`](https://huggingface.co/quanhaol/Wan2.2-TI2V-5B-Turbo)
+— our exact variant, 4-step, step- + CFG-distillation via Self-Forcing. Reported 121
+frames @ 24 fps, 1280×704, in 4 steps. _Model-card claims, not verified by us._
+
+## Why it is worth doing
+
+The base handles speed, the adapter handles actions — the same decoupling as
+[[exp-shortcut-pdd-lora-distill-dc]], but with the distillation already paid for by
+someone else. If it works it is a direct D4 result: fast **and** action-conditioned.
+
+## Honest caveat
+
+This does **not** test the D2 failure. Our Wan action adapter measures temporal alignment
+at chance, and the leading hypothesis is the **injection site** (cross-attention into the
+residual stream vs per-frame AdaLN —
+[[../../30_Knowledge/experiments/20260802-avid-wan-cleanroom-perframe-causal]],
+[[../feat-adapter-wan-per-frame-adaln]]). Swapping the base for a distilled one does not
+touch that. Expect this to answer "does the composition survive a distilled base?", not
+"does the adapter follow actions now."
+
+## DECIDED (Lukas, 2026-08-03): action conditioning only, no step-size conditioning
+
+The adapter on this base runs **action-conditioned only**. `use_step_level_conditioning:
+false`, no `shortcut_direction_weight`, no `multistep_consistency_weight`.
+
+Rationale: `log2(d)` conditioning presumes a continuum of step sizes to interpolate over.
+A step-distilled base has collapsed the step axis onto its own grid, so asking the adapter
+to be step-size-aware on top of it is ill-posed. This makes the arm a **pure D2
+measurement on a fast base**, with no D3 machinery to confound it.
+
+## Timestep sampling — still changes, even without step-size conditioning
+
+Dropping the step-size pathway does **not** remove the sampling problem. The adapter is
+still trained at some `t`, and the base's output at that `t` is only meaningful on the
+distilled grid — doubly so because `condition_on_base_outputs: true` feeds the base output
+to the adapter as *input*.
+
+Current sampling (`losses/flow_matching.py:53-86`): logit-normal `t = sigmoid(randn())`,
+continuous over (0,1), plus resolution shift (`flow_shift_x1: 256`, `flow_shift_x2: 4096`)
+and `sigma_shift: 5.0`. Smoke log `25166226`: *"median sigma 0.833; eval stays U(0,1)."*
+
+**All three DECIDED (Lukas, 2026-08-03) — use the distilled grid and adjust the rest:**
+1. **Sample `t` from the distilled grid** — uniform over `{t₀…t₃}`, replacing the
+   logit-normal draw at `trainer.py:406`. New sampler, gated behind a config flag so the
+   continuous path stays intact for every other arm.
+2. **Use their shift, not ours.** `sigma_shift`/`inference_shift: 5.0` were tuned for the
+   undistilled Wan. Read the value off the Turbo sampler config; do not guess.
+3. **CFG.** CFG-distilled ⇒ no guidance pathway. Check `drop_condition_prob` / null-path
+   plumbing, which assumes one.
+
+No longer required (was only an issue under step-size conditioning):
+4. ~~`eval_stepsize_blindness.py`'s dyadic ladder 1/128…1 is undefined on a 4-step model.~~
+   Not used on this arm. **But** the action-sensitivity eval must be run *at the grid
+   timesteps*, not at U(0,1).
+
+Consequence to watch: the adapter sees only ~4 distinct noise levels (plus `t=0` on
+observation frames under diffusion forcing). That matches deployment exactly, which is
+good, but it is a far narrower training distribution than any arm so far — worth watching
+for overfitting to the grid points.
+
+## Other unknowns to check before committing
+
+- Does the Turbo checkpoint keep Wan2.2 TI2V-5B's exact DiT layout (our vendored provider
+  and the 48-ch VAE assume it)?
+- Licence / redistribution terms for a thesis artefact.

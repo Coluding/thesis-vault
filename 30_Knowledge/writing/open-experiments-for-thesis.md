@@ -48,6 +48,33 @@ Ordered by what they unblock in the draft.
 | A3 | **RT-1 held-out re-eval** | every RT-1 number is quarantined as in-sample until this lands | ☐ [[../../00_Inbox/2026-08-01-rt1-heldout-split]] |
 | A4 | **Shortcut target 2×2 — `v_average` vs `endpoint_inversion` within ONE base at ONE depth** | ⭐ **config-only, no code** (`training.shortcut_consistency_target` supports both). Decides whether the D3 result is about **geometry** (curvature) or about the **target construction**. Currently the confound runs *against* the curvature story: the DC arm used the theoretically exact `endpoint_inversion` and learned nothing. Until this runs, "shortcut works on flow because κ=0" is a hypothesis, not a result | ☐ **highest-value D3 run** |
 
+### ⚠ A5 — Confirm the clean-room A/B's evaluation split (do this first, it is a read)
+
+**The thesis's most original claim rests on this arm**, and its split status
+is not recorded. The clean-room per-frame-vs-pooled A/B runs on **RT-1**,
+and *all* RT-1 numbers are quarantined as in-sample (I1,
+[[methods-integrity]]) — but that finding was about **our** trainer
+(`--data-dir` = `--eval-data-dir`, the held-out branch never splitting). The
+clean-room runs in **AVID's own repository**
+(`external_repos/avid/wan_diffusion/`), which has its own evaluation path,
+so the quarantine may or may not apply.
+[[../experiments/20260802-avid-wan-cleanroom-perframe-causal]] does not say
+either way — the words "held-out", "in-sample" and `ind_test` do not appear
+in it.
+
+**Why it may not be fatal even if in-sample.** The readouts are a
+*sensitivity* probe and a *structure* probe, not generalisation metrics. A
+memorised model can still be asked whether its prediction responds to an
+action perturbation, and the diagonal-concentration result rests on a
+*within-model* comparison (per-frame vs pooled) at matched contribution and
+matched mask, where both arms share whatever memorisation is present.
+**But structure measured on training clips is weaker evidence than on
+held-out clips, and the difference must be stated either way.**
+
+- [ ] Read the clean-room eval path; record the split status in the note.
+- [ ] If in-sample: re-probe on held-out clips before §5.3 is finalised, or
+      state the limitation explicitly in that section and in §6.2.
+
 ### B — Strengthening a claim that already stands
 
 | # | Experiment | Moves | Status |

@@ -213,6 +213,7 @@ Two scope conditions the claim needs:
 
 ## Related
 
+- [[evidence-map]] — the per-cell verdicts mapped to sections and rubric items
 - [[thesis-storyline]] — the narrative these axes serve
 - [[rubric/03-experimental-evaluation]] — how this table is graded
 - [[../experiments/_index]] — the results ledger (every axis traces to runs)

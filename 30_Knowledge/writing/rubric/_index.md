@@ -21,6 +21,7 @@ sources:
 > that already satisfies the criteria.
 
 Rubric verbatim + the structural read: [[../thesis-grading-rubric]].
+Which evidence moves which item: [[../evidence-map]].
 How the prose must argue: [[../thesis-style-guide]].
 
 **Bands below are an analysed estimate** (CLAUDE.md hard rule 7b) — a
@@ -53,7 +54,7 @@ this is the material that must exist before coherent text is worth writing.
 
 | # | Action | Moves | Cost | Status |
 |---|---|---|---|---|
-| Q1 | **Reconcile the stale layers** to the 08-02 reframe (see below) | 7, 1 | ~1 h | 🔶 outline + index + numbering done; `writing-plan-2026-08` and `positioning` remain |
+| Q1 | **Reconcile the stale layers** to the 08-02 reframe (see below) | 7, 1 | ~1 h | ✅ 2026-08-03 — all 7 layers |
 | Q2 | **Rewrite `ablation-axes.md`** — it predates the entire 07-30→08-02 campaign and the LoRA run | 3, 7 | ~2 h | ✅ 2026-08-03 — hypothesis-first, 11 hypotheses × 13 axes, verdict-bearing |
 | Q3 | **Probe-suite instrument spec** — each probe, its null, its chance level, its validation | 2, 5, 3 | ~2 h | ✅ 2026-08-03 → [[../../tech/probe-suite]] |
 | Q4 | **Methods-integrity inventory** — every retraction/bug/confound, detection→consequence | 3, 5 | ~2 h | ✅ 2026-08-03 → [[../methods-integrity]] |
@@ -71,17 +72,20 @@ below — state the ceiling **per cell**.
 
 ## The stale-layer list (Q1)
 
-Known inconsistencies as of 2026-08-03. **Drafting from any of these
-produces prose that contradicts the vault's own evidence.**
+**✅ Q1 CLOSED 2026-08-03 — all seven reconciled.** Kept as the record of
+what was wrong and why. Two of these notes are now *banner-superseded*
+rather than deleted, so they still read as authoritative until you reach the
+banner — the standing trap when drafting from Git history or from a stale
+tab.
 
 | Layer | Stale claim | Superseded by | Fixed |
 |---|---|---|---|
-| [[../ablation-axes]] Axis 2 | "LoRA … is not run. No LoRA config." | LoRA-vs-adapter comparison **in flight** (2026-08-03) | ☐ |
-| [[../ablation-axes]] (whole note) | Axis map predates 07-30→08-02; missing injection-pathway, scale-calibration and capacity axes | [[../thesis-storyline]] §REFRAME | ☐ |
-| [[../writing-plan-2026-08]] | Wan is the collapse branch | [[../thesis-storyline]] line 154 — superseded 08-02 | ☐ |
+| [[../ablation-axes]] Axis 2 | "LoRA … is not run. No LoRA config." | LoRA-vs-adapter comparison **in flight** (2026-08-03) | ✅ 2026-08-03 |
+| [[../ablation-axes]] (whole note) | Axis map predates 07-30→08-02; missing injection-pathway, scale-calibration and capacity axes | [[../thesis-storyline]] §REFRAME | ✅ **rewritten** 2026-08-03 |
+| [[../writing-plan-2026-08]] | **only** its "Spine correction" — Wan as the collapse branch, and the global headline that follows from it | [[../thesis-storyline]] §REFRAME | ✅ **partially** superseded 2026-08-03 — its §D2-e downgrade and in-sample warning were *correct* and still hold |
 | [[../../../70_Thesis/outline]] | **8-chapter structure**, separate adapters chapter, `draft/25-adapters.md` | the **40-page limit** — 6 chapters, see [[07-thesis-organization]] | ✅ 2026-08-03 |
 | [[../../../70_Thesis/outline]] §3.3 | "Cost only — no quality comparison (ruled out by Axis 2)" | the LoRA run makes a quality comparison available | ✅ 2026-08-03 |
-| [[../../../10_now/positioning]] anti-positioning | planning is "a sanity check, not the contribution" | storyline §2 elevates it (scoped to "we extend AVID to the use case it names") | ☐ |
+| [[../../../10_now/positioning]] anti-positioning | planning is "a sanity check, not the contribution" | storyline §2 elevates it (scoped) | ✅ 2026-08-03 |
 | [[../../../70_Thesis/index]] | Markdown draft is the source of truth; Method is Ch3 | LaTeX tree + 6-chapter proposal | ✅ 2026-08-03 |
 
 **Template constraints now known** (2026-08-03): UvA MSc AI, `report`/12pt,
@@ -100,11 +104,19 @@ it and one stale phrasing would damage several items at once:
 > (0.0357 vs the control's 0.0433). The untreated control clears the AVID
 > reference *unaided* — the cell works natively.
 >
-> **On Wan it does not** — 6/6 quality metrics beaten (FVD −64%) with all
-> three structure probes **at chance**: a domain adapter, not an action
-> conditioner. **The injection pathway is what discriminates them**, and
-> the clean-room A/B shows it is causal at matched contribution and matched
-> mask.
+> **On Wan, it depends on the pathway — and that is the whole point.**
+> State it per cell, never per backbone:
+>
+> | cell | injection | verdict |
+> |---|---|---|
+> | Wan × ACWM | cross-attention | **domain corrector** — 6/6 quality (FVD −64%), all three structure probes **at chance** |
+> | Wan × RT-1 (clean-room) | **per-frame AdaLN** | **follows actions** — 2.49× @12000 (Welch t=10.5), diagonal concentration 0.409 vs chance 0.200 |
+> | DC × ACWM | concat + centring | follows actions — triad above chance |
+>
+> **The decisive contrast is within Wan**, not between backbones: the same
+> base, the same data, matched adapter contribution and matched mask, and
+> only the injection pathway differs. That eliminates base strength as a
+> confound entirely — which the DC-vs-Wan comparison cannot do.
 
 **This is a positive result with a matched architectural negative control**
 — not a failed method with a good post-mortem. Lead with it in that order.

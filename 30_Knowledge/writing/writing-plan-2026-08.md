@@ -11,31 +11,30 @@ sources:
 
 # Writing plan — start now, experiments continue in parallel
 
-> **🛑 SUPERSEDED 2026-08-03.** This plan was written on 2026-08-01, before
-> the 08-02 results and the reframe. Several of its statements are now
-> **wrong**, not merely dated:
+> **⚠ SUPERSEDED IN PART 2026-08-03 — read this, then use the plan freely.**
 >
-> - It frames **Wan as the collapse branch**. Wan beats its frozen base 6/6
->   on ACWM and, with per-frame conditioning, beats the AVID/DC reference at
->   matched depth. It is the *contribution*, not the failure.
-> - Its headline — *"the adapter learns to correct the base, not to
->   incorporate actions"* — is contradicted by the DC cell, which follows
->   actions on three independent readouts.
-> - Its §D2-e "two-factor law" and the 35× rest on the **retracted**
->   SkyReels cell.
+> **What is superseded (one substantive thing):** the *"Spine correction"*
+> section, which frames **Wan as the generality branch that collapses** and
+> DC as the main story. The 08-02 clean-room result retires that — Wan beats
+> its frozen base 6/6 on ACWM and, with per-frame conditioning, beats the
+> AVID/DC reference at matched depth. The storyline retires it explicitly too
+> ([[thesis-storyline]] §REFRAME). Consequence: the headline this plan says
+> to write against — *"the adapter corrects the base rather than
+> incorporating actions"* — is **correct for the Wan cross-attention cells**
+> and **wrong as a global headline**, because the DC cell follows actions on
+> three independent readouts.
 >
-> **Live replacements:** [[../../70_Thesis/outline]] (structure + per-section
-> sources) · [[open-experiments-for-thesis]] (what is still needed) ·
+> **What is NOT superseded — this plan was ahead of the evidence.** It
+> downgraded the §D2-e two-factor law and the 35× figure on 2026-08-01, on
+> the `effect_rel` gain-confound grounds, *before* the SkyReels cell was
+> retracted; and it independently flagged that all RT-1 and OpenVid numbers
+> are in-sample. Both calls were right and both still hold. Its readiness
+> table, its rule that every number cites a run, and its
+> provisional/blocked markings remain good practice.
+>
+> **Live companions:** [[../../70_Thesis/outline]] (structure + sources) ·
+> [[open-experiments-for-thesis]] (what is still needed) ·
 > [[rubric/_index]] (what is graded) · [[thesis-storyline]] §9 (the result).
-> Kept for its reasoning about sequencing and its sourcing discipline; **do
-> not draft from its status claims.**
-
-**Decision 2026-08-01 (user):** begin writing the thesis. The qualitative
-results are clear enough to write against — *the adapter learns to correct the
-base, not to incorporate actions* — and the mechanism behind that is measured.
-Fix-experiments continue for ~2 weeks **in parallel**; they can only improve
-numbers inside a story whose shape is already settled
-([[thesis-storyline]] §8–9).
 
 ## What is safe to write TODAY (evidence closed)
 

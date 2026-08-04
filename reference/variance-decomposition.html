@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference — The conditional-variance decomposition</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<div class="eyebrow">Reference · one page</div>
+<h1>The conditional-variance decomposition</h1>
+<p class="sub">Notation, the three identities, the estimators, and the traps. Print this.</p>
+
+<h2>Notation</h2>
+<table>
+<tr><th>symbol</th><th>meaning</th><th>in our setting</th></tr>
+<tr><td><code>Y</code></td><td>regression target</td><td>ε, velocity, or x₀ — whatever <code>prediction_type</code> says</td></tr>
+<tr><td><code>X</code></td><td>conditioning input</td><td><code>x_t</code>, the noised latent (plus <code>t</code>)</td></tr>
+<tr><td><code>A</code></td><td>extra conditioning</td><td>the per-frame action vector</td></tr>
+<tr><td><code>f</code></td><td>the learned predictor</td><td>frozen base + adapter</td></tr>
+</table>
+
+<h2>The three identities</h2>
+
+<h3>1 · L2 recovers the conditional mean</h3>
+<div class="eq">E[(Y − f(X))²]  =  E[Var[Y|X]]  +  E[(E[Y|X] − f(X))²]
+argmin<sub>f</sub>  ⇒  f(X) = E[Y|X]</div>
+<p>Squared error cannot learn anything else. The residual <code>E[Var[Y|X]]</code> is a floor.</p>
+
+<h3>2 · Law of total variance (the split)</h3>
+<div class="eq">Var[Y|X]  =  E<sub>A</sub>[Var[Y|X,A]]  +  Var<sub>A</sub>(E[Y|X,A])
+             <span class="lbl">irreducible</span>        <span class="lbl">action-explained</span></div>
+
+<h3>3 · The ceiling</h3>
+<div class="eq">best blind MSE − best action-aware MSE  =  E[Var<sub>A</sub>(E[Y|X,A])]</div>
+<p>The total loss reduction available from actions, for <em>any</em> architecture. A property
+of data + representation, not of the model.</p>
+
+<h2>Estimators — what you can actually compute</h2>
+<table>
+<tr><th>quantity</th><th>estimator</th><th>we log it as</th></tr>
+<tr><td>E[Var[Y|X]]</td><td>the denoising loss of a well-trained blind model</td><td><code>eval_loss</code></td></tr>
+<tr><td>action-explained</td><td>loss(shuffled actions) − loss(true actions)</td><td><code>eval_action_loss_gap</code></td></tr>
+<tr><td>total target variance</td><td>Var over the dataset of the target</td><td><strong>not logged — the gap</strong></td></tr>
+</table>
+
+<div class="callout">
+<strong>The normalisation is the whole trick.</strong> Raw losses are not comparable across
+backbones — different latent spaces (4-ch SD-VAE vs 48-ch Wan-VAE), different target
+scalings. Divide by <code>Var[target]</code> and they are:
+<div class="eq">R²      = 1 − E[(Y − f)²] / Var[Y]        <span class="lbl">how much X determines Y</span>
+ΔR²<sub>act</sub> = action_loss_gap / Var[Y]           <span class="lbl">how much A adds</span></div>
+Both dimensionless. This is the only way to put DC and Wan on one axis.
+</div>
+
+<h2>Traps</h2>
+<table>
+<tr><th>trap</th><th>why it bites</th></tr>
+<tr><td>Comparing raw <code>eval_loss</code> across backbones</td><td>different latent dims and target scalings; DC 0.026 vs Wan 0.13 says nothing on its own</td></tr>
+<tr><td>Reading a low ceiling as "the adapter failed"</td><td>the bound is pre-architectural; every injection site hits the same wall</td></tr>
+<tr><td>Assuming blinding to <code>x_t</code> lowers the ceiling</td><td>it <em>raises</em> the action-explained share — explaining-away is removed</td></tr>
+<tr><td>Averaging over <code>t</code></td><td>ambiguity varies hugely with noise level; always report per-σ</td></tr>
+<tr><td>Treating it as a diffusion-only result</td><td>it is a property of L2; flow matching inherits it identically</td></tr>
+</table>
+
+<h2>Explaining away, in one line</h2>
+<div class="eq">Var<sub>A</sub>(E[Y|A])  ≥  Var<sub>A</sub>(E[Y|X,A])</div>
+<p>Conditioning on <code>X</code> can only shrink what <code>A</code> is left to explain. Hence the
+action-only arm has the <em>higher</em> action ceiling and the worse absolute loss.</p>
+
+<h2>Anchors from our runs</h2>
+<table>
+<tr><th>quantity</th><th>value</th><th>source</th></tr>
+<tr><td class="num">actions' share of loss</td><td class="num">0.45%</td><td>copy-decomposition note, 2026-07-31</td></tr>
+<tr><td class="num">arm E <code>action_loss_gap</code></td><td class="num">0.01418</td><td>wandb <code>6oyu1inq</code></td></tr>
+<tr><td class="num">DC <code>eval_loss</code></td><td class="num">0.026</td><td>wandb <code>6oyu1inq</code></td></tr>
+<tr><td class="num">Wan <code>eval_loss</code></td><td class="num">0.13–0.18</td><td>wandb <code>vy9tcuco</code>, D3 arms</td></tr>
+</table>
+<p class="sub" style="margin-top:-.6rem">⚠ The DC/Wan loss pair is <em>not</em> yet comparable — that is exactly the normalisation gap above.</p>
+
+<div class="nav">
+  <a href="../lessons/0001-why-l2-gives-you-a-ceiling.html">← Lesson 1: the derivation</a>
+  <a href="../MISSION.md">Mission</a>
+</div>
+</body>
+</html>

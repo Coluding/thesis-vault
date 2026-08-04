@@ -45,13 +45,19 @@ a systems build. The headline:
 > works *natively* — `condition_center` accelerates escape (~6×) rather
 > than enabling it.
 >
-> **On Wan it does not.** 6/6 quality metrics beaten (FVD 1118 → 406) with
-> all three structure probes **at chance** — a *domain* adapter, not an
-> action conditioner.
+> **On Wan the verdict depends on the injection pathway** — state it per
+> cell, never per backbone. With **cross-attention** (× ACWM) it is a
+> *domain corrector*: 6/6 quality metrics beaten (FVD 1118 → 406) with all
+> three structure probes at chance. With **per-frame AdaLN** (the clean-room
+> arm) the same backbone *follows actions*: 2.49× at step 12000 (Welch
+> t=10.5), diagonal concentration 0.409 against chance 0.200.
 >
-> **The injection pathway discriminates them**, causally: per-frame
-> modulation of normalised activations carries the action; cross-attention
-> tokens survive the attention and drown at the residual add.
+> **The decisive contrast is within Wan**, not between backbones — same
+> base, same data, matched adapter contribution and matched mask, only the
+> pathway differs. That removes base strength as a confound, which the
+> DC-vs-Wan comparison cannot. Per-frame modulation of normalised
+> activations carries the action; cross-attention tokens survive the
+> attention and drown at the residual add.
 >
 > **A positive result with a matched architectural negative control** — tell
 > it in that order. Limits, per cell: rollout-level control is null on Wan;
@@ -174,6 +180,7 @@ Ch2 proceeds in parallel as the missing literature notes land.
 
 ## Related
 
+- [[../30_Knowledge/writing/evidence-map]] — **cells → sections → topics → rubric**, with the caveats that travel with each number
 - [[index]] — chapter → source map
 - [[../30_Knowledge/writing/rubric/_index]] — the ten graded items + queue
 - [[../30_Knowledge/writing/thesis-storyline]] — the narrative spine
