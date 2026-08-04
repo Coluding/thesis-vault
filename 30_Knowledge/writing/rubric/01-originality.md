@@ -76,7 +76,7 @@ Actions explain ~0.45% of a teacher-forced denoising loss, so appearance
 correction always pays more per unit of gradient. This is *not* fixable by
 architecture, and naming it bounds the whole method class. Originality here
 is in the framing: a limit derived from the objective rather than observed
-from a failure.
+from a failure. (TODO: maybe argue with variance here !!)
 
 **(2b) Shortcut modelling *through an adapter* — the only uncovered axis.**
 
@@ -130,13 +130,6 @@ the averaging rule, so the bias compounds up the doubling tower — and
 5.1 / 16.1 / 24.1 % off at s = ¼, ½, ¾ where the endpoint target lands
 0.000000. It is *proven*, not observed, and it fits the storyline's chain as
 the node that motivates the flow pivot.
-
-⚠ **One scope line, and it is the only caution needed:** present the
-curvature result as **theory with synthetic verification**, and do not cite
-the DC arm as its empirical confirmation. That arm ran
-`endpoint_inversion` — the exact target — so it cannot speak to the bias in
-the *averaging* target either way. Citing it as confirmation is the one
-version a reader can check and disprove from our own experiment note.
 
 The **A4 2×2** (`v_average` vs `endpoint_inversion`, one base, one depth,
 config-only) would convert theory into empirical confirmation cheaply —
@@ -197,6 +190,7 @@ implied**:
   measured, few-step quality scoped to future work), and **the framework**
   (D1, demonstrated by porting AVID's own recipe to a new base family
   inside AVID's own repository).
+- --> Our contribution is extendable repo and the shortcut / distillation modelling through adapters based on action world models since the rollouts are too slow otherwise!!
 
 **Note the shape of the delta:** three of the four *sharpen or bound* AVID's
 contribution; **D3 is the one that extends it into new territory.** If a
