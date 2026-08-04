@@ -2,7 +2,7 @@
 type: ledger
 scope: compute-accounting
 status: living
-last_updated: 2026-08-03
+last_updated: 2026-08-04
 ---
 
 # Compute spend ledger
@@ -34,9 +34,17 @@ Rate used throughout: **192 SBU/h** per H100 at 180 GB, **384** at 360 GB.
 | | _(environment setup — login-node only, no GPU billing)_ | | 0 | — | **0** | |
 | 08-03 | 25183933 | env smoke (attempt 1) | 192 | 0.03 | **6** | ❌ wandb: no API key |
 | 08-03 | 25184424 | env smoke (attempt 2, `WANDB_MODE=offline`) | 192 | 0.39 | **75** | ✅ **PASSED** — 30 steps, ckpt written |
-| | | | **RUNNING TOTAL** | | **81** | |
+| 08-03 | 25185841/25186717 | action-only (blind), gated | 192 | ~9.5 | ~1,825 | ⚠ gate froze at cap — confounded, see bug ticket |
+| 08-04 | 25192286 | **action-only (blind) + `add`** | 192 | 17 (cap) | ~3,265 | 🔄 running |
+| 08-04 | 25192313 | **token-norm NOBASE + `add`** | 192 | 17 (cap) | ~3,265 | 🔄 running — tests whether the gate throttled the whole campaign |
+| 08-04 | 25192514/724/840, 25192986, 25193042, 25193194 | EasyAnimate integration smokes + NaN debug | 192 | ~0.2 | ~40 | 🔄 debugging `denoise` NaN |
+| | | | **RUNNING TOTAL (incl. committed)** | | **~8,470** | |
 
-**Remaining against our 100,000 cap: 99,919**
+**Remaining against our 100,000 cap: ~91,530**
+
+⚠ `accinfo` on this account also lags (and it includes the supervisor's own jobs,
+e.g. `dc-pdd-full`), so **this itemised table — not `accinfo` — is our figure against
+the cap.**
 
 ### Environment provenance (for reproducibility)
 

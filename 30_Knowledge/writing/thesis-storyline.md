@@ -114,7 +114,46 @@ their evidence separated and merely **order** themselves along the arc.
 
 ---
 
-## The chain
+## ⭐ The chain, restated 2026-08-04 — efficiency as the spine
+
+**Proposed by Lukas; open decision
+[[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].** Two nodes
+move; everything else is unchanged.
+
+```
+DC + adapter works  →  AVID  →  TOO SLOW  →  flow models  →  rectified flow
+      →  DISTILLATION TO FEW STEPS — three axes
+           L1  shortcut adapter      speed in the ADAPTER      (entangled)
+           L2  PDD / LoRA distil     speed in a 2nd ADAPTER    (separable)
+           L3  distilled base        speed in the BASE         (free)
+      →  ANALYSIS: what worked, what did not, and why
+```
+
+**What changed.** "Shortcut" was one node with one cell; it becomes three
+**placements** of the same capability, distinguished by *where few-step
+behaviour lives* and therefore by whether acceleration and conditioning are
+**entangled or separable**. The ending changes from a diagnosis to a
+**comparative analysis with a design recommendation**.
+
+**What did not change.** The D2 mechanism campaign is not displaced — it is
+the *conditioning* half of the final analysis node, which is where its 20+
+runs already point. §§1–9 below stand as written.
+
+**The prediction the economics bound makes** (and the reason this is a
+designed experiment rather than a sweep): actions are worth ~0.45 % of a
+teacher-forced denoising loss, so they are already outbid by appearance
+correction; adding a consistency objective to the **same** adapter adds a
+second, larger claim on the same gradient budget. **Predicted: L1 degrades
+action-following; L2 and L3 preserve it.** If it holds, the recommendation
+is *separate acceleration from conditioning*. If it fails, the framing
+survives and the recommendation inverts.
+
+⚠ L1 has never been trained (it is D4); L2 and L3 are ticketed but unrun.
+Build the framing now; write no level as having worked until run ids land.
+
+---
+
+## The chain (as settled 2026-07-26, unchanged below)
 
 ```
 ESTABLISH  (DynamiCrafter — the baseline cell, and where planning is contributed)

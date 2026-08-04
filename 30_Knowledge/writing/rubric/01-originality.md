@@ -49,6 +49,50 @@ architectural variable that discriminates them** — is a materially stronger
 originality position than "we measured why it fails". Structure the
 contributions in that order.
 
+## ⭐⭐ The efficiency axis — the largest available move on this item
+
+**Proposed 2026-08-04, open decision:
+[[../../../50_Decisions/open/efficiency-axis-as-thesis-spine]].**
+
+Expand the single "shortcut" node into **three acceleration levels**, and
+make *where few-step behaviour should live* the thesis question:
+
+| Level | Speed lives in | Entanglement |
+|---|---|---|
+| **L1** shortcut adapter | the adapter | **one adapter learns actions *and* step size** |
+| **L2** PDD / LoRA distil | a second adapter on the base | two adapters, sequential |
+| **L3** distilled base | the base | acceleration free; only conditioning learned |
+
+This mirrors the D1 taxonomy — *where does trainable capacity sit relative
+to the frozen prior?* — asked of the **speed** axis rather than the
+**conditioning** axis. The symmetry is what makes it a chapter.
+
+**Why it moves this item more than anything else available.** The current
+climax is a *diagnostic* (pathway + economics), and diagnostics cap near the
+8-row: they explain, they do not answer a design question. Three tested
+placements with a recommendation is what "the problem is tackled from a
+fresh perspective" describes.
+
+**And the economics bound *predicts the ordering* before the runs.** Actions
+are worth ~0.45 % of the loss, so they are already outbid; adding a
+consistency objective to the *same* adapter adds a second, larger claim on
+the same gradient budget. Predicted: **L1 degrades action-following, L2/L3
+preserve it.** A theory-derived prediction discriminated by three cells is a
+stronger structure than any shoot-out, and it reaches toward the 9-row
+("thought-provoking") rather than merely securing the 8.
+
+It also converts the economics bound from a *limit* into a *predictive
+tool* — the same result in a materially stronger form
+([[04-knowledge-of-domain]]) — and retroactively makes the action-free D3
+isolation a design decision rather than a caution.
+
+⚠ **Three runs are outstanding** (L1 has never been trained; L2 and L3 are
+ticketed but unrun), and a claimed result exists only in conversation.
+Build the framing and the skeletons now — they cost nothing and do not
+depend on outcomes — but **no level is written as having worked** until run
+ids are in the vault. If the prediction fails, the framing survives and the
+recommendation inverts; that is the property a good axis should have.
+
 ## ⭐ The contribution spine (Lukas, 2026-08-04): **efficient rollouts**
 
 The positive, forward-facing statement of what the thesis contributes —

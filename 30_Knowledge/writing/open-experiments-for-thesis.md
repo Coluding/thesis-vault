@@ -108,6 +108,33 @@ or an action adapter on an already-distilled base
 ([[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]]).
 These split the two jobs rather than asking one adapter to learn both.
 
+### ⭐ A7 — The three acceleration levels (the efficiency axis)
+
+Open decision: [[../../50_Decisions/open/efficiency-axis-as-thesis-spine]].
+**Pre-register the predicted ordering before any of these land.**
+
+| Level | Run | Status |
+|---|---|---|
+| **L1** shortcut adapter + actions (entangled) | = **A6 / D4** | ☐ never trained |
+| **L2** PDD / LoRA distil, adapter on top (separable) | [[../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]] · [[../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]] | ☐ ticketed |
+| **L3** action adapter on an already-distilled base (free) | [[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]] | ☐ ticketed |
+
+**Predicted (from the 0.45 % economics): L1 degrades action-following, L2
+and L3 preserve it.** Write the prediction down *before* the results.
+
+**Common protocol — without it the three are not comparable:**
+- [ ] A **matched conditioning-only control** per level.
+- [ ] The **same action-structure readout** across levels — the structure
+      triad, not `effect_rel` alone.
+- [ ] **Wall-clock and NFE at matched quality**, against an honest
+      fast-sampler baseline (not many-step sampling alone).
+- [ ] **Few-step quality actually measured** — currently *not measured* on
+      the one shortcut cell that exists.
+
+⚠ Lukas reports data for the levels exists. Until run ids and checkpoints
+are in the vault this is **A0-class evidence** — the framing may be built,
+no level may be written as having worked.
+
 ### B — Strengthening a claim that already stands
 
 | # | Experiment | Moves | Status |

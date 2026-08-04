@@ -142,3 +142,49 @@ first use.
 **Risk this gate will surface:** Turbo is CFG-distilled, so it has no guidance
 pathway. If our generation path assumes CFG it will error or silently degrade.
 Better found here than after a training run.
+
+## GATE PASSED — and this is the DECIDED training setup (Lukas, 2026-08-04)
+
+Jobs `25192893` (prompt-free) and `25193375` (prompted), `scripts/gate_turbo_fewstep_quality.py`.
+Both COMPLETED, no CFG failure, 1:11 wall for both models.
+
+| run | mean | std | interframe_motion |
+|---|---|---|---|
+| Turbo @4, no prompt | −0.625 | 0.402 | 0.0326 |
+| **Turbo @4, prompted** | **−0.704** | **0.313** | **0.0173** |
+| Base @50, no prompt (guidance inert) | −0.631 | 0.325 | 0.0040 |
+| Base @50, prompted + real CFG | −0.647 | 0.309 | 0.0117 |
+
+**Lukas's verdict on the videos: the prompted distilled output "looks very nice" —
+use exactly this setup for training.**
+
+⚠️ Retracted: an earlier reading of "Turbo produces 8x more motion than the base"
+compared against an UNPROMPTED, guidance-inert reference. Against the fair
+(prompted + CFG) reference it is ~1.5x, not 8x. Quote the prompted row only.
+
+### The setup to reproduce, exactly
+
+```yaml
+model:
+  provider: wan2.2_turbo                      # Wan22TurboVideoModel; refuses guide_scale != 1.0
+  pretrained_model_name_or_path: /scratch-shared/lbierling1/ckpts/Wan2.2-TI2V-5B-Turbo-hf
+  freeze: true
+```
+- **prompt**: `configs/prompts/acwm_robotarm.contexts.pt`, key `__default__`
+  (positive `[69,4096]`; `negative` `[126,4096]` is a plain shared tensor, NOT a dict —
+  that asymmetry cost job `25193258`).
+- **sampling_steps: 4**, **guide_scale: 1.0** (CFG-distilled — the provider raises otherwise).
+- **shift: 5.0** — was flagged `_needs verification_` as inherited from the undistilled
+  base. **Now empirically validated by output quality at 4 steps.** Still not the
+  published value; if their sampler config ever surfaces, re-check.
+- **geometry**: `frame_num 49`, `max_area 589824` -> 864x672, conditioning frame from
+  `robot_arm/ind_test/episode_0.mp4`, seed 0.
+
+### Still required for the TRAINING arm (not the gate)
+
+1. **Grid timestep sampling** — draw `t` from `Wan22TurboVideoModel.timestep_grid()`
+   (4 points at shift 5.0) instead of the continuous logit-normal at
+   `losses/flow_matching.py:53`. Behind a config flag; every other arm keeps the
+   continuous path.
+2. `use_step_level_conditioning: false` — action conditioning ONLY (decided 2026-08-03).
+3. Action-sensitivity eval must run **at the grid timesteps**, not U(0,1).
