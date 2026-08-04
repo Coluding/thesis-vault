@@ -133,7 +133,19 @@ Actions explain ~0.45% of a teacher-forced denoising loss, so appearance
 correction always pays more per unit of gradient. This is *not* fixable by
 architecture, and naming it bounds the whole method class. Originality here
 is in the framing: a limit derived from the objective rather than observed
-from a failure. (TODO: maybe argue with variance here !!)
+from a failure.
+
+> 📌 **Open (Lukas): argue this with variance instead of loss share.**
+> "Actions explain ~0.45 % of the loss" is a *share-of-objective* statement,
+> and it invites the obvious objection that a small share can still be
+> decisive — a rudder is a small fraction of a ship. The stronger form is a
+> **variance decomposition**: how much of the *predictable* future variance
+> is action-determined versus appearance-determined. That is measurable, and
+> the **IDM ceiling** (B5 in [[../open-experiments-for-thesis]] — minutes of
+> GPU, `(z_t, z_{t+1}) → a_t` on ground-truth transitions) gives the
+> numerator directly. **Decide before §5.5 is written**; if the variance
+> version holds it should replace the loss-share phrasing everywhere, since
+> it is the version that survives the objection.
 
 **(2b) Shortcut modelling *through an adapter* — the only uncovered axis.**
 
