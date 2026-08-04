@@ -49,6 +49,63 @@ architectural variable that discriminates them** — is a materially stronger
 originality position than "we measured why it fails". Structure the
 contributions in that order.
 
+## ⭐ The contribution spine (Lukas, 2026-08-04): **efficient rollouts**
+
+The positive, forward-facing statement of what the thesis contributes —
+distinct from the *study* framing above, which describes the method:
+
+> **An extensible framework, and step-size / distillation modelling through
+> adapters for action-conditioned world models — because rollouts are
+> otherwise too slow to plan through.**
+
+This is the better spine for §1.4, and it reorders the deliverables: **D1 +
+D3 lead, D2 supplies the conditions.** Rollout cost is the motivating
+problem, action conditioning is the setting, and the adapter-borne
+few-step behaviour is the contribution. It also makes the D2 mechanism
+campaign *load-bearing rather than incidental* — you cannot build a fast
+action-conditioned rollout without knowing which injection pathway survives.
+
+**Three routes to the efficient rollout are in scope**, all ticketed:
+
+| Route | Ticket |
+|---|---|
+| Shortcut adapter (step-size conditioning on a frozen base) | [[../../../20_Tickets/experiments/exp-shortcut-action-free-isolation]] |
+| **PDD / LoRA distillation** of the base, action adapter on top | [[../../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]] · [[../../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]] |
+| Action adapter on an already-distilled base | [[../../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]] |
+
+### ⚠ What is and is not established on Wan
+
+The tempting claim is *"we trained an action-sensitive in-domain shortcut
+adapter on Wan"*. **That is D4, and it has not been run.** The two halves
+are validated **separately, on the same backbone**:
+
+| | Cell | Actions | Shortcut |
+|---|---|---|---|
+| S-w | `..._shortcut_actionfree_robotarm.yaml` | ❌ **stripped by design** | ✅ learns it, 9× vs matched control |
+| W-a | clean-room per-frame AdaLN | ✅ 2.49×, structured | ❌ none |
+
+The D3 arm is action-free *deliberately*, so that "does shortcut work" is
+not confounded with "does action conditioning work"
+([[../thesis-storyline]] §6). Writing the combination as done would collapse
+that isolation and is checkable against our own config names.
+
+**But the situation is far better than the vault records.** D4 was descoped
+as "gated on a working D2 cell". Both halves now work on Wan independently,
+so D4 is **no longer gated — it is simply unrun**, and it is the highest-value
+remaining experiment for this item: it is the thesis's punchline, both
+components are de-risked, and the ticket has existed since June
+([[../../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]]).
+➜ tracked as **A6** in [[../open-experiments-for-thesis]].
+
+### The diffusion side
+
+We show **that** the diffusion cell does not learn the consistency relation
+(0.084 vs matched control 0.083, CIs coincident; gain exploding to 4e4 at
+large `d`), and we **derive** why the published velocity-averaging target is
+biased on a curved VP arc. Phrase these as two results — a measurement and a
+derivation — rather than as one causal claim, since the DC arm ran
+`endpoint_inversion`; A4 closes the gap between them config-only.
+
 ## Our answer to that question
 
 Three candidates, ranked by how well they survive the test.

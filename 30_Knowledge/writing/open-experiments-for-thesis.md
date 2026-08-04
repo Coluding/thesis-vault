@@ -75,6 +75,39 @@ held-out clips, and the difference must be stated either way.**
 - [ ] If in-sample: re-probe on held-out clips before §5.3 is finalised, or
       state the limitation explicitly in that section and in §6.2.
 
+### ⭐ A6 — D4: the action-conditioned shortcut adapter on Wan
+
+**The thesis's punchline, and it is no longer gated — just unrun.** D4 was
+descoped as "gated on a working D2 cell". Both halves are now validated
+**on the same backbone, separately**: the shortcut objective is learnable in
+the Wan/flow cell (action-free by design), and per-frame AdaLN gives
+structured action-following on Wan. The combination has never been trained.
+
+Ticket exists since 2026-06-04:
+[[../../20_Tickets/experiments/exp-conditioning-add-actions-to-shortcut-adapter]].
+
+**Why it is the highest-value remaining run for Originality**
+([[rubric/01-originality]]): the contribution spine is *efficient rollouts
+for action-conditioned world models via adapters*, and D4 is the only cell
+that instantiates it. Everything else supplies conditions or components.
+
+**Design note.** The per-frame AdaLN result says which injection to use, so
+the D4 arm should not repeat the cross-attention pathway. Combine
+per-frame AdaLN conditioning with the shortcut objective on the flow base.
+
+⚠ Pre-register: what counts as success when *both* objectives are active —
+action structure must not degrade relative to W-a, and consistency must not
+degrade relative to S-w. A D4 cell that wins on neither axis is a negative
+result and should be reported as one.
+
+**Alternative routes to the same spine**, if D4-direct is too expensive:
+PDD/LoRA distillation of the base with the action adapter on top
+([[../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]],
+[[../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]]),
+or an action adapter on an already-distilled base
+([[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]]).
+These split the two jobs rather than asking one adapter to learn both.
+
 ### B — Strengthening a claim that already stands
 
 | # | Experiment | Moves | Status |

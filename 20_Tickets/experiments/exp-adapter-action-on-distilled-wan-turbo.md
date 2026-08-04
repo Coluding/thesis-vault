@@ -98,3 +98,47 @@ for overfitting to the grid points.
 - Does the Turbo checkpoint keep Wan2.2 TI2V-5B's exact DiT layout (our vendored provider
   and the 48-ch VAE assume it)?
 - Licence / redistribution terms for a thesis artefact.
+
+## RESOLVED 2026-08-04: the checkpoint is DROP-IN COMPATIBLE
+
+Downloaded and verified: `/scratch-shared/lbierling1/ckpts/Wan2.2-TI2V-5B-Turbo/model.pt`,
+18.63 GiB, **825 tensors / 5.00B params**, loads clean.
+
+(Correction: the HF API reports ~40 GB `usedStorage`, which counts dedup metadata,
+not the file. 18.63 GiB IS the complete file — it had been done since 00:06 while
+a hung `curl` process made it look like it was still downloading.)
+
+**Key/shape diff against our vendored `ckpts/Wan2.2-TI2V-5B`:**
+
+```
+turbo tensors: 825      base tensors: 825
+after rename -> missing: 0   extra: 0   shape mismatches: 0
+VERDICT: DROP-IN COMPATIBLE
+```
+
+The checkpoint was saved from an **FSDP-wrapped** model. The entire "state-dict
+remap" I had budgeted as major work is:
+
+```python
+k = k.removeprefix("model.").replace("._fsdp_wrapped_module.", ".")
+```
+
+**dtype is fp32** (hence 18.63 GiB for 5B params) — our provider loads `bf16`, so
+cast on load.
+
+### Quality gate BEFORE any training (Lukas, 2026-08-04)
+
+Do not train an adapter on this base until the base itself is shown to produce
+usable few-step video on our domain. Inference-only, no training:
+
+1. Load with the rename + a shape assertion.
+2. Generate at **4 steps** (its design point) on `configs/prompts/acwm_robotarm.yaml`.
+3. Reference: undistilled Wan2.2 base at 50 steps.
+4. Score with the configs' existing `psnr/ssim/lpips` + visual inspection.
+
+`scripts/generate_shortcut_fewstep.py` exists and has never been run — this is its
+first use.
+
+**Risk this gate will surface:** Turbo is CFG-distilled, so it has no guidance
+pathway. If our generation path assumes CFG it will error or silently degrade.
+Better found here than after a training run.
