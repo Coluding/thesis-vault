@@ -44,17 +44,25 @@ INSIDE the base.** Two consequences follow directly:
    recomputes each block during backward — the standard ~1.5× compute trade — on
    top of (1).
 
-   ⚠ **Correction 2026-08-03.** An earlier version of this note attributed the
-   OOM to "14,400 tokens per sample (24×24 patches × 25 latent frames)". That was
-   **wrong by 9×**: it derived the latent grid from `max_area` (768² → 48×48),
-   but the config sets `latent_height: 16` / `latent_width: 16` explicitly, so
-   with `patch_size 2` it is **8×8 × 25 latent frames = 1,600 tokens/sample**
-   (19,200 at batch 12). The OOM is real and measured; the token-count
-   explanation of its magnitude was not, and the true cause of the peak is
-   **unattributed** — it was raised in self-attention `qkv_fn`, but 1,600 tokens
-   does not obviously account for 93 GB, so something else dominates (plausibly
-   the full-resolution generation eval, `inference_max_area: 589824`). _Needs
-   verification before this note is cited on the memory point._
+   ✅ **Resolved 2026-08-04 by measurement — the ORIGINAL ~14k figure was right.**
+   The cached Wan latents are **`(48, 25, 42, 54)`** (read directly off
+   `latents.shared`), so with `patch_size 2` that is **25 × 21 × 27 = 14,175
+   tokens/sample**, i.e. **170,100 at batch 12**. That comfortably accounts for a
+   93 GB peak in self-attention `qkv_fn`, and the OOM needs no further explanation.
+
+   ⚠ **The 2026-08-03 "correction" that replaced 14,400 with 1,600 was itself
+   wrong, and is retracted.** It argued from `latent_height: 16` / `latent_width: 16`
+   in the config — but those two fields are read **only** by
+   `testing/fake_data.py` to shape synthetic smoke-test batches. They neither
+   describe nor constrain real latents, which come from `max_area` + the VAE
+   stride. Verified by grep: no other reader exists in `src/`.
+
+   **The transferable lesson is about the correction, not the original error.** The
+   first number was a derivation; the "fix" was also a derivation, from a
+   config field whose meaning was assumed rather than checked — and it was
+   *more* confidently worded than what it replaced. Reading one cached tensor
+   would have settled it at any point. Prefer measuring the artifact over
+   re-deriving from config.
 
 Analysed estimate of the split: checkpointing accounts for ~1.5× and the
 differentiable base pass for the remaining ~2×. _Not separately measured_ — it
@@ -87,8 +95,8 @@ result above is unaffected and is the durable finding from this run.
 - n=1 per arm.
 - The 3.1× is specific to this configuration and base. A setting that needed no
   checkpointing would narrow the gap toward the ~2× differentiable-pass term
-  alone. (See the token-count correction above — the sequence is 1,600
-  tokens/sample, not 14,400.)
+  alone. (Sequence length is **14,175 tokens/sample**, measured off the latent
+  cache — see the resolved note above.)
 - LoRA rank 16 on q/k/v/o (30 blocks, dim 3072) = 23.6 M, plus a 2.1 M action
   projector. A different rank changes the parameter count but not the structural
   argument.

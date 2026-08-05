@@ -236,3 +236,177 @@ against a real build, not guessed. Do this first and smoke it before any trainin
 - Action-sensitivity eval at the GRID timesteps, not U(0,1)
   (`scripts/eval_action_sensitivity.py`). Otherwise it measures the adapter at noise
   levels the distilled base cannot operate at.
+
+## UNBLOCKED 2026-08-04 — grid verified firing (job 25209235)
+
+```
+COMPLETED 00:30:29 0:0
+SIGMA-GRID MARKER: 1
+base=Wan22TurboVideoModel (external wan.WanTI2V)
+[sigma-grid] drawing sigma from the base's distilled grid (4 points): [1.0, 0.9375, 0.83333, 0.625]
+```
+Grid concentrated at high sigma, as a shift-5 4-step schedule should be — a sanity
+check, not just a marker.
+
+### Ready to launch
+`configs/wan22/diffusion_wan22turbo_action_robotarm.yaml` +
+`jobs/experiments_cluster/acwm_phys/shortcut/submit_train_wan22turbo_action.sh`
+(`--account=gusei17535`, `--mem=180G`).
+
+### It took FIVE smokes — four silent no-ops, one per layer
+Each returned a green job or died at startup; none of the flags errored on their own.
+1. `25196512` COMPLETED — script hardcoded `config.model.provider = "wan2.2_external"`,
+   clobbering `wan2.2_turbo`. Turbo WEIGHTS loaded, Turbo SEMANTICS did not.
+2. `25205710` — grid flag set but base had no `timestep_grid()` (consequence of 1).
+3. `25205782` — provider fixed; CFG guard refused `guide_scale=5.0`. Config had
+   `inference_guide_scale: 5.0`; a CFG-distilled base needs 1.0.
+4. `25205823` COMPLETED, marker 0 — grid code sat in `WanBatchPreprocessor.__call__`,
+   but `Wan22DiffusionForcingPreprocessor` OVERRIDES `__call__` and draws its own sigma.
+5. `25209183` — `NameError`: the import patch used `str.replace` with no match check and
+   silently no-oped (script imports from the PACKAGE, not the module).
+
+**Fix (Lukas's suggestion) was structural, not another flag:** a `_draw_sigma` seam on
+`Wan22DiffusionForcingPreprocessor`, overridden by
+`Wan22TurboDiffusionForcingPreprocessor`, selected **by provider** in the training
+script — so distilled base and distilled sampling cannot drift apart.
+
+`sigma_shift` is deliberately NOT applied on the grid path (the grid already encodes
+its shift; both would move training off the grid). Eval keeps the continuous draw.
+
+### ⚠️ Watch on the first real eval
+- `eval_adapter_gate_mean = 0.00000`, `gate_std = 0.00000` — gate pinned. Same
+  signature as `bug-adapter-gate-cap-equals-init-freezes-gate`. May be init at 12
+  steps; if still exactly 0 after a few hundred, the adapter cannot blend.
+- `eval_denoise_adapter_delta = -1.78` (base 0.148 -> adapted 1.93). Expected from a
+  scratch-init adapter this early; the number to track.
+
+### Lesson
+Every failure above produced a no-op, not an error. Explicit markers (`[sigma-grid]`,
+`base=`) were the only thing that caught them — the same role as the
+`shortcut_direction_loss/N###` check for the PDD arms.
+
+---
+
+## 2026-08-05 — grid-consistent eval, VRAM sizing, SBU ledger
+
+### Two defects found in the first full launch (`25218334`, cancelled at 10 min)
+Both were config values **inherited from the undistilled Wan arm** and both put the
+distilled base off its grid at eval time — the exact failure the `_draw_sigma` seam
+fixed on the *training* side.
+
+1. `eval_step_schedule: [{8, 0.125}, {50, 0.02}]` → the trainer's own guard fired:
+   `trainer.py:1402 RuntimeWarning: sampling_steps=50 on a 4-step distilled base.`
+   Now a single row, `{num_steps: 4, step_level: 0.25}`.
+2. `quality_eval_num_steps: 10` → now `4`.
+
+Cost of the defect, not just its wrongness: the 50-step row is ~75 s per rollout ×
+2 models × 3 samples ≈ 7.5 min **per eval cycle**, plus the same at step 0. Job
+`25218334` spent its entire 10-minute life in the step-0 eval and never reached a
+training step. With both rows on-grid the eval is ~12× cheaper.
+
+Generation and training now share one grid by construction: `inference_shift: 5.0`
+== `base_grid_shift: 5.0`, and both sides call `get_sampling_sigmas(4, 5.0)` →
+`[1.0, 0.9375, 0.83333, 0.625]`.
+
+### Batch sizing is measured, not inherited — and the inherited number was wrong
+`submit_train_wan22turbo_action.sh` carries a `bs=12 → 86.5 GiB` note (D3 shortcut
+arm) and a `bs=12 → ~37 GiB` note for the action arm. Reasoning from the second one
+— this arm is `shortcut_direction_weight: 0.0` and `multistep_consistency_weight:
+0.0` (config.py default), so **one** adapter forward per step, therefore cheap — gave
+"39 % of the card, lots of headroom". **That is false.** Measured:
+
+| bs | outcome | allocated |
+|---|---|---|
+| 12 | **trains** | **76.9 GiB / 93 GiB = 82 %** |
+| 16 | OOM | — |
+| 20 | OOM | 92.2 GiB |
+| 24 | OOM | 90.8 GiB |
+| 28 | OOM | 92.6 GiB |
+| 32 | OOM | 88.5 GiB (needed +5.2) |
+
+All OOMs land in `rope_apply` (`wan/modules/model.py`), in the **frozen base's**
+forward under `no_grad` — not in the adapter's backward graph. That is why "one
+adapter forward per step" did not predict the cost: the dominant term is the base's
+rotary embedding over 14 175 tokens/clip, which `no_grad` does not shrink. Note the
+OOM totals barely move with batch size (90.8–92.6 GiB across bs 20–32) — the
+allocator fills to the ceiling and dies wherever the next big block lands, so a
+failed run's number is a *lower bound*, useless for extrapolation. Only a surviving
+run's `peak_vram` is a measurement.
+
+**Consequence: bs=12 is already the maximum this arm fits, at 82 % occupancy.**
+There is no headroom to reclaim, and the usual "bigger batch vs. more optimizer
+steps" trade does not arise here — the memory-maximising batch and the
+convergence-maximising batch are the same one.
+
+Added `peak_vram=X/YGiB(Z%)` to the trainer step line
+(`trainer.py`, `log_every` branch) so batch sizing stops being read off a comment.
+
+`submit_probe_turbo_vram.sh <bs>` sizes it empirically: it disables the step-0
+baseline eval and sets `inference_every_n_steps: 6`, because the number that matters
+is the gen_eval transient landing on a **warm** allocator pool — surviving the step-0
+eval proves nothing, no training block is allocated yet.
+
+### SBU ledger (billing = 192/h at `--mem=180G`, 1×H100)
+Attributable to this workstream since 2026-08-03:
+
+| Job | Name | State | Elapsed | SBU |
+|---|---|---|---|---|
+| 25187395–25187746 | dc-pdd-smoke 1–4 | FAILED/TIMEOUT | 42 min | 135 |
+| 25188330 | dc-pdd-full | TIMEOUT | 10.0 h | 1921 |
+| 25192893–25193375 | turbo-gate ×3 | mixed | 4.5 min | 14 |
+| 25196512–25209235 | wan22turbo-action smokes ×6 | mixed | 99 min | 316 |
+| 25217047 | turbo-shift-scan | COMPLETED | 2.5 min | 8 |
+| 25218334 | wan22turbo-action-full | CANCELLED | 10 min | 32 |
+| 25219073 | turbo-vram-probe (bs=32) | — | — | ~25 |
+
+**≈ 2 450 SBU of the 20 000 cap.** `dc-pdd-full` alone is 78 % of that — a 10 h run
+whose objective turned out to be endpoint inversion, not PDD.
+
+Account-level (`accinfo`, budget EINF-17535/L1): 530 185 used / 469 815 remaining of
+1 000 000. A further ~11 400 SBU on this account since 2026-08-03 belongs to
+concurrently-running `ea-*` / `wan-actiononly*` jobs **not launched from this
+workstream** — flagged so the two are not conflated in the cap.
+
+### Does the gen_eval fit on top of an 82 %-full card? Yes — measured
+The real risk of an 83 %-occupancy run is not the training step (that is steady) but
+the periodic `gen_eval` landing on a **warm** allocator pool at step 200. Probe
+`25219563` (bs=12) fired a gen_eval at step 6 and cleared it:
+
+```
+step 6  peak_vram=76.9/93GiB(82%)     <- training only
+[eval-mem] rollout-start:      alloc=14.13G reserved=14.32G
+[eval-mem] after-base-gen:     alloc=14.13G reserved=44.38G
+[eval-mem] after-adapted-gen:  alloc=14.13G reserved=44.39G
+step 7+ peak_vram=77.7/93GiB(83%)     <- +0.8 GiB, no OOM
+```
+
+`alloc` drops to 14.1 G during eval: the training blocks are freed and the eval's
+~30 GiB of transients reuse them (`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`).
+So the eval transient is NOT additive on top of the training peak — the +0.8 GiB is
+the whole cost. The probe's TIMEOUT is its own 25-min cap at step 12/14, not a
+failure; loss fell 3.02 -> 1.72 over 12 steps.
+
+### Overnight run
+`25221298` — `--time=10:00:00`, `--mem=180G`, `--account=gusei17535`, `BATCH_SIZE=12`
+(`submit_train_wan22turbo_action.sh` now honours `${BATCH_SIZE:-12}`; it previously
+hardcoded 12 and silently ignored the environment).
+
+Probe cost for the sizing sweep (bs 32/28/24/20/16/12): 6 jobs, **124 SBU**. That
+bought a measured ceiling in place of a comment that was off by a factor of two.
+
+Startup confirmed on `gcn147`: `base=Wan22TurboVideoModel`, `batch_size=12`,
+`[sigma-grid] ... [1.0, 0.9375, 0.83333, 0.625]`, step-0 baseline eval completed, and
+**zero** occurrences of `sampling_steps=50` in either stream — the off-grid eval is
+gone. The whole step-0 eval + model load now takes ~14 min including wandb video
+encoding; under the old 8/50-step schedule job `25218334` had not finished it in 10.
+
+### SBU total for this workstream
+| | SBU |
+|---|---|
+| spent so far (incl. probe sweep) | 2 596 |
+| overnight run `25221298`, 10 h projected | 1 920 |
+| **projected total** | **4 516** of the 20 000 cap |
+
+Separately, 11 742 SBU since 2026-08-03 belongs to concurrent `ea-*` /
+`wan-actiononly*` jobs on the same account, **not launched from this workstream** —
+worth confirming who owns them before they are counted against the cap.

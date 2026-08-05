@@ -1,6 +1,6 @@
 ---
-last_updated: 2026-07-30
-status: pre-results
+last_updated: 2026-08-06
+status: first-results-in
 ---
 
 # Experiment State
@@ -98,7 +98,43 @@ Channel-stack / single-joint baseline variants still not built. See
 
 | **Generation-eval conditioning bug found+fixed; σ-sweep + action probe; gatelow overfit** (2026-07-20/21) | `diffusion_wan22_avid_xattn_replace_metaworld` (+ local `--sigma-sweep`/`--action-probe` diagnostics) | y1jrgxqp @1500 running→converged; uxrst2k5 crashed @342 | `y1jrgxqp` / `uxrst2k5`; local ckpt `outputs/replace-metaworld-run/checkpoints/step_00001500.pt` | see note | **Root cause of "replace generation = noise": eval paths dropped the per-frame `action_seq`** the xattn adapter trained on (silent OOD fallback, cos vs base 0.997→0.63). Fixed + validated end-to-end: `y1jrgxqp` adapted FID 518→58 ≈ base by step 600. **⚠ Generation metrics of ALL earlier action_seq-xattn runs are invalid** (5cxstyh4, ostoa19d, 81wq3lwt, bcipghvw, uea10230, likely xb76ptw2 incl. its "worse on all 6 metrics" row above) — training-seam losses stay valid. Post-fix measurements: adapter converges to a **total base-clone** (per-σ sweep: cos ≥0.996 at every σ, flat −0.002 deficit; sole exception σ=0.05 where adapter beats base +0.005) and is **fully action-blind** (shuffled/zeroed actions move loss <1e-4 at every σ). Gatelow single-clip overfit (`uxrst2k5`): gate saturated 0.5→0.99 from balanced init, grad norm 4.4→0.003 — failed to overfit ONE clip ⇒ copy-through is an optimization trap, balanced init insufficient. Countermeasures landed: `sigma_shift: 5.0` training option (enabled in replace config), no-base-input overfit config queued ([[../20_Tickets/experiments/exp-adapter-replace-nobase-overfit]]). See [[../30_Knowledge/experiments/20260721-replace-fix-validation-sigma-sweep-action-probe]] |
 
+
+### 2026-08-06 — FIRST RESULT WHERE THE ADAPTER ACTUALLY WORKS
+
+Everything above this line was written while every adapter we had was, in
+effect, cosmetic. That is no longer the current state.
+
+On **EasyAnimate V5 / V5.1 (7B)** the same 34.9M output adapter
+(`composition: add`, cross-attention actions, no base-output oracle):
+
+| run | base loss | adapted | Δ | `adapter_base_cosine` | `rel_contrib` |
+|---|---|---|---|---|---|
+| best Wan arm (`25192313`) | 0.13362 | 0.12917 | −3.3% | **0.9989** | 0.047 |
+| **EA V5 diffusion** (`25240257`) | 0.24290 | **0.06098** | **−74.9%** | 0.868 | **0.521** |
+| **EA V5.1 flow** (`25241732`) | 0.44620 | **0.11759** | **−73.6%** | 0.886 | **0.484** |
+
+On Wan `adapter_base_cosine` 0.9989 means the adapted prediction was numerically
+almost the frozen base. On EasyAnimate the adapter reshapes it substantially.
+**The ceiling was Wan-specific, not intrinsic to output adapters** — which revises
+the direction of [[../30_Knowledge/experiments/20260802-adapter-is-a-domain-adapter-not-an-action-conditioner]].
+
+**Where the objective bites:** the two objectives adapt *equally well* (−74.9% vs
+−73.6%) but diffusion leads on action-specificity — `effect_rel` 0.0389 vs 0.0286
+(+36%), `effect_vs_adapter` 0.0756 vs 0.0598 (+26%). Across four backbones both
+diffusion bases (DC, EA-V5) sit above both flow bases (EA-V5.1, Wan).
+
+⚠ **Interim** — arms still running, steps not matched (9000 vs 8200), n=1 per arm,
+per-eval `effect_rel` swings 20–80%. ⚠ Only **6–8%** of the adapter's output is
+action-driven, so the domain-corrector question is open at ~10× scale. ⚠ V5/V5.1
+differ in TEXT stack (BERT+T5 vs Qwen2VL) and CFG steers through text.
+
+⚠ **All EasyAnimate numbers logged before 2026-08-05 are VOID** — the base was
+rendering noise while every shape/finiteness check passed.
+
+Full write-up: [[../30_Knowledge/experiments/20260806-objective-governs-action-specificity-not-adapter-capacity]]
+
 ### Action-conditioning status (2026-07-30) — the fault is localised to our code
+
 
 The D2 storyline through July was "our adapters don't follow actions, and we
 don't know why". As of 2026-07-30 that is narrowed:
