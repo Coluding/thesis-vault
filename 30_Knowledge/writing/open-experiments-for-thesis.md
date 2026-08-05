@@ -117,7 +117,7 @@ Open decision: [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]].
 |---|---|---|
 | **L1** shortcut adapter + actions (entangled) | = **A6 / D4** | ☐ never trained |
 | **L2** PDD / LoRA distil, adapter on top (separable) | [[../../20_Tickets/experiments/exp-shortcut-pdd-lora-distill-dc]] · [[../../20_Tickets/experiments/exp-shortcut-parallel-decoding-adapter-wan]] | ☐ ticketed |
-| **L3** action adapter on an already-distilled base (free) | [[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]] | ☐ ticketed |
+| **L3** action adapter on an already-distilled base (free) | [[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]] | 🔶 **first data 2026-08-05** — [[../experiments/20260805-turbo-action-tokens-binned-to-latent-grid]]. `effect_vs_adapter` 0.18–0.31 (~4× the best Wan arm) but `action_loss_gap` ~0 → **effect without accuracy**; confounded by 3 simultaneous changes; no matched control |
 
 **Pre-registered 2026-08-04, before any level ran** — full statement with
 both branches and the capacity discriminator in
@@ -142,6 +142,9 @@ both branches and the capacity discriminator in
       fast-sampler baseline (not many-step sampling alone).
 - [ ] **Few-step quality actually measured** — currently *not measured* on
       the one shortcut cell that exists.
+- [ ] **An accuracy readout, not only an effect readout** — L3 scored best
+      of any cell on `effect_vs_adapter` while learning no correct dynamics
+      (`action_loss_gap` ~0). Effect-only ranking is actively misleading.
 
 ⚠ Lukas reports data for the levels exists. Until run ids and checkpoints
 are in the vault this is **A0-class evidence** — the framing may be built,

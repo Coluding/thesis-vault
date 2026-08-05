@@ -98,9 +98,29 @@ per clip (r≈0.75) — i.e. the action sets *how much* the arm moves even thoug
 cannot see it. That would explain the Result-2 dissociation, since squared error
 penalises slightly-misplaced motion as hard as none.
 
-🛑 **This is not a result.** n=6, pooled across two *different* eval draws, GT values
-fall in two clusters rather than spreading → p ≈ 0.08. Hand-measured, not logged.
-**Confirm before citing anywhere.** `Trainer._clip_motion` / `_pearson` +
+⚠️ **Preliminary, but stronger than first assessed** (revised 2026-08-06).
+
+Initially dismissed as "n=6 pooled across two eval draws, p≈0.08". Both parts of that
+were wrong:
+
+1. **Spearman, not Pearson, is the right statistic** here — GT motion clusters into
+   fast/slow groups, which is precisely when Pearson is fragile. ρ = **0.943**, above
+   the n=6 critical value of 0.886 → p ≈ 0.017.
+2. **Pooling is not doing the work.** Decomposed per draw, the adapted rank order
+   matches GT **perfectly in BOTH independent draws** (step 1400 `[2,1,3]` vs
+   `[2,1,3]`; step 4000 `[2,1,3]` vs `[2,1,3]`; the draws use different clips — GT
+   values differ entirely). The base matches 1/2, i.e. chance. P(both match by
+   chance) = (1/6)² = **0.028**.
+
+What remains open is **causal, not statistical**: is the adapter tracking the ACTION,
+or the conditioning frame? Arm pose at frame 0 plausibly predicts how much motion
+follows. The frozen base is not a sufficient control — it differs from the adapter in
+every respect, not only action access. **Only the paired shuffled-action control
+settles it** (same weights, same frame, same seed, another clip's actions):
+`eval/motion_corr_action_gain` > 0 with a CI excluding zero ⇒ action-driven.
+
+Still hand-measured from 6 mp4s rather than logged. **Do not cite until the
+instrumented run reports.** `Trainer._clip_motion` / `_pearson` +
 `eval/motion_corr_{adapted,base}` are now wired into `_native_quality_eval`
 (16 clips/cycle, tests in `tests/test_motion_tracking_metric.py`) and fire
 automatically on the next run — that is the confirmation.

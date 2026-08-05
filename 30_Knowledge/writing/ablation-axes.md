@@ -67,7 +67,7 @@ answers neither cleanly on its own; it is monotone in action-pathway gain.
 | # | Candidate explanation | Discriminating axis | Verdict |
 |---|---|---|---|
 | H1 | **Our data does not reward actions** | 1 Dataset | **Killed.** The unmodified AVID recipe follows actions on *our* ACWM Robot Arm (effect_rel 0.0295, null 0) where our three adapters were blind (0.0013–0.0056) — same frozen weights, same data, same probe |
-| H2 | **The base is too strong; the adapter clones it** | 2 Backbone · 7 Base-pred injection | **Refined, not confirmed.** ~87% of the pred–base cosine is shared-target convergence, present with **no** base input — high cosine ≠ copying. The removable part is *oracle-reading* |
+| H2 | **The base is too strong; the adapter clones it** | 2 Backbone · 7 Base-pred injection | **REVISED 2026-08-06 — the ceiling was Wan-specific, not intrinsic.** The same adapter family cuts loss **−74.9%** and contributes **0.52** on EasyAnimate, against **−3.3%** / **0.047** on the best comparable Wan arm (`adapter_base_cosine` 0.9989 — *numerically almost the frozen base*). So output adapters **can** reshape a frozen video base; Wan was the exception, not the rule. The earlier ~87%-shared-target decomposition still stands *for Wan* |
 | H3 | **Optimisation traps (gate)** | 6 Composition · 8 Gate bias/cap · 9 Gate pretraining | **Real but insufficient.** The traps exist and are fixable; fixing them did not unlock action use |
 | H4 | **Insufficient capacity** | 4 Adapter size | **Killed.** A structurally clean 7.5M adapter settles *below* the DiT-clone arms (~0.0025 vs 0.008–0.011); the DiT inductive bias is worth 3–4× on this data |
 | H5 | **Wrong adapter family** | 3 Family (output vs LoRA) | **Open — run in flight** ([[../../20_Tickets/experiments/exp-adapter-lora-vs-output-comparison]]) |
@@ -77,7 +77,16 @@ answers neither cleanly on its own; it is monotone in action-pathway gain.
 | H9 | **The injection pathway is wrong** | 5 Action injection | **✅ THE ANSWER.** Per-frame modulation of normalised activations is *causal* at matched adapter contribution and matched mask; cross-attention fails at every scale and alignment tested |
 | H10 | **The objective does not pay for actions** | analysis, not an axis | **Confirmed as the bound.** Actions explain ~0.45% of the teacher-forced denoising loss; appearance correction always outbids them |
 | H11 | **The consistency loss is at fault** (D3 contamination) | 13 + `anchor_prob: 1.0` control | **Killed.** The D2 failure is measured on runs carrying no consistency term |
+| **H12** | **The training objective governs how much of the adaptation is action-conditioned** | **14 Training objective** (diffusion vs flow at matched video backbone) | ⚠️ **INTERIM, promising.** EA V5 vs V5.1: adaptation *capacity* tied (−74.9% vs −73.6% loss) while `effect_rel` differs **+36%** and `effect_vs_adapter` **+26%** for diffusion. Cross-family: both diffusion backbones above both flow backbones (n=2 per objective). **Unifies with H10** — both say the objective allocates gradient, not that capacity binds. ⚠ runs unfinished, steps unmatched, text backbones differ, and it is *"flow is weaker"* not *"flow fails"* |
 
+**H9 + H10 are the thesis, and H12 generalises H10.** H9 is the mechanism
+that is fixable; H10 is the bound that is not; **H12 says the same thing one
+level up — the objective decides what fraction of the adapter's capacity
+becomes action-conditioned.** Stated together: *what an adapter learns is
+governed by how the objective allocates gradient, not by how much capacity
+it has or (beyond a scale-free pathway) where the signal enters.*
+
+(Original framing:)
 **H9 + H10 are the thesis.** H9 is the mechanism that is fixable; H10 is the
 bound that is not. Everything else is the elimination that makes those two
 credible — and the eliminations must be *reported*, not compressed away
@@ -96,7 +105,8 @@ comparison count honestly.
 | # | Axis | Values exercised |
 |---|---|---|
 | 1 | **Dataset** | MetaWorld `five_task` (action-**redundant** control) · ACWM {Push Cube, Robot Arm, Reacher} (informative) · RT-1 (diverse real) · OpenVid |
-| 2 | **Frozen backbone** | Wan2.2-TI2V-5B (flow, DiT, 4× temporal compression) · SkyReels-1.3B · DynamiCrafter (diffusion, UNet) |
+| 2 | **Frozen backbone** | Wan2.2-TI2V-5B (flow, DiT) · **Wan2.2-Turbo (4-step distilled)** · SkyReels-1.3B · DynamiCrafter (diffusion, UNet) · **EasyAnimate V5 7B (diffusion)** · **EasyAnimate V5.1 7B (flow)** |
+| **14** | **Training objective** *(new 2026-08-06)* | diffusion vs flow **at matched video backbone** (EA V5 vs V5.1) — the closest available controlled comparison. ⚠ text backbones differ (BERT+T5 vs Qwen2VL) |
 
 ### Architecture axes
 

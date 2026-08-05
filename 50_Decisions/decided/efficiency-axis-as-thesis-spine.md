@@ -185,6 +185,39 @@ arm loses. If it does not, H-C is eliminated and H-E stands alone.
 and *sensitive* to whether the parameter sets are shared. H-C predicts the
 reverse. L2 at fixed total parameter count separates them directly.
 
+## First data on L3 (2026-08-05) — and what it does not yet settle
+
+[[../../30_Knowledge/experiments/20260805-turbo-action-tokens-binned-to-latent-grid]]
+— an action adapter on a frozen **4-step distilled Wan-Turbo** base is L3 by
+construction: acceleration lives in the base, the adapter learns only
+conditioning.
+
+**Suggestive in the predicted direction.** `effect_vs_adapter` reaches
+**0.18 → 0.31** on the distilled base, against **0.047** on the best
+comparable non-distilled Wan arm — roughly 4×. H-E predicts exactly this:
+where the two adaptations occupy separate parameter sets, conditioning is
+not crowded out.
+
+**But it is not yet evidence.** Three variables move at once — 100M vs
+34.9M adapter, binned vs unbinned action tokens, distilled vs full base — so
+it cannot be attributed to separability. **This is precisely what the
+matched conditioning-only control exists to prevent**, and its absence here
+is the first practical demonstration of why that requirement is
+load-bearing rather than bureaucratic.
+
+**And L3 is not a working cell as it stands.** The action changes the
+prediction without changing it *correctly*: `eval_action_loss_gap` is ~0 at
+all ten evals and `eval_action_cos` never leaves 0.9998. The adapter also
+**hurts denoising at every eval** and overfits from step 1200. So L3
+currently shows *the action reaching the adapter*, not *the adapter having
+learned action-conditioned dynamics* — a distinction the level comparison
+must preserve, or the axis will read as three cells that all "sort of work".
+
+➜ **Consequence for the protocol below:** the per-level readout must include
+an *accuracy* measure (loss gap / action error), not only an *effect*
+measure. `effect_vs_adapter` alone would have scored L3 as the best level
+while it learned no correct dynamics at all.
+
 ## What each level needs to be citable
 
 Common protocol, so the three are comparable at all:

@@ -225,6 +225,64 @@ This is the unit-test analogue of the degenerate-input problem the structure
 probes already guard against ([[../tech/probe-suite]] §5g) — the same
 failure mode at a different layer.
 
+---
+
+## I8 — A base that rendered noise while every automated check passed
+
+**Expectation.** A newly integrated frozen base (EasyAnimate) producing
+valid video, as every shape, finiteness and file-existence check reported.
+
+**Detection.** **A human looked at one frame.** No automated check failed.
+
+**The defect — three stacked.** A zero text context was passed instead of a
+real embedding (absmax 21); the diffusers pipeline silently dropped the
+entire T5 stream; and classifier-free guidance was forced to 1.0. Each is
+individually survivable; together the base was generating noise.
+
+**Damage.** **Every `effect_rel` number logged on that base before
+2026-08-05 is void.** The cost is recorded in
+[[../../10_now/compute-spend-ledger]].
+
+**Correction.** Base fixed first, then re-measured; the numbers that survive
+([[../experiments/20260806-objective-governs-action-specificity-not-adapter-capacity]])
+are all post-fix.
+
+**Transferable lesson — the sharpest in this section.** Shape checks,
+finiteness checks and file-existence checks are all *type* checks: they
+verify that an object of the right kind was produced, never that it is the
+right object. A generative pipeline can satisfy all of them while producing
+noise. **The only check that caught it was rendering one frame and looking
+at it**, and that check costs seconds. It is now standing practice before
+any new base is trusted.
+
+This is the same failure mode as the vacuous test suite (I7) and the
+degenerate-response matrix ([[../tech/probe-suite]] §5g), at a third layer:
+*a well-formed output is not a correct one.* Three independent instances in
+one campaign is itself the finding.
+
+---
+
+## I9 — A run that cannot be exactly reproduced
+
+**Expectation.** Runs are reproducible from the recorded commit.
+
+**Detection.** Launch-time audit of the remote working tree.
+
+**The defect.** 135 uncommitted modified files at launch; the run executed
+rsynced working-tree code, not the recorded commit `75721b7`.
+
+**Damage.** None to the result's validity — config, adapter config and the
+resolved `action_seq_len` are captured in the note and the startup log — but
+**exact re-creation requires files that were never committed.**
+
+**Correction.** Commit before launch, adopted as standing practice.
+
+**Why it is reported rather than quietly fixed.** The provenance convention
+in this thesis is *run id + checkpoint + commit*
+([[thesis-formal-rules]] §5). Where the commit does not fully determine the
+code, saying so is the only honest form of the receipt — and a reader who
+sees one such disclosure can trust the others.
+
 ## What the section should conclude
 
 Not an apology. The closing move is the transferable one:

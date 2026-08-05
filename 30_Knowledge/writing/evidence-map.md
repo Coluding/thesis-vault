@@ -221,6 +221,109 @@ falling and they would cross around ~1500–2000 — the sign is unresolved.
 ⚠ The first test suite passed **vacuously** (zero-init head, zeros compared
 to zeros) — belongs in [[methods-integrity]].
 
+## Cells added 2026-08-05/06 — these REVISE earlier readings
+
+### E-o — EasyAnimate V5 (diffusion) vs V5.1 (flow), objective comparison
+
+**Runs.** slurm `25240257` (V5 diffusion) / `25241732` (V5.1 flow), project
+`coluding/EasyAnimate-objective-acwm-robotarm`, ACWM Robot Arm. ⚠ **status
+`running`, steps not matched (9000 vs 8200), n=1 per arm.**
+Note: [[../experiments/20260806-objective-governs-action-specificity-not-adapter-capacity]].
+
+**Two findings, and the first one revises the Wan story.**
+
+1. **The Wan ceiling was not intrinsic to output adapters.** The *same*
+   adapter family (34.9M, `composition: add`, cross-attention,
+   `condition_on_base_outputs: false`) cuts denoising loss **−74.9 %** on EA
+   and contributes **0.52** of the prediction, against **−3.3 %** and
+   **0.047** on the best comparable Wan arm. Wan's `adapter_base_cosine`
+   0.9989 means the adapted prediction was *numerically almost the frozen
+   base* — the adapter was **cosmetic** there.
+2. **The objective governs action-specificity, not adaptation capacity.**
+   Loss reduction is tied (−74.9 % vs −73.6 %); `action_effect_rel` is
+   **+36 %** and `effect_vs_adapter` **+26 %** for diffusion.
+   `effect_vs_adapter` is the cleaner measure — it asks what fraction of the
+   adapter's *own* output is action-driven, so a large adapter cannot
+   inflate it.
+
+**Cross-backbone pattern.** Both diffusion backbones (DC 1.4B, EA-V5 7B) sit
+above both flow backbones (EA-V5.1 7B, Wan 5B) — **n=2 per objective across
+independent model families**, which is materially harder to dismiss than one
+pair. ⚠ But it is *"flow is weaker"*, not *"flow fails"*: EA-flow (0.029) is
+~3× Wan-flow, so backbone still matters and the two are **not separable**
+from four points.
+
+**Topics it licenses.** The objective as the governing variable — which
+**unifies with the 0.45 % economics**: both say *what the adapter learns is
+set by how the objective allocates gradient*, not by capacity. Also: a
+5th/6th backbone family for D1, and a same-video-backbone objective contrast
+(V5 vs V5.1) that is the closest thing to a controlled comparison available.
+
+**§.** §5.3 (the pathway/objective analysis) · §5.1 (D1 breadth) · §6.1.
+**Rubric.** **1 Originality** · 3 Experimental evaluation · 4 Knowledge.
+
+**Caveats that travel with it**
+- ⚠ **Interim.** Both arms running; steps unmatched (9000 vs 8200); n=1.
+  Quote the end-of-run matched-step value. Direction held for 8 consecutive
+  hourly evals — quote *that*, not a single eval.
+- **EA vs Wan differs in backbone, VAE, objective *and* text conditioning.**
+- **V5 vs V5.1 do not share a text backbone** (BERT+T5 vs Qwen2VL), and CFG
+  steers *through* text — not peripheral.
+- **Only 6–8 % of the adapter's large contribution is action-driven**
+  (`effect_vs_adapter` 0.076 / 0.060). "The adapter is powerful" is
+  established; "powerful **at action conditioning**" is not — the
+  domain-corrector reading may still hold, now at ~10× the operating scale.
+- All `effect_rel` logged before the 2026-08-05 base fix are **void** (I8).
+
+### T-l3 — Wan2.2-Turbo (distilled base) + action adapter = **efficiency level L3**
+
+**Run.** `jlnl7s1k` (slurm `25240927`), 100M adapter (1.99 %), binned action
+tokens, ACWM Robot Arm 49f. Frozen `Wan2.2-TI2V-5B-Turbo`, 4-step distilled
+grid. Note: [[../experiments/20260805-turbo-action-tokens-binned-to-latent-grid]].
+
+**This is the first data point on L3 of the efficiency axis**
+([[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]]).
+
+**Result 1 (sourced).** Binning action tokens to the latent grid raises
+`effect_rel` **4.1×** and `effect_vs_adapter` **6.5×** (0.0277 → 0.179) at
+matched step 1600, growing monotonically to 0.27–0.31 by step 2800–4000.
+⚠ **Two variables changed** — binning *and* 34M→100M — so it is not
+attributable to binning alone; a 34M+binned control is needed.
+
+**Result 2 (sourced, negative) — the clean dissociation.**
+`eval_action_loss_gap` is ~0 at every one of ten evals (|x| ≤ 0.00055) and
+`eval_action_cos` never leaves 0.9998. **The action now changes the
+prediction, but changing it to the *correct* value does not reduce error
+versus shuffling or zeroing it.** Misalignment was real and worth fixing; it
+was **not the binding constraint.**
+
+**Result 4 (sourced).** Overfits from step 1200 (best `eval_loss` 0.1271 →
+0.1918 @4000), and `eval_denoise_adapter_delta` never crosses zero — **the
+adapter hurts denoising at every eval.** Gate healthy throughout.
+
+**Why L3 matters to the axis.** `effect_vs_adapter` 0.18–0.31 on the
+distilled base is ~4× the best comparable Wan arm (0.047) — *suggestive*
+that putting acceleration in the base does not cost conditioning, which is
+the direction H-E predicts. ⚠ **Confounded** (100M vs 34.9M, binned vs
+unbinned, different base), so it is not yet evidence for the
+pre-registration. The matched control is what would make it so.
+
+**§.** §5.7 / the acceleration axis (L3) · §5.3 (the dissociation).
+**Rubric.** 1 Originality (L3 has data) · 3 Experimental evaluation (a clean
+dissociation with a matched-step comparison) · 5 Reflection.
+
+**Caveats**
+- 🛑 **Result 3 (motion tracking, ρ=0.943) is hand-measured from 6 mp4s —
+  DO NOT CITE.** It is genuinely promising (perfect rank match in *both*
+  independent draws, P≈0.028) but the open question is **causal, not
+  statistical**: is the adapter tracking the *action* or the conditioning
+  frame? The frozen base is not a sufficient control. Only the paired
+  shuffled-action control settles it, and it is now instrumented and fires
+  automatically on the next run.
+- ⚠ **Reproducibility:** 135 uncommitted modified files at launch; the run
+  used rsynced working-tree code, not commit `75721b7`.
+- Also changed and not isolated: 49f clips (was 97), fp32 eval VAE decode.
+
 ## The D3 cells
 
 | # | Cell | Verdict | § | Rubric |
