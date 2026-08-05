@@ -49,6 +49,41 @@ what makes a diagnostic claim citable rather than a postmortem.
 | 7 | **Planning through the world model works, and is slow** — which motivates 4-5 | planning demo + wall-clock | ⚠️ pending |
 | 8 | Few-step rollouts **improve over the no-shortcut control but are not competitive**; more training and tuning needed | qualitative | ⚠️ pending |
 
+### ⚠ UPDATE 2026-08-06 — two claims above need scoping
+
+**New evidence:**
+[[../experiments/20260806-objective-governs-action-specificity-not-adapter-capacity]],
+[[../experiments/20260805-turbo-action-tokens-binned-to-latent-grid]].
+
+**(a) The Wan ceiling was NOT intrinsic to output adapters.** The same
+adapter family cuts denoising loss **−74.9 %** and contributes **0.52** of
+the prediction on EasyAnimate, against **−3.3 %** and **0.047** on the best
+comparable Wan arm — whose `adapter_base_cosine` of 0.9989 means the adapted
+prediction was *numerically almost the frozen base*. Claim 3 above ("the
+backbone is not the limit") therefore needs rewording: the backbone **is** a
+limit on how much the adapter can reshape at all; what it is *not* is a
+limit on whether per-frame conditioning is addressable.
+
+**(b) The objective governs action-specificity, not adaptation capacity.**
+EA V5 (diffusion) vs V5.1 (flow) at matched video backbone: loss reduction
+tied (−74.9 % vs −73.6 %), but `effect_rel` **+36 %** and
+`effect_vs_adapter` **+26 %** for diffusion. Both diffusion backbones sit
+above both flow backbones across independent families (n=2 per objective).
+**This generalises the 0.45 % economics** — the objective allocates
+gradient; capacity does not bind. ⚠ Interim, unmatched steps, differing text
+backbones, and it is *"flow is weaker"* not *"flow fails"*.
+
+**(c) A new dissociation, sharper than the old one.** On the distilled
+Turbo base the action *reaches* the adapter better than anywhere else
+(`effect_vs_adapter` 0.18–0.31) while `action_loss_gap` stays at ~0 and
+`action_cos` never leaves 0.9998 — **effect without accuracy**. The
+domain-corrector reading survives, now stated more precisely: the adapter
+consumes the action without learning the action-conditioned dynamics.
+
+➜ These revise, not overturn. The pathway principle stands; the *scope* of
+"Wan fails" narrows to a statement about that base's adaptability, and the
+objective joins the pathway as a governing variable.
+
 ### The central mechanistic finding, stated precisely
 
 > Adapters **can** make a video foundation model action-conditioned — but only

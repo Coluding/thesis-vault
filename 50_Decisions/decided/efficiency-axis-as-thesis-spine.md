@@ -231,6 +231,14 @@ Common protocol, so the three are comparable at all:
       conditioning adapter without the acceleration stage.
 - [ ] **The same action-structure readout** across levels (the structure
       triad, not `effect_rel` alone — it is monotone in gain).
+- [ ] **An accuracy readout as well as an effect readout.** Added 2026-08-06
+      after the first L3 data: the action reached the adapter
+      (`effect_vs_adapter` 0.18–0.31, the best of any cell to date) while
+      `action_loss_gap` stayed at ~0 across all ten evals — the adapter
+      consumed the action **without learning correct dynamics**. An
+      effect-only comparison would have ranked L3 first on a cell that
+      learned nothing, which is the single most misleading outcome this
+      protocol can produce.
 - [ ] **Wall-clock and NFE** at matched quality, against an honest
       fast-sampler baseline.
 - [ ] **Few-step quality** actually measured — currently *not measured* for
