@@ -313,16 +313,50 @@ pre-registration. The matched control is what would make it so.
 dissociation with a matched-step comparison) · 5 Reflection.
 
 **Caveats**
-- 🛑 **Result 3 (motion tracking, ρ=0.943) is hand-measured from 6 mp4s —
-  DO NOT CITE.** It is genuinely promising (perfect rank match in *both*
-  independent draws, P≈0.028) but the open question is **causal, not
-  statistical**: is the adapter tracking the *action* or the conditioning
-  frame? The frozen base is not a sufficient control. Only the paired
-  shuffled-action control settles it, and it is now instrumented and fires
-  automatically on the next run.
+- ✅ **Result 3 (motion tracking) RESOLVED 2026-08-06** — and it resolved
+  *against* the preliminary reading. See **T-mc** below.
 - ⚠ **Reproducibility:** 135 uncommitted modified files at launch; the run
   used rsynced working-tree code, not commit `75721b7`.
 - Also changed and not isolated: 49f clips (was 97), fp32 eval VAE decode.
+
+### T-mc — the paired control on the Turbo arm (D2, methodological)
+
+**Run.** `mo3k2639` (slurm `25259766`), same Turbo arm, 1200 steps, first run
+of the instrumented motion metric.
+Note: [[../experiments/20260806-motion-tracking-is-action-driven-but-the-base-control-was-wrong]].
+
+**Result 1 (sourced).** The **paired shuffled-action** control — identical
+weights, conditioning frame and seed, only another clip's actions — gives a
+positive gain in **4/4 draws** (+0.069, +0.168, +0.122, +0.213; mean
+**+0.143**; sign test p ≈ 0.06). Because it differs from the adapted rollout
+in exactly one respect, this is the **causal** quantity.
+
+**Result 2 (sourced, negative).** The **frozen-base** control does *not*
+fire: adapted − base is +0.13, +0.10, +0.045, **−0.034** — sign-inconsistent
+and centred near zero. The hand-measured preliminary gap of **0.66** does
+**not** survive; the logged gap is an order of magnitude smaller.
+
+**What it licenses.** A modest, consistently-signed action effect on **how
+much the arm moves per clip** — and, more importantly, the design rule:
+*a control must differ from the treatment in exactly one respect.* This is
+the second time an instrument in this thesis was validated by finding it
+wrong (the first being `effect_rel`'s gain confound).
+
+**§.** §4.3 (probe suite — controls) · §4.6 (integrity, **I10**) · §5.3.
+**Rubric.** **2 Technical skills** (instrument validation) · **5 Reflection**
+· 3 Experimental evaluation.
+
+**Caveats**
+- **No interval on the gain.** The CIs reported are on `corr(adapted, GT)`,
+  not on the gain; paired bootstrap is now wired but **cannot be applied
+  retroactively** — the next run produces the first gain intervals.
+- `corr(adapted, GT)` is **not distinguishable from zero** — its CI spans
+  zero in 3 of 4 draws. The claim is about the *gain*, not the correlation.
+- n=16 per draw, 4 draws, **one run**, no seed replication.
+- ⚠ **No wandb dashboard** — metrics in stdout and `metrics.jsonl` only.
+- Still **magnitude, not correctness**: `action_loss_gap` finished at
+  0.00005, `action_cos` at 0.99995. The effect-without-accuracy dissociation
+  is unchanged.
 
 ## The D3 cells
 

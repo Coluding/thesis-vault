@@ -283,6 +283,52 @@ in this thesis is *run id + checkpoint + commit*
 code, saying so is the only honest form of the receipt — and a reader who
 sees one such disclosure can trust the others.
 
+---
+
+## I10 — The control was the wrong control, and it manufactured a result
+
+**Expectation.** Comparing the adapted rollout against the **frozen base**
+isolates the effect of action conditioning: the base never sees an action,
+so a gap between them is action-driven.
+
+**Detection.** The reservation was written into the preliminary note
+*before* the confirmation run — *"the frozen base is not a sufficient
+control; it differs from the adapter in every respect, not only action
+access"* — and the instrumented run tested it.
+
+**The defect.** That objection was not academic; **it was the entire
+effect.** A hand-measured preliminary comparison had the adapted rollout
+tracking ground-truth motion at r ≈ +0.75 against the base's r ≈ +0.09 — a
+gap of **0.66**, and a striking result. Under logging, `adapted − base`
+across four draws is **+0.13, +0.10, +0.045, −0.034**: an order of magnitude
+smaller and **sign-inconsistent**. The frozen base, which cannot see
+actions, tracks per-clip motion about as well as the adapter does.
+
+**What the right control shows.** A **paired shuffled-action** control —
+identical weights, identical conditioning frame, identical seed, only
+another clip's actions — differs from the adapted rollout in exactly one
+respect. Its gain is positive in **4/4 draws** (+0.069, +0.168, +0.122,
++0.213; mean **+0.143**; sign test p ≈ 0.06 one-tailed). So there *is* a
+real effect, roughly a fifth the size of the illusory one.
+
+**Damage.** None reported — the preliminary claim was flagged *"do not cite
+until the instrumented run reports"* and never entered the draft. Had the
+base remained the control, this would have been recorded as a strong
+positive result resting on a comparison confounded by capacity, conditioning
+pathway and training all at once.
+
+**Transferable lesson — the design rule for every action claim in this
+thesis:** *a control must differ from the treatment in exactly one respect.*
+The frozen base is convenient and available and differs in everything; the
+paired shuffled-action control is the one that isolates the variable.
+**The paired control is what turned a false positive into a small true
+one.**
+
+This is why the efficiency-axis protocol requires a *matched
+conditioning-only control per level*
+([[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]]) rather than
+comparing each level to the frozen base — the same error, one level up.
+
 ## What the section should conclude
 
 Not an apology. The closing move is the transferable one:

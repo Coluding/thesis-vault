@@ -125,6 +125,11 @@ instrumented run reports.** `Trainer._clip_motion` / `_pearson` +
 (16 clips/cycle, tests in `tests/test_motion_tracking_metric.py`) and fire
 automatically on the next run — that is the confirmation.
 
+### The instrumented run reported → promoted to its own note
+
+**Full write-up: [[20260806-motion-tracking-is-action-driven-but-the-base-control-was-wrong]]**
+(run `mo3k2639` / slurm 25259766). Summary kept here for continuity.
+
 ### The instrumented run reported (2026-08-06) — the CONTROL was wrong, not the signal
 
 Run `25259766`, quality-eval cycles at steps 400 and 800, two independent draws of
