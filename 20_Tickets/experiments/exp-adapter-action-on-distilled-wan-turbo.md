@@ -410,3 +410,39 @@ encoding; under the old 8/50-step schedule job `25218334` had not finished it in
 Separately, 11 742 SBU since 2026-08-03 belongs to concurrent `ea-*` /
 `wan-actiononly*` jobs on the same account, **not launched from this workstream** —
 worth confirming who owns them before they are counted against the cap.
+
+---
+
+## 2026-08-06 — motion confirmation ran; Result 3 partially survives
+
+Run `mo3k2639` (slurm 25259766), `--time=03:00:00` as this ticket recommended after
+`jlnl7s1k` overfit from step 1200. It worked: eval_loss 0.182 → 0.143 → **0.127 @1200**,
+still falling at the cap, no overfit turn. Batch 16, peak VRAM 89.5/93 GiB (96%).
+
+**Full write-up:**
+[[../../30_Knowledge/experiments/20260806-motion-tracking-is-action-driven-but-the-base-control-was-wrong]].
+Meeting entry:
+[[../../60_Updates/entries/2026-08-06-paired-control-turns-a-false-positive-into-a-small-true-one]].
+
+Headline: the **paired shuffled-action control fires** (gain positive 4/4, mean +0.143,
+p≈0.06) while the **frozen-base control does not** (adapted − base sign-inconsistent,
+one draw negative). The hand-measured 0.66 adapted-vs-base gap does not survive; the
+real effect is ~10× smaller and is on motion **magnitude**, not correctness
+(`action_loss_gap` 0.00005 at the final eval).
+
+### Open on this arm, unchanged
+- `action_loss_gap` ≈ 0 — action-following is still unsolved here.
+- The 34M + binned control that would split token-binning from the 34M→100M capacity
+  change is **still not run**.
+
+### New, and blocking a citable number
+`Trainer._gain_ci` (added 2026-08-06) bootstraps the gain with paired resampling, but
+**cannot be applied retroactively** — this run logged summary correlations only. **The
+next launch on this arm produces the first gain intervals**, and that is what decides
+whether +0.143 is a result or noise at n=16.
+
+### Logging defect to fix before that launch
+This run wrote **no wandb entry** — metrics exist only in stdout and `metrics.jsonl`.
+Set `training.extra.wandb: {enable: true, require_vae: false}` for metrics-only logging.
+(Same defect hit all three PDD arms; `video_logging.enable: false` is the legacy alias
+for the whole wandb block, not just the video panels.)

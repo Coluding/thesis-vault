@@ -42,12 +42,15 @@ what makes a diagnostic claim citable rather than a postmortem.
 |---|---|---|---|
 | 1 | Adapting a frozen video FM into an action-conditioned world model is possible, and **the injection pathway decides whether it works** | clean-room A/B, 2.49x @12000, Welch t=10.5, matched adapter contribution + mask | ✅ measured |
 | 2 | **Cross-attention injection fails** even with correctly binned per-frame tokens | binned RT-1 run: no benefit at any depth to 2800 steps, declines from 1600 | ✅ measured |
-| 3 | **The backbone is not the limit** — flow/DiT with 4x-compressed latents beats the published UNet baseline at matched depth | 0.0175 vs 0.0125 @step 5000; 25.3% vs 24.4% action-driven @12000 | ✅ measured |
+| 3 | **The backbone is not the limit *for addressability*** — flow/DiT with 4x-compressed latents beats the published UNet baseline at matched depth | 0.0175 vs 0.0125 @step 5000; 25.3% vs 24.4% action-driven @12000 | ✅ measured · ⚠️ **scoped 2026-08-06**: the backbone **is** a limit on how much the adapter can reshape at all — see claim 11 |
 | 4 | **Shortcut is learnable on flow, not on a curved diffusion arc** | 0.302 vs control 0.034 (9x, disjoint CIs); DC 0.084 vs 0.083; gain flat O(1) vs 4e4 blow-up | ✅ measured |
 | 5 | **Horizon**: flow + a stronger base gives multi-second single rollouts vs ~1 s | ~241 frames / ~35-40 s vs ~9-10 s | ⚠️ pending |
 | 6 | **The framework makes base-swapping a configuration change** | 3 backbone families behind one interface; a published method ported to a new base family inside its own repo | ✅ demonstrated |
 | 7 | **Planning through the world model works, and is slow** — which motivates 4-5 | planning demo + wall-clock | ⚠️ pending |
 | 8 | Few-step rollouts **improve over the no-shortcut control but are not competitive**; more training and tuning needed | qualitative | ⚠️ pending |
+| **9** | **The adapter reads the action as a scalar ("how much movement"), not as a directional command** — which is why MSE cannot see it and the structure triad reads at chance | global-bag (directionless) + paired-control motion gain 4/4, mean +0.143 + `action_loss_gap` ≈0 across every cell | ✅ measured, ⚠️ no CI on the gain |
+| **10** | **The objective governs action-specificity; the backbone governs adaptability** | EA V5 vs V5.1 at matched video backbone: loss reduction tied (−74.9% vs −73.6%), `effect_rel` +36% for diffusion; both diffusion backbones above both flow backbones (n=2/objective) | ⚠️ interim — arms running, steps unmatched |
+| **11** | **The Wan ceiling was base-specific, not intrinsic to output adapters** — the same family cuts loss −74.9% and contributes 0.52 on EasyAnimate vs −3.3% / 0.047 on Wan (`adapter_base_cosine` 0.9989 = numerically almost the base) | EA V5/V5.1 vs Wan add-composition arms | ⚠️ interim |
 
 ### ⚠ UPDATE 2026-08-06 — two claims above need scoping
 
@@ -83,6 +86,37 @@ consumes the action without learning the action-conditioned dynamics.
 ➜ These revise, not overturn. The pathway principle stands; the *scope* of
 "Wan fails" narrows to a statement about that base's adaptability, and the
 objective joins the pathway as a governing variable.
+
+### ⭐ SYNTHESIS 2026-08-06 — what the adapter actually extracts from the action
+
+Three results that looked separate resolve into one statement:
+
+| result | what it showed |
+|---|---|
+| **Global bag** (Wan, 07-31) | the signal is **directionless** — steering cos ≈ 0.00, temporal at chance, spatial at chance |
+| **Motion tracking** (Turbo, 08-06) | the action **does** drive *how much* the arm moves — paired shuffled-action control positive **4/4 draws**, mean +0.143 |
+| **Loss gap ≈ 0** (every cell, throughout) | feeding the *correct* action does not reduce error versus a wrong one |
+
+> **The adapter reads the action as a scalar — "how much movement" — not as
+> a directional command.**
+
+This is sharper than "effect without accuracy", and it explains the
+dissociation rather than restating it: a magnitude-only response is exactly
+what squared error cannot reward, because MSE penalises slightly-misplaced
+motion as hard as no motion at all. It also explains why the structure triad
+reads at chance while the effect metrics are non-zero — a scalar gain has no
+direction, no temporal placement and no spatial locus to detect.
+
+**This is the campaign's first causally-isolated rung-3 (control) signal**,
+and it arrived only because the control was correct: the frozen-base
+comparison gave a spurious gap of 0.66 that vanished under a paired
+shuffled-action control ([[../experiments/20260806-motion-tracking-is-action-driven-but-the-base-control-was-wrong]]).
+
+⚠ **Scope tightly.** Modest effect; **no confidence interval on the gain**
+yet (the logged CIs are on `corr(adapted, GT)`, not the gain, and that
+correlation spans zero in 3 of 4 draws); one run, no seed replication; on
+the distilled Turbo base only. Write it as *"a modest, consistently-signed
+effect on motion magnitude"* — never as trajectory control.
 
 ### The central mechanistic finding, stated precisely
 
@@ -512,11 +546,15 @@ adapter contribution and matched mask.
 
 ### The honest limits — per cell, not global
 
-- **Rollout-level control (rung 3) is not demonstrated on either cell.**
-  Null on Wan; **not measured on DC**. The quantitative rollout-swap probe
-  exists only on the Wan path (`scripts/generate_wan22_i2v_compare.py`).
-  Never write "control is demonstrated nowhere" either — the DC structure
-  probes pass, which is rung 2. Ticket:
+- **Rung 3 (control) — updated 2026-08-06.** A **causally-isolated but
+  modest** effect on *motion magnitude* now exists on the distilled Turbo
+  base (paired shuffled-action control, 4/4 draws, mean +0.143). It is
+  **not** trajectory control: `action_loss_gap` ≈ 0 everywhere, so the
+  correct action still does not reduce error versus a wrong one. On the
+  non-distilled Wan arms the rollout-swap is null; on DC it is **still not
+  measured**. Never write "control is demonstrated nowhere" — the DC
+  structure probes pass (rung 2) and the Turbo paired control fires (rung 3,
+  magnitude only). Ticket:
   [[../../20_Tickets/experiments/exp-eval-rollout-action-swap-dc-arme]].
 
   > ⚠ **The DC rollout videos (arm E `6oyu1inq`, arm F `86kb01su`) compare
