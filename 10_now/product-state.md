@@ -110,23 +110,24 @@ On **EasyAnimate V5 / V5.1 (7B)** the same 34.9M output adapter
 | run | base loss | adapted | Δ | `adapter_base_cosine` | `rel_contrib` |
 |---|---|---|---|---|---|
 | best Wan arm (`25192313`) | 0.13362 | 0.12917 | −3.3% | **0.9989** | 0.047 |
-| **EA V5 diffusion** (`25240257`) | 0.24290 | **0.06098** | **−74.9%** | 0.868 | **0.521** |
-| **EA V5.1 flow** (`25241732`) | 0.44620 | **0.11759** | **−73.6%** | 0.886 | **0.484** |
+| **EA V5 diffusion** (`25240257`) | 0.22594 | **0.03650** | **−83.8%** | 0.868 | **0.517** |
+| **EA V5.1 flow** (`25241732`) | 0.47049 | **0.14746** | **−68.7%** | 0.883 | **0.491** |
 
 On Wan `adapter_base_cosine` 0.9989 means the adapted prediction was numerically
 almost the frozen base. On EasyAnimate the adapter reshapes it substantially.
 **The ceiling was Wan-specific, not intrinsic to output adapters** — which revises
 the direction of [[../30_Knowledge/experiments/20260802-adapter-is-a-domain-adapter-not-an-action-conditioner]].
 
-**Where the objective bites:** the two objectives adapt *equally well* (−74.9% vs
-−73.6%) but diffusion leads on action-specificity — `effect_rel` 0.0389 vs 0.0286
-(+36%), `effect_vs_adapter` 0.0756 vs 0.0598 (+26%). Across four backbones both
-diffusion bases (DC, EA-V5) sit above both flow bases (EA-V5.1, Wan).
+**Where the objective bites (final, matched step 14,200):** the objective's effect is
+far larger on action-specificity than on capacity — `effect_rel` 0.0600 vs 0.0387
+(**+55%**) and `effect_vs_adapter` 0.116 vs 0.079 (**+47%**), against only **+5%** on
+raw contribution. Diffusion led **all 15** hourly evals, never once behind, and is
+**~4× more stable** (final three ±0.001 vs flow 0.030–0.044). Across four backbones
+both diffusion bases (DC, EA-V5) sit above both flow bases (EA-V5.1, Wan).
 
-⚠ **Interim** — arms still running, steps not matched (9000 vs 8200), n=1 per arm,
-per-eval `effect_rel` swings 20–80%. ⚠ Only **6–8%** of the adapter's output is
-action-driven, so the domain-corrector question is open at ~10× scale. ⚠ V5/V5.1
-differ in TEXT stack (BERT+T5 vs Qwen2VL) and CFG steers through text.
+⚠ n=1 per arm; single matched-step readings, not means over draws. ⚠ Only **8–12%** of
+the adapter's output is action-driven, so the domain-corrector question is open at ~10×
+scale. ⚠ V5/V5.1 differ in TEXT stack (BERT+T5 vs Qwen2VL) and CFG steers through text.
 
 ⚠ **All EasyAnimate numbers logged before 2026-08-05 are VOID** — the base was
 rendering noise while every shape/finiteness check passed.

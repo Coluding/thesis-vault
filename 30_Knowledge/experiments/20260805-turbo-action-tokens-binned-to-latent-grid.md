@@ -125,6 +125,64 @@ instrumented run reports.** `Trainer._clip_motion` / `_pearson` +
 (16 clips/cycle, tests in `tests/test_motion_tracking_metric.py`) and fire
 automatically on the next run — that is the confirmation.
 
+### The instrumented run reported (2026-08-06) — the CONTROL was wrong, not the signal
+
+Run `25259766`, quality-eval cycles at steps 400 and 800, two independent draws of
+n=16 each:
+
+| step | draw | corr(adapted, GT) | base | shuffled | **action gain** | ratio_ad |
+|---|---|---|---|---|---|---|
+| 400 | 1 | −0.082 [95% CI −0.60, +0.56] | −0.212 | −0.151 | **+0.069** | 1.13 |
+| 400 | 2 | +0.494 [95% CI +0.13, +0.77] | +0.397 | +0.326 | **+0.168** | 1.05 |
+| 800 | 1 | +0.196 [95% CI −0.29, +0.55] | +0.151 | +0.073 | **+0.122** | 1.16 |
+| 800 | 2 | −0.105 [95% CI −0.60, +0.39] | −0.071 | −0.318 | **+0.213** | 0.92 |
+
+**Two different comparisons live in this table and they say opposite things.**
+
+**adapted vs base — dead.** The differences are +0.13, +0.10, +0.045, **−0.034**:
+sign-inconsistent and centred near zero. The frozen base, which never sees an action,
+tracks per-clip GT motion about as well as the adapter does. The hand-measured
+preliminary claim above (adapted +0.75 vs base +0.09, gap **0.66**) rested entirely on
+this comparison and **does not survive** — the gap is an order of magnitude smaller and
+in one draw it reverses.
+
+**adapted vs shuffled — consistently positive.** `motion_corr_action_gain` is positive
+in **4/4 draws** (+0.069, +0.168, +0.122, +0.213; mean **+0.143**). Sign test:
+p = 1/16 ≈ 0.06 one-tailed. Same weights, same conditioning frame, same seed — only the
+actions differ — so this isolates the action in a way the frozen base never could.
+
+So the earlier reservation stated at the top of Result 3 was the correct one, and it
+resolved against the base: *"The frozen base is not a sufficient control — it differs
+from the adapter in every respect, not only action access."* The instrumented run shows
+that objection was not academic. It was the whole effect.
+
+**What this supports, precisely:** a modest, consistently-signed action effect on how
+much the arm moves per clip. It does **not** support the magnitude of the hand
+measurement, and the adapted correlation itself is not distinguishable from zero in 3 of
+4 draws (CIs span zero).
+
+Gaps before this can be cited:
+
+1. ~~**No interval on the gain itself.**~~ **FIXED 2026-08-06.** `Trainer._gain_ci`
+   bootstraps `corr(adapted) − corr(shuffled)` directly, resampling clips **once per
+   draw** and recomputing both correlations on the same resampled set — the pairing is
+   the design (adapted and shuffled differ only in which actions were fed, on the same
+   clips, weights and seed), and bootstrapping the two series independently would
+   discard it and inflate the interval. Emitted as
+   `eval/motion_corr_action_gain_ci_{lo,hi}` and printed on the `[motion]` line.
+   Tests in `tests/test_motion_tracking_metric.py` (5 new, incl. the confound case where
+   tracking survives shuffling and the interval must straddle zero).
+   ⚠️ **Cannot be applied retroactively** to the four draws above — the run logged only
+   the summary correlations, not the per-clip motion series. The next run on this arm
+   produces the first gain intervals.
+2. n=16 per draw, 4 draws, 2 cycles, one run. A weak hint of growth with training
+   (mean gain +0.119 @400 → +0.168 @800) on two points is not a trend.
+3. `eval_action_loss_gap` is still ≈0 (Result 2), so this remains an effect on motion
+   *magnitude*, not evidence that the adapter predicts the *correct* motion.
+
+**Status: Result 3 partially confirmed — the causal control, not the base comparison.**
+The reading above has not been discussed with Lukas.
+
 ## Result 4 (SOURCED): overfits from step 1200
 
 `eval_loss`: .1840@400 → **.1271@1200 (best)** → .1466 → .1632 → .1422 → .1641 →

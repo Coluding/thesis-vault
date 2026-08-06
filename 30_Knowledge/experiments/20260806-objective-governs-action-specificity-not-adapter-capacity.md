@@ -8,34 +8,49 @@ wandb_run_id: project coluding/EasyAnimate-objective-acwm-robotarm
               — V5 slurm 25240257, V5.1 slurm 25241732
 ckpt_path: /home/lbierling1/generative-flow-adapters/outputs/acwm-robotarm-EA-V5-tokennorm-nobase-ADD-run/checkpoints/
            and .../acwm-robotarm-EA-V51-tokennorm-nobase-ADD-run/checkpoints/
-status: running
+status: completed (V5); V5.1 running out its wall
 deliverable: D2
 metrics:
-  v5_diffusion_step: 9000
-  v51_flow_step: 8200
-  v5_loss_reduction_vs_frozen_base: -0.749
-  v51_loss_reduction_vs_frozen_base: -0.736
-  v5_adapter_rel_contribution: 0.521
-  v51_adapter_rel_contribution: 0.484
-  v5_action_effect_rel: 0.03893
-  v51_action_effect_rel: 0.02861
-  v5_action_effect_vs_adapter: 0.07559
-  v51_action_effect_vs_adapter: 0.05984
-notes: "TWO findings. (1) The Wan ceiling was NOT intrinsic to output adapters: on
-  EasyAnimate the same adapter family cuts denoising loss ~74% vs the frozen base and
-  contributes ~50% of the prediction, against -3.3% and 0.047 on the best Wan arm.
-  (2) The training objective governs ACTION-SPECIFICITY, not adaptation capacity —
-  the two objectives adapt equally well (-74.9% vs -73.6%) but diffusion leads on
-  effect_rel (+36%) and effect_vs_adapter (+26%). NOT YET FINAL: arms still running,
-  steps not exactly matched (9000 vs 8200)."
+  matched_step: 14200
+  v5_loss_reduction_vs_frozen_base: -0.838
+  v51_loss_reduction_vs_frozen_base: -0.687
+  v5_adapter_rel_contribution: 0.51673
+  v51_adapter_rel_contribution: 0.49147
+  v5_action_effect_rel: 0.05998
+  v51_action_effect_rel: 0.03866
+  v5_action_effect_vs_adapter: 0.11623
+  v51_action_effect_vs_adapter: 0.07932
+notes: "FINAL at matched step 14,200. (1) The Wan ceiling was NOT intrinsic to output
+  adapters: the same adapter family cuts denoising loss 83.8% (diffusion) / 68.7% (flow)
+  vs the frozen base and contributes ~0.5 of the prediction, against -3.3% and 0.047 on
+  the best Wan arm; adapter_base_cosine 0.87 vs Wan's 0.9989. (2) The objective's effect
+  is far larger on ACTION-SPECIFICITY (effect_rel +55%, effect_vs_adapter +47%) than on
+  raw contribution (+5%). Diffusion led all 15 hourly evals and is ~4x more stable.
+  Confounded: V5/V5.1 differ in text stack; n=1 per arm."
 ---
 
 # The objective governs action-specificity, not adapter capacity (D2)
 
-⚠ **Interim — both arms still running.** Numbers below are the latest eval at
-**V5 step 9000 / V5.1 step 8200**, i.e. *not* exactly matched. The quotable figure is
-the end-of-run matched-step value with spread across eval draws. Recorded now because
-the finding is stable across eight consecutive hourly evals.
+✅ **FINAL, AT MATCHED STEP 14,200.** V5 reached its 17 h wall (`TIMEOUT` at 17:00:07 —
+the SBATCH limit, not a failure) with its last eval at step 14,200; V5.1 reached the
+same step while still running. Both numbers below are that step. Direction held for
+**fifteen consecutive hourly evals** with diffusion never once behind.
+
+| | V5 diffusion | V5.1 flow | diffusion |
+|---|---|---|---|
+| base loss (frozen) | 0.22594 | 0.47049 | |
+| adapted `eval_loss` | **0.03650** | **0.14746** | |
+| **loss reduction** | **−83.8%** | **−68.7%** | **+15 pts** |
+| `adapter_rel_contribution` | 0.5167 | 0.4915 | +5% |
+| `adapter_base_cosine` | 0.8678 | 0.8827 | |
+| **`action_effect_rel`** | **0.05998** | **0.03866** | **+55%** |
+| **`action_effect_vs_adapter`** | **0.11623** | **0.07932** | **+47%** |
+| `adapter_out_const_frac` | 0.0318 | 0.0090 | |
+| `action_base_null_violation` | 0.00000 | 0.00000 | clean |
+
+**Stability differs too, and it is part of the result.** Over the final five evals
+diffusion held 0.0524–0.0600 (spread ±0.001 over three consecutive) while flow swung
+0.0296–0.0444 — roughly **4× the variance**. Report the spread, not just the mean.
 
 ## Result 1 — the Wan ceiling was not intrinsic to output adapters
 
@@ -46,8 +61,8 @@ action injection, `condition_on_base_outputs: false`) on a different frozen base
 |---|---|---|---|---|---|
 | Wan action-only + `add` (`25192286`) | 0.13362 | 0.13262 | **−0.75%** | 0.9997 | 0.023 |
 | Wan token-norm + `add` (`25192313`) | 0.13362 | 0.12917 | **−3.3%** | 0.9989 | 0.047 |
-| **EA V5 diffusion** (`25240257`) | 0.24290 | **0.06098** | **−74.9%** | 0.868 | **0.521** |
-| **EA V5.1 flow** (`25241732`) | 0.44620 | **0.11759** | **−73.6%** | 0.886 | **0.484** |
+| **EA V5 diffusion** (`25240257`) | 0.22594 | **0.03650** | **−83.8%** | 0.868 | **0.517** |
+| **EA V5.1 flow** (`25241732`) | 0.47049 | **0.14746** | **−68.7%** | 0.883 | **0.491** |
 
 On Wan, `adapter_base_cosine` 0.9989 means the adapted prediction was *numerically
 almost the frozen base* — the adapter was cosmetic. On EasyAnimate it reshapes the
@@ -57,14 +72,23 @@ which risked concluding that output adapters simply cannot move a frozen video b
 
 ## Result 2 — where the objective actually bites
 
+At matched step 14,200 (final):
+
 | | V5 diffusion | V5.1 flow | diffusion lead |
 |---|---|---|---|
-| loss reduction | −74.9% | −73.6% | **~0 (tied)** |
-| `rel_contribution` | 0.521 | 0.484 | +8% |
-| `action_effect_rel` | 0.03893 | 0.02861 | **+36%** |
-| `action_effect_vs_adapter` | 0.07559 | 0.05984 | **+26%** |
+| loss reduction | −83.8% | −68.7% | **+15 pts** |
+| `rel_contribution` | 0.5167 | 0.4915 | +5% |
+| `action_effect_rel` | 0.05998 | 0.03866 | **+55%** |
+| `action_effect_vs_adapter` | 0.11623 | 0.07932 | **+47%** |
 
-**Capacity is tied; action-specificity is not.** `effect_vs_adapter` is the cleaner
+⚠ **Revision vs the interim reading.** At the earlier (unmatched) 9000/8200 point the two
+objectives looked *tied* on capacity (−74.9% vs −73.6%). At matched 14,200 they are not:
+diffusion pulls ahead on loss reduction too (+15 points). The clean statement is that
+**the objective's effect on action-specificity (+55% / +47%) is much larger than its
+effect on raw contribution (+5%)** — not that capacity is unaffected. The earlier
+"capacity is tied" phrasing was an artifact of comparing arms 800 steps apart.
+
+**Action-specificity is where the objective bites hardest.** `effect_vs_adapter` is the cleaner
 measure — it asks what fraction of the adapter's *own* output is action-driven, so it
 is not inflated by the adapter simply being large.
 
@@ -76,15 +100,15 @@ frozen base — it governs *how much of that reshaping is action-conditioned*.
 | backbone | objective | action-following |
 |---|---|---|
 | DynamiCrafter 1.4B | diffusion | present — steering +0.117, alignment 1.000 |
-| EasyAnimate V5 7B | diffusion | `effect_rel` 0.039 |
-| EasyAnimate V5.1 7B | flow | `effect_rel` 0.029 |
+| EasyAnimate V5 7B | diffusion | `effect_rel` **0.060** |
+| EasyAnimate V5.1 7B | flow | `effect_rel` **0.039** |
 | Wan2.2-TI2V 5B | flow | `effect_rel` 0.002–0.011 |
 
 Both diffusion backbones sit above both flow backbones, across **independent model
 families** — n=2 per objective rather than a single pair. That is materially harder to
 dismiss than the EasyAnimate comparison alone.
 
-⚠ **But it is "flow is weaker", not "flow fails".** EA-flow (0.029) is ~3× Wan-flow, so
+⚠ **But it is "flow is weaker", not "flow fails".** EA-flow (0.039) is ~4× Wan-flow, so
 the backbone clearly matters too. Objective and backbone are not separable from these
 four points alone.
 
@@ -95,14 +119,15 @@ four points alone.
   Qwen2VL). CFG steers *through* text, so this is not peripheral — see
   [[../../20_Tickets/bug-diffusers-silently-drops-vae-weights]] for the four distinct
   crashes this caused.
-- Steps not yet matched (9000 vs 8200); per-eval `effect_rel` swings 20–80% between
-  consecutive evals even as the *direction* held for eight straight checks.
+- Per-eval `effect_rel` swung 20–80% mid-run; the final figures are single matched-step
+  readings, not means over draws. Diffusion's last three evals were tight (±0.001), flow's
+  were not (0.0296–0.0444) — quote the spread.
 - n=1 per arm.
 
 ## What is still open
 
-Only **6–8%** of the adapter's large contribution is action-driven
-(`effect_vs_adapter` 0.076 / 0.060). So "the adapter is powerful" is established;
+Only **8–12%** of the adapter's large contribution is action-driven
+(`effect_vs_adapter` 0.116 diffusion / 0.079 flow — both roughly doubled over the run). So "the adapter is powerful" is established;
 "powerful **at action conditioning**" is not. The domain-corrector reading from
 [[20260802-adapter-is-a-domain-adapter-not-an-action-conditioner]] may still hold —
 now at ~10× the operating scale.
