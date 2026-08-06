@@ -42,15 +42,15 @@ what makes a diagnostic claim citable rather than a postmortem.
 |---|---|---|---|
 | 1 | Adapting a frozen video FM into an action-conditioned world model is possible, and **the injection pathway decides whether it works** | clean-room A/B, 2.49x @12000, Welch t=10.5, matched adapter contribution + mask | ✅ measured |
 | 2 | **Cross-attention injection fails** even with correctly binned per-frame tokens | binned RT-1 run: no benefit at any depth to 2800 steps, declines from 1600 | ✅ measured |
-| 3 | **The backbone is not the limit *for addressability*** — flow/DiT with 4x-compressed latents beats the published UNet baseline at matched depth | 0.0175 vs 0.0125 @step 5000; 25.3% vs 24.4% action-driven @12000 | ✅ measured · ⚠️ **scoped 2026-08-06**: the backbone **is** a limit on how much the adapter can reshape at all — see claim 11 |
+| 3 | **The backbone is not the limit *for addressability*** — flow/DiT with 4x-compressed latents beats the published UNet baseline at matched depth | 0.0175 vs 0.0125 @step 5000; 25.3% vs 24.4% action-driven @12000 | ✅ measured · ⚠️ **scoped 2026-08-06** — the backbone **is** a limit on how much the adapter can reshape at all; see claim 11 |
 | 4 | **Shortcut is learnable on flow, not on a curved diffusion arc** | 0.302 vs control 0.034 (9x, disjoint CIs); DC 0.084 vs 0.083; gain flat O(1) vs 4e4 blow-up | ✅ measured |
 | 5 | **Horizon**: flow + a stronger base gives multi-second single rollouts vs ~1 s | ~241 frames / ~35-40 s vs ~9-10 s | ⚠️ pending |
 | 6 | **The framework makes base-swapping a configuration change** | 3 backbone families behind one interface; a published method ported to a new base family inside its own repo | ✅ demonstrated |
 | 7 | **Planning through the world model works, and is slow** — which motivates 4-5 | planning demo + wall-clock | ⚠️ pending |
 | 8 | Few-step rollouts **improve over the no-shortcut control but are not competitive**; more training and tuning needed | qualitative | ⚠️ pending |
 | **9** | **The adapter reads the action as a scalar ("how much movement"), not as a directional command** — which is why MSE cannot see it and the structure triad reads at chance | global-bag (directionless) + paired-control motion gain 4/4, mean +0.143 + `action_loss_gap` ≈0 across every cell | ✅ measured, ⚠️ no CI on the gain |
-| **10** | **The objective governs action-specificity; the backbone governs adaptability** | EA V5 vs V5.1 at matched video backbone: loss reduction tied (−74.9% vs −73.6%), `effect_rel` +36% for diffusion; both diffusion backbones above both flow backbones (n=2/objective) | ⚠️ interim — arms running, steps unmatched |
-| **11** | **The Wan ceiling was base-specific, not intrinsic to output adapters** — the same family cuts loss −74.9% and contributes 0.52 on EasyAnimate vs −3.3% / 0.047 on Wan (`adapter_base_cosine` 0.9989 = numerically almost the base) | EA V5/V5.1 vs Wan add-composition arms | ⚠️ interim |
+| **10** | **The objective governs action-specificity; the backbone governs adaptability** | EA V5 vs V5.1 at matched video backbone: loss reduction tied (−74.9% vs −73.6%), `effect_rel` +36% and `effect_vs_adapter` +26% for diffusion; both diffusion backbones above both flow backbones (n=2/objective) | ⚠️ interim — arms running, steps unmatched (9000 vs 8200), n=1 |
+| **11** | **The Wan ceiling was base-specific, not intrinsic to output adapters** — the same adapter family cuts loss **−74.9%** and contributes **0.52** on EasyAnimate vs **−3.3%** / **0.047** on Wan, whose `adapter_base_cosine` 0.9989 means the adapted prediction was numerically almost the frozen base | EA V5/V5.1 vs Wan add-composition arms (`25192313`) | ⚠️ interim |
 
 ### ⚠ UPDATE 2026-08-06 — two claims above need scoping
 

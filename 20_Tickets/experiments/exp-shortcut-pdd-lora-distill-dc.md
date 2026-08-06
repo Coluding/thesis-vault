@@ -357,3 +357,26 @@ and converging monotonically rather than in ±0.5 swings.
 **What cannot:** one run each, no seed replication, and the volatility means B's endpoint
 depends on where you stop. Nothing here is about few-step generation quality — the N-head
 rollout is still not wired.
+
+---
+
+## RESULT (2026-08-06) — the rollout ran
+
+**Full write-up:
+[[../../30_Knowledge/experiments/20260806-pdd-parallel-decoding-works-on-the-lora-base-not-the-adapter]]**
+(generation job `25284685`).
+
+Headline: **Idea B decodes in parallel; Idea A does not.** One network call vs 8, same
+noise/conditioning/grid — B emits a recognisable arm scene, A emits a featureless blur.
+
+Two readings recorded earlier in this ticket rest on **PSNR-vs-ground-truth and are
+retracted**: it ranks every comparison backwards here (in-run proof: the 50-step base
+scores *below* the 8-step base on all three arms). Generation-from-noise is not
+reconstruction, so blur near the conditional mean wins on PSNR.
+
+Also retracted: the loss-curve reading. A's PDD loss fell across **all eight heads**
+(k000 10.7× better) and still produced no usable rollout — low PDD loss did not transfer
+to generation.
+
+What stands: **1 call vs 8** (structural), and the matched-batch cost measurement
+(A 20.3 GiB / 0.08 steps/s vs B 39.8 GiB / 0.05).
