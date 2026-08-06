@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-07-31
+last_updated: 2026-08-06
 status: living
 ---
 
@@ -49,6 +49,9 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-08-06 | finding | D2 | [[entries/2026-08-06-objective-governs-action-specificity-not-capacity]] |
+| 2026-08-05 | finding | D2 | [[entries/2026-08-05-turbo-action-effect-without-accuracy]] |
+| 2026-08-04 | decision | D3 | [[entries/2026-08-04-efficiency-axis-becomes-the-thesis-spine]] |
 | 2026-07-31 | finding | D2 | [[entries/2026-07-31-wan-blindness-located-and-the-scale-calibration-principle]] |
 | 2026-07-30 | finding | D2 | [[entries/2026-07-30-action-embedding-is-a-learned-pedestal]] |
 | 2026-07-30 | finding | D2 | [[entries/2026-07-30-avid-follows-actions-on-our-data-its-our-implementation]] |

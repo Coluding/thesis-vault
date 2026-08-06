@@ -330,3 +330,30 @@ teacher init" story explained the first two points and not the next two.
 **Not yet comparable:** A-control and B are at different step counts (200 vs 500). Quote
 them only at matched steps. A's advantage on cost is solid; any claim about which
 converges *better* needs matched steps and more than one run.
+
+### Matched-step comparison, 08:50 — A is monotone, B is volatile at the same level
+
+Both at bs=8, lr=5e-5, identical objective/grid/data. `25264058` (A control) vs
+`25262887` (B):
+
+| step | 0 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 |
+|---|---|---|---|---|---|---|---|---|---|
+| **A control** | 0.887 | 0.828 | 0.768 | 0.706 | 0.640 | 0.613 | 0.578 | 0.570 | **0.547** |
+| **B** | 0.843 | 1.445 | 1.269 | 1.562 | **0.525** | 0.609 | 0.549 | **0.493** | 0.788 |
+
+**A: nine consecutive improvements, monotone throughout.** **B: swinging over 0.49–1.56
+and still swinging at step 800.** On level they are comparable — B is better at steps 400
+and 700, worse at 100–300 and 800 — but B's value at any given eval is not predictive of
+the next one.
+
+For reference, A at bs=24 (`25262886`, not comparable) reaches 0.542 by step 500 — the
+same level in fewer steps, as expected from 3× the batch.
+
+**What can be said from this pair:** at matched batch, LR, objective and data, the
+adapter transposition reaches the same loss level as the paper-faithful form while using
+**half the VRAM (20.3 vs 39.8 GiB)**, running **~1.4× faster (0.07 vs 0.05 steps/s)**,
+and converging monotonically rather than in ±0.5 swings.
+
+**What cannot:** one run each, no seed replication, and the volatility means B's endpoint
+depends on where you stop. Nothing here is about few-step generation quality — the N-head
+rollout is still not wired.
