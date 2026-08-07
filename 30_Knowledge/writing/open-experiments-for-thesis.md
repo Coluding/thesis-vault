@@ -108,6 +108,71 @@ or an action adapter on an already-distilled base
 ([[../../20_Tickets/experiments/exp-adapter-action-on-distilled-wan-turbo]]).
 These split the two jobs rather than asking one adapter to learn both.
 
+### ⭐ A0.4 — Few-step rollout QUALITY (reported 2026-08-07, not in the vault)
+
+**The efficiency axis's missing outcome variable.** Lukas reports few-step
+rollouts that look better and will supply the results. Until they land the
+axis can say the shortcut objective is *learnable* and that a distilled base
+*accepts* an action adapter, but not that any of it produces usable video in
+few steps.
+
+⚠ **EVIDENCE PENDING, NOT MISSING.** No level is written as producing usable
+few-step video until this lands.
+
+> **⭐ CLARIFIED 2026-08-07: the few-step quality result is ACTION-FREE, and
+> the action-conditioned version does not work.**
+>
+> This is a **D3** outcome, not a D4 one, and it is the *predicted* result.
+> H-E (pre-registered 2026-08-04, before any level ran) says the entangled
+> level degrades while separable levels do not. Acceleration succeeding with
+> actions stripped, and failing with actions present, is that prediction
+> landing in its primary branch.
+>
+> **Consequence for the chapter:** D4 becomes a **reported negative with a
+> mechanism**, not an absence. The efficiency axis reads: the shortcut
+> objective is learnable *and* improves few-step quality when it is the only
+> thing the adapter must learn; adding action conditioning to the same
+> adapter breaks it; the economics predicted exactly that. That is a
+> stronger chapter than a bare mechanism study and it does not require D4 to
+> have succeeded.
+>
+> ⚠ **Three things must be established before it can be written that way**,
+> because the prediction landing is worth nothing without the controls:
+>
+> 1. **A matched control on the action-free quality claim**: shortcut vs
+>    no-shortcut at the *same step count*. Without it, "few-step looks
+>    better" is not attributable to the objective.
+> 2. **What form the action-conditioned failure took.** Degraded
+>    action-following? Degraded few-step quality? Failed to train at all?
+>    H-E predicts specifically the *first*. A different failure mode is a
+>    different finding and must not be reported as H-E confirmed.
+> 3. **A matched conditioning-only control for the combined arm**, or the
+>    degradation has no referent. This is the requirement that the first L3
+>    data already violated once.
+
+**What makes it citable, in order of how much it matters:**
+
+1. **Against the no-shortcut control at the same step count.** The only
+   comparison that isolates the objective. "Better than the base at many
+   steps" is a different claim; "better than earlier attempts" is not a
+   claim at all.
+2. **Which level** it came from (L1 / L2 / L3). The three currently sit on
+   different bases, adapter sizes and clip lengths, so the level decides
+   what the number may be compared against.
+3. **A metric, not only visual inspection** (FVD / FID / LPIPS). A
+   qualitative panel is legitimate as a figure but cannot be the outcome
+   variable, and this campaign owns the counterexample: the Wan cell
+   improved on 6/6 perceptual metrics while carrying no action information.
+4. **Matched NFE**, against an honest fast-sampler baseline (DPM-Solver,
+   consistency sampling), not many-step sampling alone
+   ([[../../50_Decisions/open/d3-positioning-vs-weaver-reflow]]).
+5. **Same clips, same seed** across arms, stated in the caption.
+6. Run ids, checkpoints, step counts.
+
+**With (1) and (3) the efficiency chapter has an outcome and the axis stops
+being a mechanism study.** With only "looks better" it is a qualitative
+figure and the gap stays open.
+
 ### ⭐ A7 — The three acceleration levels (the efficiency axis)
 
 Open decision: [[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]].

@@ -241,8 +241,17 @@ Common protocol, so the three are comparable at all:
       protocol can produce.
 - [ ] **Wall-clock and NFE** at matched quality, against an honest
       fast-sampler baseline.
-- [ ] **Few-step quality** actually measured — currently *not measured* for
-      the one shortcut cell that exists.
+- [ ] **Few-step quality**: the axis's **outcome variable**, and currently
+      not measured on *any* level. Reported 2026-08-07 as existing and
+      pending supply
+      ([[../../30_Knowledge/writing/open-experiments-for-thesis]] A0.4).
+      The load-bearing form is *against the no-shortcut control at the same
+      step count*; a comparison against the base at many steps does not
+      isolate the objective, and a qualitative "looks better" cannot serve
+      as the outcome variable for a three-level comparison. Until it lands,
+      the chapter can say the shortcut objective is *learnable* and that a
+      distilled base *accepts* an action adapter, but not that any of it
+      produces usable video in few steps.
 - [ ] Pre-registration of the predicted ordering **before** the runs land.
 
 ## ✅ DECISION — adopt-with-fallback (Lukas, 2026-08-04)
