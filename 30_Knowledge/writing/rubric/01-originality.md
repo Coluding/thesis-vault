@@ -154,6 +154,39 @@ derivation — rather than as one causal claim, since the DC arm ran
 
 Three candidates, ranked by how well they survive the test.
 
+> ### 🛑 RESTATED 2026-08-07 — the conditioning literature scan
+>
+> Full verdict: [[../../related-work/pathway-claim-prior-art-verdict]].
+>
+> **The ranking is not novel.** ADM, DiT, and two 2026 preprints on *action
+> conditioning specifically* (IOI arXiv:2606.23296; Nano World Models
+> arXiv:2605.23993) already report modulation beating cross-attention. Do
+> not write it as a finding.
+>
+> **The frozen-backbone version is nearly claimed.** Decoupled Action Expert
+> (arXiv:2511.12101) ran it: cross-attention 61.3 → **19.8 %** under
+> freezing, AdaLN 62.0 → **62.3 %**. Same conclusion, different explanation
+> (projection staleness). **Cite it.** Their own additive row (57.0 → 45.3)
+> bypasses backbone projections and still degrades, which their account does
+> not explain and ours does. That is the opening.
+>
+> **One claim is refutable as loosely stated.** Motif-Video 2B
+> (arXiv:2604.16503) measures the same ratio and gets 7.6 % mean / 5.2 %
+> weakest block, concluding cross-attention is *not* a residual no-op. Ours
+> is ~0.3–0.6 %. So "the cross-attention write is negligible" is false in
+> general; the claim must be conditional on **frozen backbone +
+> from-scratch adapter + low-dimensional signal**.
+>
+> **What is ours:** (i) the measured ratio *in that setting*, stated against
+> Motif's numbers; (ii) **the localisation** — the signal survives all ten
+> blocks at 44–56 % action-driven and dies in one residual addition, which
+> is sharper than anything in the scan; (iii) the design rule, **scoped to
+> low-dimensional spatially-global signals** or GenTron and DexAC-WM refute
+> it.
+>
+> ➜ Rewrite the block below to lead with the mechanism and the localisation,
+> not the ranking.
+
 **(1) The injection-pathway principle — the strongest.**
 
 > Conditioning must arrive **scale-free relative to the residual stream**.
