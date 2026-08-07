@@ -156,17 +156,25 @@ design**; say so, and it strengthens rather than weakens the point.
 is not that flow bases are harder to adapt. It is that less of the
 adaptation becomes action-conditioned.
 
-> ⚠ **Do not extend the curvature argument to cover this. Considered and
-> rejected 2026-08-07.** The curvature result is about the **shortcut target
-> construction** — the arithmetic mean of two tangents is not the chord, and
-> the true field is not a fixed point of the averaging rule. It involves no
-> model and no conditional distribution, which is why it can be verified
-> synthetically. A claim that *"a curved trajectory leaves the base less
-> committed, so actions matter more"* is a different proposition that
-> happens to share the word *curvature*. Trajectory geometry and conditional
-> entropy are not the same quantity and nothing here links them. The
-> unified "one property explains both halves of the thesis" story is
-> attractive and unsupported.
+**A third candidate, offered as a hypothesis (2026-08-07).** Curved
+trajectories may leave the base less committed at a given state, so the
+action carries more marginal value in the loss and the gradient pays more
+for it. Consistent with capacity being tied while specificity differs.
+
+> ⚠ **Write it as a hypothesis, never as an argument, and never as the same
+> claim as the D3 curvature result.** The D3 result concerns the **shortcut
+> target construction**: the arithmetic mean of two tangents is not the
+> chord, and the true field is not a fixed point of the averaging rule. It
+> involves no model and no conditional distribution, which is why it can be
+> verified synthetically. The proposition here is about conditional
+> entropy, a *different* quantity that happens to share the word
+> *curvature*. **Nothing we have measured links the two.** Presenting them
+> as one property explaining both halves of the thesis is attractive and
+> unsupported; presenting this as a labelled, testable hypothesis alongside
+> the eliminations is not.
+>
+> **What would link them:** action-attributable variance in the objective,
+> measured per backbone. That is the **IDM ceiling** (B5), minutes of GPU.
 
 **If a mechanism is wanted**, the measurable quantity is action-attributable
 variance in the objective per backbone, which the **IDM ceiling** (B5 in

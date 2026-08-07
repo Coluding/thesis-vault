@@ -12,6 +12,22 @@ sources:
 
 # The shortcut v-averaging bias — a manifold-geometry mistake
 
+> **⚠ STATUS 2026-08-07 — HYPOTHESIS STATUS FOR THE D3 RESULT.** The
+> derivation below, and its synthetic verification at zero model error
+> (5.1 / 16.1 / 24.1 % versus 0.000000), are **proven**. Its use as the
+> *explanation* for why the shortcut objective is not learnable on our
+> diffusion cell is a **hypothesis**, not a confirmed result: that arm ran
+> `endpoint_inversion`, the exact construction, so the theory predicts it
+> should have worked and it did not, and the cross-base comparison also
+> varies depth. Write the derivation as proven and the attribution as a
+> hypothesis with its decider named. **Decider:** the A4 2×2 (`v_average`
+> vs `endpoint_inversion`, one base, one depth, config-only).
+>
+> **Do not extend this argument to the D2 diffusion-versus-flow
+> action-specificity result.** That is a claim about conditional entropy,
+> not about the target construction; see
+> [[../writing/thesis-storyline]] §"Why diffusion appears better suited".
+
 > **Claim (analysed result, numerically verified).** The self-consistency
 > target `((v1 + v2) / 2).detach()` in `compute_self_consistency_target_v`
 > is **biased for diffusion v-prediction**. It is exact for flow matching,
