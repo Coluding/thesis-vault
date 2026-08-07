@@ -400,6 +400,77 @@ EasyAnimate showed the same adapter family reshaping a base by −74.9 %, so
 defensible version is Wan-specific and it belongs in the Discussion with
 that scoping. See [[ablation-axes]] H2.
 
+## ⭐ CHAPTER 5 STRUCTURE (settled 2026-08-07) — two halves, one through-line
+
+Results splits into two blocks, and they are joined by the same variable
+rather than merely adjacent.
+
+### Half one: why conditioning fails on Wan
+
+Nine independent lines, which is what makes the failure a contribution:
+
+| line | evidence |
+|---|---|
+| **where it dies** | 23-depth trace: 44–56 % action-driven across all ten blocks, then 0.0085 in **one residual addition** |
+| what survives | the scalar reading; global bag — directionless, at chance in time and space |
+| what it reads instead | oracle: ~100× more sensitive to the base's prediction than to actions |
+| why the gradient allows it | 0.45 % at the margin, ~18 % at the optimum |
+| that it is the pathway | clean-room A/B at matched contribution and matched mask: 2.49×, Welch t=10.5 |
+| that it is not concat | our negative, corroborated independently by IOI |
+| **that it is not the family** | **EasyAnimate reshapes a base by −74.9 %** |
+| that it is not the data | AVID follows actions on our data |
+| that it is not capacity | the clean 7.5M arm sits *below* the DiT-clone arms |
+
+**EA's narrative role is a control, not a fourth backbone.** It enters as
+the answer to "maybe output adapters simply cannot move a frozen video
+base". It belongs in Ch4 §4.2 as a backbone, but its *introduction* in Ch1
+and Ch5 is as a response to the failure. That makes it motivated rather than
+arbitrary.
+
+**And the apparent contradiction must be pre-empted.** We argue hard for Wan
+(horizon, capability, speed) and then spend a chapter on its failure. The
+resolution, stated plainly:
+
+> Wan is chosen for its **generative capability** and fails on its
+> **conditioning interface**. Nothing about being a better generator over
+> longer horizons implies an action signal will survive the way it is
+> injected. That these come apart *is* the finding.
+
+### Half two: making the rollout cheap, three cases
+
+| Case | Shows | State |
+|---|---|---|
+| **PDD** | parallel decoding works **base-side** (LoRA), not **adapter-side**. B decodes a scene in one call; A produces mush **at matched capacity** while fitting the objective 5× better | ✅ **the most decisive.** Capacity excluded, variance collapse refuted |
+| **Shortcut** | learnable **action-free** (0.302 vs 0.034, disjoint CIs; gain ladder flat O(1) vs collapsing control); **not** learnable with actions present | ✅ mechanism · ⏳ few-step **quality** pending (A0.4) |
+| **Distilled base** | the action *reaches* the adapter better than anywhere else (0.18–0.31) and still does not become correct dynamics; adapter hurts denoising at every eval | ⚠️ confounded three ways |
+
+### The through-line that joins them
+
+The three cases are not three accelerations. **They differ in where the
+trainable part sits relative to the frozen prior**, which is the same
+variable half one turns on:
+
+- **PDD-B** reads the LoRA-modulated backbone and works; **PDD-A** reads a
+  from-scratch network and fails
+- **the oracle**: ~100× more sensitive to the base's prediction than to actions
+- **the composition ablation**: the same flag buys quality, costs 25 % of
+  action-following
+
+> **Access to the prior's computation helps you reproduce it and hurts you
+> when you must add to it.** Acceleration is a *reproduction* task, so the
+> trainable part needs the prior's features. Conditioning is an *addition*
+> task, and the same access supplies a cheaper gradient than learning the
+> action.
+
+That is what makes Ch5 one chapter rather than two, and it is the
+well-founded unification (one variable, four measurements), unlike the
+curvature one rejected on 2026-08-07.
+
+⚠ **Honest state of half two:** one decisive result, one mechanism without
+its outcome variable, one confounded. The pre-registered prediction landed
+in its primary branch (action-free works, action-conditioned does not), but
+the matched controls that would make it quotable are missing on all three.
+
 ## ⭐ The chain, restated 2026-08-04 — efficiency as the spine
 
 **Adopted 2026-08-04 (Lukas); decision
