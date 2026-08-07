@@ -71,7 +71,7 @@ Four explanations are available before reaching the architecture, and each
 is excluded by a measurement rather than by argument.
 
 \paragraph{Not the data.} The unmodified published recipe of
-\citet{\nv{rigter2024avid}} follows actions on the same environment, with
+\citet{rigter2024avid} follows actions on the same environment, with
 the same frozen weights and the same probe, where three of our adapters did
 not.\prov{rqp4s3gp}{\nv{ckpt}}{\nv{commit}} Whatever prevents the action
 being used is on our side of the experiment.
@@ -148,7 +148,7 @@ The conditioning signal here is \emph{low-dimensional and spatially global}:
 a seven-degree-of-freedom vector with no spatial extent. For signals that
 vary across the frame, the ordering reverses, and cross-attention's
 finer-grained spatial treatment is what recommends
-it~\citep{\nv{chen2024gentron}}; the same has been reported for
+it~\citep{chen2024gentron}; the same has been reported for
 high-degree-of-freedom dexterous conditioning. Our result is a statement
 about the regime in which a global modulation is expressive enough to carry
 the signal.
@@ -157,7 +157,7 @@ The base is also \emph{frozen} and the adapter is trained from scratch
 beside it, which is what makes the magnitude comparison severe. In models
 trained end-to-end the cross-attention pathway operates at a substantially
 higher fraction of the residual stream and is demonstrably not
-inert~\citep{\nv{motifvideo2026}}. The claim is therefore conditional: in a
+inert~\citep{motif2026video}. The claim is therefore conditional: in a
 frozen backbone with a from-scratch adapter carrying a low-dimensional
 signal, the cross-attention write lands roughly an order of magnitude below
 the level at which jointly trained models operate that pathway.
@@ -165,10 +165,10 @@ the level at which jointly trained models operate that pathway.
 \paragraph{What is ours and what is not.} That modulation of normalised
 activations outperforms token-based conditioning for low-dimensional signals
 is established, in class-conditional
-diffusion~\citep{\nv{peebles2023dit}} and, more recently, for action
-conditioning specifically~\citep{\nv{ioi2026}, \nv{nanowm2026}}; that the
+diffusion~\citep{peebles2023dit} and, more recently, for action
+conditioning specifically~\citep{bai2026ioi, huang2026nano}; that the
 gap widens under a frozen backbone has also been
-reported~\citep{\nv{dae2026}}, attributed there to conditioning being routed
+reported~\citep{zhou2026decoupled}, attributed there to conditioning being routed
 through frozen projections. What this section adds is the localisation. The
 signal is not lost in the attention computation, where it remains between
 \SI{44}{\percent} and \SI{56}{\percent} action-driven; it is lost at the

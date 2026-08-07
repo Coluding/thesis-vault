@@ -106,7 +106,8 @@ delta ([[../30_Knowledge/writing/thesis-style-guide]] §6)._
 - 2.1 Adapting frozen generative models (PEFT lineage) — **stub** — 🛑 **blocked**: `related-work/lora.md` and `related-work/controlnet.md` do not exist
 - 2.2 **Conditioning mechanisms** (FiLM · adaLN-Zero/DiT · cross-attention) — **stub** — 🛑 **blocked**: notes do not exist. **This section underwrites the pathway result** — it turns an empirical finding into a principled one
 - 2.3 Action-conditioned video and world models — **stub** — src: `related-work/avid`, `unicon`, `unified-world-models`, `dreamzero-wam`. Place our frozen-base setting against retrain-from-scratch
-- 2.4 Few-step generation — **stub** — src: `related-work/shortcut-models`, `consistency-models`, `self-distillation`, `dpm-solver`. The honest D3 baseline is not 50-step DDIM alone; open decision [[../50_Decisions/open/d3-positioning-vs-weaver-reflow]]
+- 2.4 Diffusion and flow matching **as literatures**, not as formalism — **stub** — ⚠ **split decided 2026-08-07**: the *mathematics* (interpolant, prediction targets, trajectory curvature, step size) lives in **Method §3.1 Preliminaries**, because Ch2 is an argument and Ch3 needs the notation before it can state the composition rule. This section covers what has been *done* with each: the parameterisation debate, and what flow matching changed
+- 2.5 Few-step generation — **stub** — src: `related-work/shortcut-models`, `consistency-models`, `self-distillation`, `dpm-solver`. The honest D3 baseline is not 50-step DDIM alone; open decision [[../50_Decisions/open/d3-positioning-vs-weaver-reflow]]
 - Cite the **negative space** with its search scope stated
 
 ➜ Gaps and the full candidate list: [[../30_Knowledge/writing/rubric/06-literature]]
@@ -115,7 +116,8 @@ delta ([[../30_Knowledge/writing/thesis-style-guide]] §6)._
 
 _Function: what the system **is**. No results, no motivation._
 
-- 3.1 The composition interface — **draft-complete** (2026-08-07) — src: [[../10_now/architecture]]
+- 3.1 **Preliminaries** — **draft-complete** (2026-08-07, ~1 pp) — interpolant, the three prediction targets and why we always state which, trajectory curvature (VP curved vs rectified flow straight, κ=0), step size. Deliberately minimal: only what §3.4 and §3.5 use
+- 3.2 The composition interface — **draft-complete** (2026-08-07) — src: [[../10_now/architecture]]
 - 3.2 **Adapter families and the selection** — **draft-complete** (2026-08-07) — *(was a standalone chapter; merged for the page limit.)* Derive **one** decision — the AVID-style output adapter — via two criteria: (a) weight/internals access required? (b) gradients through the frozen base required? src: [[../30_Knowledge/theory/interior-vs-output-adapters-backward-cost]], [[../30_Knowledge/theory/unicon-output-adapters-detached-backward]]. Must answer head-on: *if output adapters win on principle, why implement four families?* — and note that a `d`-dependent weight update is definitionally a hypernetwork
 - 3.3 Conditioning interfaces — **draft-complete** (ported 2026-08-07) — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/frame-stride-conditioning]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]]
 - 3.4 Shortcut training and target construction — **draft-complete** (ported 2026-08-07) — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/shortcut-training-modes]], [[../50_Decisions/decided/shortcut-anchor-schedule]]

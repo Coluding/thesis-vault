@@ -25,6 +25,8 @@
 
 % --- units and numbers ------------------------------------------------
 \usepackage{siunitx}
+\DeclareSIUnit{\nothing}{}      % for bare counts: \SI{34.97}{\mega\nothing}
+\DeclareSIUnit{\pixel}{px}
 \sisetup{
   detect-weight    = true,
   detect-family    = true,

@@ -36,7 +36,7 @@ We therefore ask what the smallest sufficient adaptation is, and what
 governs whether it succeeds. Both halves matter: an adaptation that works
 but requires retraining the base has given up the premise, and one that
 leaves the base untouched but ignores the actions has given up the goal.
-\citet{\nv{rigter2024avid}} have shown that the first half is achievable,
+\citet{rigter2024avid} have shown that the first half is achievable,
 training an action-conditioned adapter on a frozen video diffusion model
 using only the base's own predictions.
 
@@ -75,7 +75,7 @@ chronology here; the chapters that follow are organised by deliverable and
 report their evidence separately.
 
 \paragraph{Adapting a frozen base works, and it is not our result.} The
-starting point is \citet{\nv{rigter2024avid}}, who train an
+starting point is \citet{rigter2024avid}, who train an
 action-conditioned adapter on a frozen video diffusion model using only the
 base's own predictions. We reproduce that behaviour and find it robust: on
 our data, the unmodified published recipe follows actions where three of our
@@ -159,7 +159,7 @@ we started.
 
 Adapting a frozen video diffusion model into an action-conditioned world
 model is not a gap in the literature: it is the contribution of
-AVID~\citep{\nv{rigter2024avid}}, which trains an action-conditioned adapter
+AVID~\citep{rigter2024avid}, which trains an action-conditioned adapter
 on a frozen base using only that base's predictions. We take that result as
 our starting point. What is not established is \emph{when} the approach
 works, \emph{why} it stops working, and whether the same composition can

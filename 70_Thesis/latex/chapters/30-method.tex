@@ -3,6 +3,68 @@
 \chapter{Method}
 \label{ch:method}
 
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+This section fixes the notation and the two facts about generative
+trajectories that later sections rely on. It is deliberately minimal: we
+state what \cref{sec:shortcut} and \cref{sec:curvature} use and no more.
+
+\subsection{Forward process and prediction target}
+
+Both model classes we work with define a path between data and noise. Given
+a sample $x_0$ and Gaussian noise $\noisepred \sim \mathcal{N}(0, I)$, an
+intermediate state is a mixture of the two, indexed by a time $t$:
+\begin{equation}
+  \label{eq:interpolant}
+  \xt = \alpha_t\, x_0 + \sigma_t\, \noisepred ,
+\end{equation}
+with $\alpha_t$ and $\sigma_t$ set by the schedule. Training samples $t$,
+constructs $\xt$, and regresses a network on a target derived from
+$(x_0, \noisepred)$.
+
+\emph{Which} target is a choice, and it matters enough that we state it
+everywhere it is relevant. A model may predict the noise $\noisepred$, the
+clean sample $x_0$, or the velocity $\vel$; the three are related by
+invertible transformations at fixed $t$, but the loss surfaces and the
+downstream algebra differ. We therefore carry two labels with every model:
+\cfg{model\_type}, which is \code{diffusion} or \code{flow}, and
+\cfg{prediction\_type}, which is \code{noise}, \code{x0} or
+\code{velocity}. All backbones in this thesis use velocity prediction; only
+the model type varies. That is an accident of which models were available
+rather than a design choice, and \cref{sec:res-pathway} makes use of it.
+
+\subsection{The sampling trajectory, and why its shape matters}
+
+Sampling integrates a deterministic trajectory from noise to data. Its
+instantaneous direction is the velocity field, and the geometry of the path
+it traces is the property \cref{sec:curvature} turns on.
+
+Under a \textbf{variance-preserving diffusion} schedule, $\alpha_t$ and
+$\sigma_t$ vary non-linearly, and the trajectory from noise to data is
+\emph{curved}: the velocity at one point of the path does not equal the
+velocity at another. We write $\curv$ for that curvature.
+
+Under \textbf{rectified flow matching}, the interpolant of
+\cref{eq:interpolant} is taken to be linear in $t$, so the path between a
+noise sample and a data sample is a straight line, the velocity is constant
+along it, and $\curv = 0$.
+
+This is the whole of the distinction we need. Flow matching is not treated
+here as a different family of model but as \emph{the case in which the
+sampling trajectory is straight}, and the consequences of that appear in
+\cref{sec:shortcut} and \cref{sec:curvature}.
+
+\subsection{Step size}
+
+Sampling proceeds in a finite number of steps. We write $\dstep$ for the
+size of a step, that is the interval of $t$ traversed by one network
+evaluation, and \emph{few-step sampling} means increasing $\dstep$ so that
+fewer evaluations cover the same path. A model that is conditioned on
+$\dstep$ can in principle be asked for a step of any size at inference,
+which is the property \cref{sec:shortcut} trains for and
+\cref{sec:res-shortcut} evaluates.
+
 \section{The composition interface}
 \label{sec:composition}
 
@@ -32,7 +94,7 @@ family.
 
 \paragraph{The composition is additive and gated, not a mixture.} An
 alternative is to combine the two predictions convexly, as
-\citet{\nv{rigter2024avid}} do with a learned mask $m$, giving
+\citet{rigter2024avid} do with a learned mask $m$, giving
 $\hat{y} = \hat{y}_{\text{base}} \odot m + \hat{y}_{\text{adapt}} \odot
 (1-m)$. We use an additive residual with a multiplicative gate instead. The
 difference matters for a specific reason: $\gate$ is a function of
@@ -70,7 +132,7 @@ some part of the base. Each therefore requires the base to be open in a way
 that goes beyond being callable. An output-level adapter requires only
 $\fbase(\xt, t)$, and is the only family that survives the black-box
 constraint of \cref{sec:composition}. This is
-\citeauthor{\nv{rigter2024avid}}'s argument as well, and it is a claim about
+\citeauthor{rigter2024avid}'s argument as well, and it is a claim about
 the direction the field is moving in rather than about any particular model:
 the strongest video generators are increasingly released as weights that can
 be sampled but not inspected.
