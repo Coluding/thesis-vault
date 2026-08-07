@@ -191,6 +191,36 @@ from a failure.
 > version holds it should replace the loss-share phrasing everywhere, since
 > it is the version that survives the objection.
 
+> ### 🛑 NARROWED 2026-08-07 by the literature scan
+>
+> **The architecture is taken.** [[../../related-work/scfm-shortcutting-pretrained-flow-models]]
+> (arXiv:2510.17858) already does frozen-base LoRA shortcutting of flow
+> models: `θ = θ₀ + Δθ`, base frozen, acceleration in the adapter.
+> [[../../related-work/lcm-lora]] is a second precedent. So *"few-step
+> behaviour carried entirely by the adapter while the prior stays frozen"*
+> is **no longer an open claim** and citing it as one would not survive
+> review.
+>
+> **What survives is narrower and sharper.** SCFM explicitly *declines*
+> explicit step-size conditioning: "our method does not rely on an explicit
+> step-size parameter". The open claim is therefore **explicit step-size
+> conditioning in an adapter on a frozen base**, with a testable
+> consequence: an explicitly conditioned adapter can trade NFE at inference
+> and an implicitly trained one cannot. **The evidence for it is a
+> quality-versus-NFE curve, not a single-NFE number** — LCM-LoRA
+> structurally cannot produce that curve.
+>
+> **The curvature analysis also has prior art.**
+> [[../../related-work/homo-high-order-shortcut-matching]]
+> (arXiv:2502.00688) already argues shortcut models degrade in
+> high-curvature regions and that a velocity-only treatment misses the
+> geometry. Position our derivation as an **independent and more precise**
+> statement of a known limitation; the sagitta form, the fixed-point
+> argument and the endpoint-inversion escape are the additions. Do not claim
+> the finding as novel.
+>
+> ➜ Rewrite the paragraph below accordingly; it is kept for its structure.
+
 **(2b) Shortcut modelling *through an adapter* — the only uncovered axis.**
 
 Added 2026-08-03. Distinct from the others in kind: (1) and (2) sharpen the

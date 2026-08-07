@@ -12,6 +12,17 @@ sources:
 
 # The shortcut v-averaging bias — a manifold-geometry mistake
 
+> **⚠ PRIOR ART 2026-08-07.** We are **not** the first to identify a
+> curvature limitation in shortcut models.
+> [[../related-work/homo-high-order-shortcut-matching]] (arXiv:2502.00688)
+> argues they degrade in high-curvature regions and that the velocity-only
+> approach misses manifold geometry; [[../related-work/meanflow]]
+> (arXiv:2505.13447) derives the exact average-vs-instantaneous velocity
+> identity. **Cite both.** Position what follows as an independent and more
+> precise statement: the sagitta form ≈ ½κδ², the fixed-point argument for
+> why it does not train away, and the endpoint-inversion escape are what we
+> add.
+
 > **⚠ STATUS 2026-08-07 — HYPOTHESIS STATUS FOR THE D3 RESULT.** The
 > derivation below, and its synthetic verification at zero model error
 > (5.1 / 16.1 / 24.1 % versus 0.000000), are **proven**. Its use as the
