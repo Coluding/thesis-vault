@@ -45,9 +45,17 @@ does not train away, it compounds up the doubling tower.
 
 Corroborated numerically at *zero model error*: the averaged target lands
 5.1% / 16.1% / 24.1% off at s = 1/4, 1/2, 3/4; the endpoint/displacement
-target lands 0.000000 at every step. Then confirmed empirically by the
-flow-vs-diffusion shortcut result. **Theory → numerics → experiment, all
-agreeing, is the strongest form this item takes**, and we have it.
+target lands 0.000000 at every step. **Theory plus synthetic verification
+at zero model error is the strongest form this item takes**, and we have it.
+
+⚠ **Corrected 2026-08-07.** An earlier version of this paragraph claimed the
+argument was "confirmed empirically by the flow-vs-diffusion shortcut
+result". It is not. That experiment's diffusion arm ran
+`endpoint_inversion`, the *exact* construction, so the theory predicts it
+should have worked and it did not; the comparison is confounded and the
+confound runs against the attribution. The A4 2×2 (`v_average` vs
+`endpoint_inversion`, one base, one depth, config-only) is what would supply
+empirical support.
 
 **Domain understanding demonstrated by correction.** Recognising that
 action conditioning on a frozen video base is *AVID's own contribution* —
@@ -97,39 +105,46 @@ Stated at that altitude, it applies to conditioning-on-frozen-priors as a
 class, not to action-conditioned video world models specifically. That is
 the 9-row move, and it costs an afternoon of thinking rather than a GPU.
 
-## ⭐ The trade-off argument (2026-08-07) — the strongest available 9-row move
+## Why diffusion appears better suited (2026-08-07) — measured, unexplained
 
-The 9-row is "place the field under a new light". This is the candidate:
+Action following is demonstrated on four backbones across both objectives
+(DC, EA V5, EA V5.1, Wan-distilled), with both diffusion backbones above
+both flow backbones. **We report the difference and we do not have a
+mechanism for it.**
 
-> **Curvature hurts the shortcut target and helps the adapter.** A curved
-> probability-flow arc makes the published velocity-averaging target biased,
-> which is why the shortcut objective is learnable on a straight interpolant
-> and not on a curved one. The same curvature leaves the base *less
-> committed* at a given state, so the action carries more marginal value in
-> the loss, which is why action conditioning is more specific on diffusion.
+**Two rival explanations are eliminated with existing data**, and reporting
+those eliminations is the substance here:
 
-One geometric property explains both halves of the thesis: why acceleration
-is easy on flow, and why conditioning is easy on diffusion. It converts a
-list of findings into a **trade-off**, and trade-offs are what design
-recommendations are made of.
+- **Parameterisation.** `prediction_type: velocity` holds across *all four*
+  cells, so it cannot explain a difference it does not vary with. The
+  contrast is attributable to `model_type`, not to the prediction target.
+  This is a control we obtained by construction rather than by design, and
+  it should be stated as such.
+- **Noise-level distribution.** Dead by the flat σ-sweep (H8 in
+  [[../ablation-axes]]). Report it: it is the obvious first guess, and a
+  reader who does not see it tested will assume it was not.
 
-**What makes it credible rather than a story.** Two rival explanations are
-already eliminated with existing data:
+**What the measurement constrains.** Adaptation *capacity* is tied
+(−74.9 % vs −73.6 %) while *specificity* differs (+36 %). So whatever the
+mechanism is, it is not that flow bases are harder to adapt; it is that less
+of the adaptation becomes action-conditioned.
 
-- **Parameterisation is controlled by construction.** `prediction_type:
-  velocity` holds across all four cells (DC, EA V5, EA V5.1, Wan), so it
-  cannot explain a difference it does not vary with. The diffusion/flow
-  contrast is attributable to `model_type`.
-- **Noise-level distribution is dead** (flat σ-sweep, H8 in
-  [[../ablation-axes]]). Report it: it is the obvious first guess.
+⚠ **Do NOT extend the curvature argument to cover this.** The curvature
+result is about the **shortcut target construction**: the arithmetic mean of
+two tangents is not the chord, and the true field is not a fixed point of
+the averaging rule. That argument involves no model and no conditional
+distribution. A claim that "a curved trajectory leaves the base less
+committed, so actions matter more" is a *different* proposition that happens
+to share the word *curvature*; trajectory geometry and conditional entropy
+are not the same quantity, and nothing we have measured links them. The
+unified "one property explains both halves" story is attractive and
+unsupported. Considered and rejected 2026-08-07.
 
-**What would confirm it:** H1 predicts higher action-attributable variance
-in the objective on diffusion at matched conditions. The **IDM ceiling**
-(B5) measures exactly that, in minutes of GPU.
-
-⚠ Present as an **analysed estimate with the mechanism named**, not as a
-measured result, until B5 returns. The eliminations are rung 1; the
-surviving explanation is rung 5.
+**If a mechanism is wanted**, the measurable one is action-attributable
+variance in the objective per backbone, which is what the **IDM ceiling**
+(B5 in [[../open-experiments-for-thesis]]) reports, in minutes of GPU.
+Until then the honest form is: *measured, robust across two independent
+model families, mechanism open.*
 
 ## Optimisation queue
 
