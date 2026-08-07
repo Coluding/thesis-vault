@@ -23,9 +23,109 @@ weight/internals access, gradients through the frozen base.}
 
 \section{The curvature bias in the shortcut target}
 \label{sec:curvature}
-\todo{The PROVEN node -- derive the sagitta argument, do not assert it
-(rubric/04-knowledge). Phrase precisely: the claim is about the published
-velocity-averaging target, not about diffusion.}
+
+The self-consistency objective of \cref{sec:shortcut} supervises a
+double-step prediction with the composition of two single steps. Written for
+a velocity parameterisation, the target for step size $2\dstep$ is the
+average of the velocity at the current state and the velocity at the state
+reached after one step of size $\dstep$:
+\begin{equation}
+  \label{eq:shortcut-target}
+  \vel_{\text{target}}(\xt, t, 2\dstep)
+  \;=\; \tfrac{1}{2}\Big[\, \vel(\xt, t, \dstep) \;+\; \vel(x_{t+\dstep}, t+\dstep, \dstep) \,\Big].
+\end{equation}
+
+This section establishes when \cref{eq:shortcut-target} is the correct
+target and when it is not. The distinction is a property of the base
+model's probability-flow trajectory, and it determines which bases the
+shortcut objective can be applied to as published.
+
+\subsection{Exactness on a straight interpolant}
+
+Under a rectified-flow construction the interpolant between noise and data
+is a straight line, and the velocity field along a trajectory is constant.
+Two half-steps therefore carry the same velocity as one double-step, and
+\cref{eq:shortcut-target} is exact: averaging two identical quantities
+returns the quantity. The trajectory has curvature $\curv = 0$, and the
+average of two points on a straight line lies on that line.
+
+\subsection{The bias on a curved trajectory}
+
+A variance-preserving diffusion process does not have this property. Its
+probability-flow trajectory is curved, and the two velocities being averaged
+are tangents at two distinct points of an arc. Their arithmetic mean is the
+\emph{Euclidean} centroid of the two tangent directions, whereas the
+quantity the objective requires is the direction of the chord that actually
+connects the endpoints --- a Riemannian mean along the arc.
+
+The discrepancy between the two is the \emph{sagitta} of the arc: for a
+trajectory of curvature $\curv$ traversed over a step $\delta$, the chord
+departs from the averaged tangent by
+\begin{equation}
+  \label{eq:sagitta}
+  \text{sagitta} \;\approx\; \tfrac{1}{2}\,\curv\,\delta^{2},
+\end{equation}
+so the error is second order in the step size and vanishes only as
+$\curv \to 0$. \Cref{eq:shortcut-target} is therefore not an approximation
+that improves with training --- it is a systematically wrong target whenever
+$\curv \neq 0$, and it is wrong by an amount that grows quadratically with
+the step being taken.
+
+\subsection{Why the bias does not train away}
+
+The consequence that matters is not the size of the error at one step but
+its behaviour under the doubling tower the objective constructs. A training
+objective whose target is biased can still converge to the correct field if
+the true field is a \emph{fixed point} of the target-construction rule ---
+that is, if substituting the true velocities into \cref{eq:shortcut-target}
+returns the true double-step velocity. On a curved trajectory it does not:
+substituting the exact tangents returns the averaged tangent, which differs
+from the chord by \cref{eq:sagitta}.
+
+The true field is therefore not a fixed point of the rule. Each rung of the
+doubling ladder is supervised against a target constructed from the rung
+below, so the discrepancy is re-injected at every level rather than being
+corrected, and it compounds upward. Training longer does not remove it,
+because the objective's optimum is not the true field.
+
+\subsection{Numerical verification at zero model error}
+
+The argument above is about the target construction, not about any model, so
+it can be checked with the model removed. Substituting exact velocities into
+the two candidate constructions under the training schedule --- so that the
+only error present is the construction's own --- the velocity-averaging
+target of \cref{eq:shortcut-target} departs from the true displacement by
+\SI{5.1}{\percent}, \SI{16.1}{\percent} and \SI{24.1}{\percent} at
+$s = \nicefrac{1}{4}$, $\nicefrac{1}{2}$ and $\nicefrac{3}{4}$ respectively,
+growing with the step size as \cref{eq:sagitta} predicts. The
+endpoint-inversion construction returns $0.000000$ at every step.
+
+\subsection{Two escapes, and the precise form of the claim}
+
+The bias has two independent remedies, corresponding to the two terms in
+\cref{eq:sagitta}.
+
+\emph{Fix the coordinates.} Constructing the target by inverting the
+endpoints rather than averaging tangents removes the discrepancy without
+changing the base, since the chord is then computed directly. This is exact
+on the curved manifold, as the numerical check confirms.
+
+\emph{Fix the geometry.} Adopting a base whose trajectory is straight sets
+$\curv = 0$ and makes \cref{eq:shortcut-target} faithful as published. This
+is the property that motivates the move to a flow-matching base in
+\cref{sec:backbones}.
+
+\medskip
+
+We state the claim precisely, because a looser version is both false and
+easy to refute. The result is \emph{not} that shortcut modelling fails on
+diffusion: consistency distillation on variance-preserving diffusion
+demonstrably works, and the endpoint construction above is exact on the same
+curved manifold. The result is that \textbf{the published
+velocity-averaging target is exact only at zero curvature, and carries a
+second-order bias that compounds up the doubling tower otherwise.} That is a
+statement about a target construction, and it is what the derivation and the
+numerical check jointly support.
 
 \section{Computational profile}
 \label{sec:cost}

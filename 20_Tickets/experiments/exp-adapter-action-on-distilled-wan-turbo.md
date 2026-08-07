@@ -441,8 +441,12 @@ real effect is ~10× smaller and is on motion **magnitude**, not correctness
 next launch on this arm produces the first gain intervals**, and that is what decides
 whether +0.143 is a result or noise at n=16.
 
-### Logging defect to fix before that launch
-This run wrote **no wandb entry** — metrics exist only in stdout and `metrics.jsonl`.
-Set `training.extra.wandb: {enable: true, require_vae: false}` for metrics-only logging.
-(Same defect hit all three PDD arms; `video_logging.enable: false` is the legacy alias
-for the whole wandb block, not just the video panels.)
+### Logging — CORRECTED 2026-08-07
+This run **did** log to wandb:
+`https://wandb.ai/coluding/Wan2.2-avid-xattn-acwm-robotarm/runs/mo3k2639`. An earlier
+entry here claimed otherwise; the wandb URL is printed to **stderr** and the check only
+grepped stdout. The Turbo arm's logging is fine.
+
+The defect is real for the **PDD arms** only (`video_logging.enable: false` is the legacy
+alias for the whole wandb block) — verified by grepping both streams there. Fixed in the
+115M pair via `training.extra.wandb: {enable: true, require_vae: false}`.

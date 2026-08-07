@@ -18,7 +18,7 @@ metrics:
 notes: |
   Slurm 25259766, TIMEOUT at 3:00:00 (the configured limit, not a failure), 1200 steps,
   batch 16, 49-frame windows, peak VRAM 89.5/93 GiB (96%). First run of the instrumented
-  motion metric. NO wandb dashboard — see the logging caveat below.
+  motion metric. wandb: Wan2.2-avid-xattn-acwm-robotarm/runs/mo3k2639.
 ---
 
 # The action DOES drive per-clip motion — but the frozen-base control was measuring the wrong thing
@@ -111,8 +111,9 @@ turn — the `--time=03:00:00` cap recommended by the predecessor note worked as
    logged only summary correlations, not per-clip series. **The next run on this arm
    produces the first gain intervals.**
 2. n = 16 per draw, 4 draws, 2 cycles, **one run**, no seed replication.
-3. ⚠️ **No wandb dashboard.** The run wrote no wandb entry; metrics are in the stdout log
-   and `metrics.jsonl` only.
+3. Dashboard: **https://wandb.ai/coluding/Wan2.2-avid-xattn-acwm-robotarm/runs/mo3k2639**
+   (corrected 2026-08-07 — an earlier revision of this note claimed the run produced no
+   wandb entry. It did; the URL is printed to stderr, and the check only grepped stdout.)
 
 ## Reproducibility caveat
 
