@@ -42,6 +42,57 @@ sources:
 **Consequence: the setting alone is no longer a contribution.** "We keep the
 base frozen and train an adapter" places us in a populated cell.
 
+## ⭐ UPDATE 2026-08-07b — the perimeter is tighter, and D1/D3 are safer
+
+Second scan, focused on the immediate neighbourhood. Three corrections and
+one warning.
+
+**Corrections to the tier table above:**
+
+- **DWS is AAAI 2025 and it fine-tunes.** It is **tier 4**, not a third
+  occupant of tier 5. The ambiguity is resolved.
+- **IOI (arXiv:2606.23296) is tier 5, on Wan.** Verbatim: *"Only the
+  Kinematic Fusion Embedder, Alignment Embedder, and Kinematic Blocks are
+  trainable. All DiT parameters remain frozen throughout."* It conditions on
+  **rendered kinematics** (forward kinematics → 3-view orthographic renders
+  → zero-init gated side branch), not on a raw action vector, which is the
+  distinction to draw.
+- **AVID's venue** is RLC 2025 / RLJ paper 64, not a preprint. Corrected in
+  [[avid]].
+
+**⚠ The warning: a frozen-backbone adapter cluster exists outside AVID's
+citation graph.** None of these cite AVID and none were in the vault:
+
+| Work | Base | Regime | Action interface |
+|---|---|---|---|
+| **Aero-World** (2605.19728) | video DiT | **frozen + LoRA** | IMU → MLP → **cross-attention token stream** |
+| LOME (2603.27449) | Wan2.1-VACE-14B | frozen, LoRA r=128 on VACE only | 3D keypoints rasterised to 2D action maps |
+| RealWonder (2603.05449) | Wan2.1-1.3B-InP | frozen, LoRA r=2048 | physics sim → optical-flow / RGB control images |
+| EA-WM (2605.06192) | Wan2.2 DiT | frozen + LoRA r=32 | kinematic-to-visual action fields, projected to camera view |
+| Generated Reality (2602.18422) | Wan2.2 14B I2V | LoRA r=32 | **ablates TokenConcat / AdaLN / CrossAttn / TokenAddition** |
+
+**Aero-World is our exact configuration**: MLP(action) → cross-attention
+into a frozen base. This is where a reviewer asking *"isn't this just
+LoRA?"* will point, and we currently cite none of them.
+
+Note the pattern: **four of the five condition on a spatially-aligned
+rendering** (keypoint maps, optical flow, action fields, orthographic
+renders) rather than on a raw action vector. That is the same conclusion
+GigaWorld-1 reaches, and it is a real convergence in the field worth naming
+in Ch2.
+
+**✅ D3 is uncontested** among AVID citers: no citer implements a
+step-size-conditioned or shortcut adapter. Nearest adjacent risk is
+**MWM (arXiv:2603.07799)**, action-conditioned consistency post-training
+plus "Inference-Consistent State Distillation" for few-step rollout. It is
+distillation rather than step-size conditioning and says nothing about a
+frozen base, but it is adjacent and **not in the vault**. Highest-priority
+read.
+
+**✅ D1's conjunction has no match found.** DWS explicitly notes AVID is
+*"limited to diffusion-based models"*, which is an argument **for** our
+flow-matching coverage rather than against it.
+
 ## The gap that is ours, stated as a conjunction
 
 No paper in the scan does all three:

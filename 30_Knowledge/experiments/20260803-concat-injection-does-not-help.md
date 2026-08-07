@@ -93,6 +93,33 @@ larger change than a config key. Not attempted — budget.
   emits exactly 0.0 and every assertion compared zeros to zeros. The suite now
   asserts a non-zero output first. Worth remembering as a standing check.
 
+## ✅ Independently corroborated (2026-08-07)
+
+**GigaWorld-1 verified.** arXiv:2607.02642, GigaAI + Tsinghua, 2 Jul 2026.
+Table 3 transcribed twice from independent fetches; **the numbers quoted
+above are exactly right** (cross-attn 0.1620, no-control 0.1576, ControlNet
+0.2566, channel-concat 0.3528 trajectory accuracy). ⚠ Disambiguate: there
+are three GigaWorld papers (0: 2511.19861; Policy: 2603.17240; 1:
+2607.02642) and only the last carries Table 3.
+
+Their stated conclusion supports our reading of why ours did not transfer:
+the best action representation is *"not merely explicit, but **spatially
+aligned with the noisy latent** from the beginning of denoising."* Our
+concat broadcasts a 7-DoF vector uniformly, so it is explicit but not
+spatially aligned.
+
+**IOI (arXiv:2606.23296) Table 5 corroborates our negative independently**,
+on a frozen Wan 2.1 DiT: cross-attention beats concat on every metric
+(PSNR 24.76 vs 23.58; SSIM 0.8412 vs 0.8134; LPIPS 0.0781 vs 0.1021;
+FVD 62.56 vs 67.89). So concat-below-cross-attention is not an artefact of
+our setup.
+
+⚠ **And it qualifies the vault's wider framing:** in IOI, cross-attention is
+*second-best of four*, ahead of both concat and add, and wins LPIPS
+outright. "Cross-attention is always worst" is not supportable; the ordering
+is task- and metric-dependent. See
+[[../related-work/pathway-claim-prior-art-verdict]].
+
 ## Related
 
 - [[20260731-wan-action-trace-value-pathway-drowns]] — the drowning measurement

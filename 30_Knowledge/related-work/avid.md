@@ -4,7 +4,7 @@ status: living
 last_updated: 2026-07-26
 title: "AVID: Adapting Video Diffusion Models to World Models"
 authors: ["Marc Rigter", "Tarun Gupta", "Agrin Hilmkil", "Chao Ma"]
-venue: arXiv:2410.12822v2 (preprint, 24 Nov 2024) — Microsoft Research, Cambridge UK
+venue: "RLC 2025 / Reinforcement Learning Journal 2025, paper 64 (also ICLR 2025 workshop poster). arXiv:2410.12822"
 year: 2024
 url: https://arxiv.org/abs/2410.12822
 local_pdf: docs/paper/avid.pdf
