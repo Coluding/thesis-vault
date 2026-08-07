@@ -44,11 +44,138 @@ these videos.}
 
 \section{The injection pathway decides (D2)}
 \label{sec:res-pathway}
-\todo{THE MECHANISM. The Wan contrast against \cref{sec:res-working-cell}:
-6/6 quality metrics beaten (FVD 1118 -> 406) with all three structure probes
-at chance -- a domain adapter, not an action conditioner. Then the clean-room
-A/B at matched adapter contribution and matched mask, and the temporal
-control that resolves gain-vs-information.}
+
+On the base chosen in \cref{sec:backbones} for its capability, horizon and
+sampling cost, the adapter did not use the actions. This section establishes
+what caused that, by eliminating the alternatives in turn and then varying
+the surviving one directly.
+
+\subsection{The failure}
+
+The cell improves the video substantially. Measured against its own frozen
+base on held-out clips it is better on every quality metric we
+record.\prov{vy9tcuco}{outputs/acwm-robotarm-wan-tokennorm-nobase/checkpoints/}{\nv{commit}}
+On the same checkpoint, all three structure probes of \cref{sec:probes}
+return chance: the steering cosine is $0.00$ against a chance level of
+$0.000$, and temporal alignment and spatial concentration are
+indistinguishable from theirs. The frozen-base null is exactly zero, so the
+probes are measuring the adapter.
+
+An adapter that improves generation while carrying no recoverable action
+information is performing domain adaptation, not conditioning. The remainder
+of this section asks why.
+
+\subsection{What it is not}
+
+Four explanations are available before reaching the architecture, and each
+is excluded by a measurement rather than by argument.
+
+\paragraph{Not the data.} The unmodified published recipe of
+\citet{\nv{rigter2024avid}} follows actions on the same environment, with
+the same frozen weights and the same probe, where three of our adapters did
+not.\prov{rqp4s3gp}{\nv{ckpt}}{\nv{commit}} Whatever prevents the action
+being used is on our side of the experiment.
+
+\paragraph{Not the adapter's capacity.} A structurally clean adapter of
+\SI{7.5}{\mega\nothing} parameters settles \emph{below} the larger
+DiT-derived arms rather than above them, so the constraint is not that the
+module is too small to represent the mapping.
+
+\paragraph{Not the family.} The same adapter family, on a different frozen
+base, reduces the denoising loss by \SI{74.9}{\percent} and contributes
+\num{0.52} of the prediction, against \SI{3.3}{\percent} and \num{0.047} on
+the comparable arm of the base under
+study.\prov{25240257}{\nv{ckpt}}{\nv{commit}} On that base the adapted
+prediction is numerically almost the frozen one, its cosine to the base
+being \num{0.9989}. Output adapters can reshape a frozen video model
+substantially; this one did not.
+
+\paragraph{Not a merely mis-scaled or mis-aligned signal.} Rescaling the
+action pathway and aligning the action tokens to the latent grid both
+change the magnitude of the response without changing its structure, and
+substituting channel concatenation for cross-attention performs no better at
+any matched step.\prov{6ruz55f6}{outputs/acwm-robotarm-CONCAT-nobase-run/checkpoints/}{\nv{commit}}
+
+\subsection{Where the signal is lost}
+
+Tracing the action through the network locates the failure precisely. The
+action tokens are informative on entry and remain so throughout the
+attention stack: the cross-attention output is between \SI{44}{\percent} and
+\SI{56}{\percent} action-driven in every one of the ten conditioned blocks.
+The relative sensitivity of the stream to the action then falls from
+\num{0.44} to \num{0.0085} across a \emph{single} operation, the residual
+addition.\prov{25085110}{ncztxyyo}{\nv{commit}}
+
+The magnitudes involved make the arithmetic unsurprising once measured. The
+cross-attention output has a root-mean-square of approximately \num{0.01}
+against a residual stream of \numrange{1.8}{3.0}. The signal survives the
+attention and is then added to something two orders of magnitude larger.
+
+\subsection{Varying the pathway directly}
+
+The preceding is a diagnosis, and a diagnosis invites the objection that
+something else differed. We therefore compare two injection routes with
+everything else held fixed: the same frozen base, the same data, and, at the
+point of comparison, matched adapter contribution (\num{0.114} against
+\num{0.111}) and matched composition mask (\num{0.953}). The only difference
+is whether the per-frame action is supplied as cross-attention tokens or as
+a per-frame modulation of normalised activations.
+
+The modulated arm carries more action information at every depth measured,
+and the gap widens with training rather than closing: a factor of
+\num{2.49} at step \num{12000}, Welch $t = 10.5$, with the two arms'
+contributions identical to within \SI{0.2}{\percent}.\prov{avid\_wan\_rt1\_47M\_faithful}{\nv{ckpt}}{\nv{commit}}
+The action-driven share of the modulated arm rises from \SI{15.3}{\percent}
+to \SI{25.3}{\percent} over that interval while the token arm moves from
+\SI{9.1}{\percent} to \SI{10.2}{\percent}, which is the signature of an
+information ceiling rather than of under-training.
+
+\paragraph{The measurement is not a gain artefact.} Because
+\cref{eq:effect-rel} is monotone in the gain of the action pathway
+(\cref{sec:integrity}), a larger response is by itself compatible with a
+louder signal rather than a better-used one. The temporal control separates
+them: the modulated arm concentrates its per-frame response on the diagonal
+at \num{0.409} against a chance level of \num{0.200}, while the token arm
+sits at \num{0.198}, and its per-frame response rows are \emph{bit-identical}
+to one another. Gain scales a response; it cannot manufacture per-frame
+differentiation where none exists.
+
+\subsection{Scope of the claim}
+
+Two boundaries matter, because the unscoped version is refutable.
+
+The conditioning signal here is \emph{low-dimensional and spatially global}:
+a seven-degree-of-freedom vector with no spatial extent. For signals that
+vary across the frame, the ordering reverses, and cross-attention's
+finer-grained spatial treatment is what recommends
+it~\citep{\nv{chen2024gentron}}; the same has been reported for
+high-degree-of-freedom dexterous conditioning. Our result is a statement
+about the regime in which a global modulation is expressive enough to carry
+the signal.
+
+The base is also \emph{frozen} and the adapter is trained from scratch
+beside it, which is what makes the magnitude comparison severe. In models
+trained end-to-end the cross-attention pathway operates at a substantially
+higher fraction of the residual stream and is demonstrably not
+inert~\citep{\nv{motifvideo2026}}. The claim is therefore conditional: in a
+frozen backbone with a from-scratch adapter carrying a low-dimensional
+signal, the cross-attention write lands roughly an order of magnitude below
+the level at which jointly trained models operate that pathway.
+
+\paragraph{What is ours and what is not.} That modulation of normalised
+activations outperforms token-based conditioning for low-dimensional signals
+is established, in class-conditional
+diffusion~\citep{\nv{peebles2023dit}} and, more recently, for action
+conditioning specifically~\citep{\nv{ioi2026}, \nv{nanowm2026}}; that the
+gap widens under a frozen backbone has also been
+reported~\citep{\nv{dae2026}}, attributed there to conditioning being routed
+through frozen projections. What this section adds is the localisation. The
+signal is not lost in the attention computation, where it remains between
+\SI{44}{\percent} and \SI{56}{\percent} action-driven; it is lost at the
+residual addition. That distinguishes a magnitude account from a
+representational one, and it is testable: an account based on stale
+projections does not predict that additive injection, which bypasses those
+projections entirely, degrades under freezing as well.
 
 \section{Two scale failures at the same interface (D2)}
 \label{sec:res-scale}
