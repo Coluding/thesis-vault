@@ -16,25 +16,29 @@ Video generative models are an unlikely but attractive starting point for
 building one. They are not trained to be simulators and they are not given
 actions, yet in learning to produce plausible video at scale they acquire a
 great deal of what a simulator needs: objects that persist, contacts that
-resolve, motion that continues along its trajectory. That competence is
-expensive to obtain. The largest video models are trained on data and
-compute that a single project cannot reproduce, and a growing number are
-released as weights that can be sampled but not retrained.
+resolve, motion that continues along its trajectory. A model that can
+generate a convincing minute of a robot arm moving among objects has, in
+some usable form, a prior over how such scenes evolve.
 
-Two things stand between such a model and a world model. It has no notion
-of an action, so nothing distinguishes the future that follows from one
-control input rather than another. And it is slow: a rollout costs one
-network evaluation per denoising step per frame, which is tolerable for
-generating a clip and prohibitive for searching over hundreds of candidate
-futures.
+That prior is the asset, and it is expensive. The largest video models are
+trained on data and compute a single project cannot reproduce, and a growing
+number are released as weights that can be sampled but not retrained.
 
-Both gaps could be closed by retraining, and both would then cost what the
-original training cost. The alternative is to leave the pretrained model
-frozen and to learn a small module that composes with it, adding what is
-missing without disturbing what is already there. This is the adapter
-approach that has become standard for adapting large models in other
-settings, and \citet{\nv{rigter2024avid}} have shown that it can produce an
-action-conditioned world model from a frozen video diffusion model.
+The premise of this thesis is therefore that the prior should be left alone.
+What separates a video model from a world model is not physical
+understanding, which the base already has in some measure, but the fact that
+nothing in it responds to an action. The task is not to teach the model how
+objects fall. It is to \emph{nudge} an existing competence in an
+action-conditioned direction, with as little new machinery as possible, and
+without disturbing what is already there.
+
+We therefore ask what the smallest sufficient adaptation is, and what
+governs whether it succeeds. Both halves matter: an adaptation that works
+but requires retraining the base has given up the premise, and one that
+leaves the base untouched but ignores the actions has given up the goal.
+\citet{\nv{rigter2024avid}} have shown that the first half is achievable,
+training an action-conditioned adapter on a frozen video diffusion model
+using only the base's own predictions.
 
 This thesis takes that result as its starting point and asks what governs
 whether it works.
@@ -210,13 +214,22 @@ and biased on a curved diffusion arc (\cref{sec:curvature}). Few-step
 \emph{quality} is directionally better than the no-shortcut control but is
 not competitive, and we scope it as future work.
 
-\paragraph{A framework in which the frozen base is a configuration choice.}
-We implement the adapter taxonomy behind a single composition interface
-spanning diffusion and flow matching, U-Net and DiT. The claim is
-demonstrated rather than asserted: the same interface runs across three
-backbone families, and we added a new base family to the original AVID
-repository as a third branch, running their recipe unchanged
-(\cref{sec:res-d1}).
+\paragraph{A framework that makes the base a configuration choice.} If the
+premise is that the prior should be reused rather than rebuilt, then the
+prior one reuses will keep changing, and an adaptation method that is
+expensive to port to a new base has not delivered on the premise. We
+therefore implement the adapter taxonomy behind a single composition
+interface spanning diffusion and flow matching, U-Net and DiT, so that
+swapping the frozen base is a configuration change rather than an
+engineering project.
+
+The claim is demonstrated rather than asserted. The same interface runs
+across several backbone families, and we added a new base family to the
+original AVID repository as a third branch, running their recipe unchanged
+(\cref{sec:res-d1}). We regard the resulting codebase as a contribution in
+its own right: it is what allows the questions in this thesis to be asked of
+a base other than the one we happened to start with, and what allows someone
+else to ask them of a base that does not exist yet.
 
 \paragraph{A diagnostic methodology, and the reason it was necessary.} None
 of the above is visible in the readouts normally used to monitor such a

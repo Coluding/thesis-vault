@@ -346,6 +346,60 @@ their evidence separated and merely **order** themselves along the arc.
 
 ---
 
+## ⭐⭐ THE CORE FRAMING (Lukas, 2026-08-07) — minimal adaptation of a strong prior
+
+Stated in conversation and it supersedes the framing of every note below as
+*the reason the thesis exists*. Everything else is downstream of it.
+
+> **The base model already has a strong prior over physics and dynamics.
+> That prior is the asset. We do not want to teach it what happens when
+> things collide; we want to *nudge* it in an action-conditioned direction
+> with as little new machinery as possible, and leave the prior intact.**
+
+**Why this is the right frame and not just a nicer sentence:**
+
+1. **It makes "frozen" a design goal rather than a constraint.** The usual
+   framing is defensive: we freeze because retraining is expensive or the
+   weights are closed. This framing is positive: we freeze because the prior
+   is what we came for.
+2. **It sets up the entire failure analysis.** If the prior is strong, there
+   is little left for the adapter to do, and the harder it may be to make it
+   do the one thing we want. That is the base-parity result, the oracle
+   result, and the 0.45 % economics, all of which become *consequences of
+   the premise* rather than a list of problems.
+3. **It defines success.** The smallest sufficient adaptation. An adaptation
+   that works but retrains the base has given up the premise; one that
+   leaves the base untouched but ignores the actions has given up the goal.
+   Both failure modes appear in our results.
+4. **It makes D1 necessary rather than decorative.** If the prior is the
+   asset and priors keep improving, then the method must port to a new base
+   cheaply, or it has not delivered on its own premise. The repository is
+   the argument, not the plumbing.
+
+**The chain that follows from it:**
+
+```
+the base has the prior           →  nudge it, do not rebuild it   [premise]
+AVID shows the nudge works       →  our starting point, stated as such
+we extend it to new bases        →  the framework, plug and play  [D1]
+we plan with it (DynamiCrafter)  →  it works
+  ... but too SLOW               →  planning needs many rollouts
+  ... and too SHORT              →  ~1 s of future bounds any planner
+  ... and not good enough        →  candidates must be distinguishable
+Wan2.2 gives all three           →  faster, longer, better
+distillation / shortcut / flow   →  make the rollout cheap        [D3]
+analysis                         →  what worked, what did not, where
+```
+
+⚠ **One thread deliberately deferred.** Lukas, 2026-08-07: *"we will also
+argue that the quality of Wan may be the reason the adapter did not pick
+much up. But this is for later."* That is the base-strength hypothesis, and
+it must be handled carefully: **H2 was revised on 2026-08-06** when
+EasyAnimate showed the same adapter family reshaping a base by −74.9 %, so
+"the base was too strong" is not supportable as a general claim. The
+defensible version is Wan-specific and it belongs in the Discussion with
+that scoping. See [[ablation-axes]] H2.
+
 ## ⭐ The chain, restated 2026-08-04 — efficiency as the spine
 
 **Adopted 2026-08-04 (Lukas); decision
