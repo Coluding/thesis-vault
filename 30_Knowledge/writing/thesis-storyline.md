@@ -132,55 +132,47 @@ predicts specifically that *action-following* degrades; a different failure
 mode would be a different finding. See
 [[open-experiments-for-thesis]] A0.4 and A7.
 
-### Why diffusion appears better suited (2026-08-07)
+### Why diffusion appears better suited (2026-08-07) — measured, unexplained
 
 Action following is now demonstrated on **four backbones across both
-objectives**: DynamiCrafter (diffusion), EA V5 (diffusion), EA V5.1 (flow)
-and Wan-distilled. Flow is not disqualified; diffusion is *better suited*.
-Three candidate explanations, two already eliminated.
+objectives**: DC (diffusion), EA V5 (diffusion), EA V5.1 (flow) and
+Wan-distilled. Flow is not disqualified; diffusion is *better suited*, and
+**we do not have a mechanism for it.**
 
-| # | Hypothesis | Status |
+**Two rival explanations are eliminated with data already in hand**, which
+is the reportable substance:
+
+| # | Explanation | Status |
 |---|---|---|
-| **H1** | **Actions are worth more where the base is less committed.** A curved diffusion trajectory admits more consistent futures at a given state than a near-straight rectified-flow one, so the action has more marginal value in the loss and the gradient pays more for it | ⭐ **the live hypothesis** |
-| H2 | Parameterisation: `prediction_type` changes what a fixed-scale adapter contribution is worth | 🛑 **eliminated** |
-| H3 | Actions only carry signal at high noise, so the noise-level distribution decides | 🛑 **eliminated** |
+| Parameterisation | `prediction_type: velocity` holds across **all four** cells (DC, EA V5, EA V5.1, Wan) | 🛑 **eliminated** — it cannot explain a difference it does not vary with. The contrast is attributable to `model_type` |
+| Noise-level distribution | actions only carry signal at high σ | 🛑 **eliminated** by the flat σ-sweep (H8, [[ablation-axes]]). **Report it anyway**: it is the obvious first guess |
 
-**H2 is eliminated by the existing configs, at no cost.**
-`prediction_type: velocity` holds across **all four** cells: DC
-(diffusion+velocity), EA V5 (diffusion+velocity), EA V5.1 (flow+velocity),
-Wan (flow+velocity). A variable that does not vary cannot explain a
-difference. The parameterisation is therefore *controlled by construction*,
-and the diffusion-versus-flow difference is attributable to `model_type`,
-i.e. the trajectory geometry, rather than to the prediction target.
+The parameterisation control was obtained **by construction rather than by
+design**; say so, and it strengthens rather than weakens the point.
 
-**H3 is eliminated** by the flat σ-sweep (H8 in [[ablation-axes]]).
-**Report it anyway** in the thesis: it is the obvious first guess, and a
-reader who does not see it tested will assume it was not.
-
-**H1 fits the shape of the measurement.** Adaptation *capacity* is tied
+**What the measurement constrains.** Adaptation *capacity* is tied
 (−74.9 % vs −73.6 % loss reduction) while *specificity* differs (+36 %
-`effect_rel`, +26 % `effect_vs_adapter`). The difference is not how much the
-adapter can do; it is how much of what it does the action gets credit for,
-which is what a marginal-value argument predicts and a capacity argument
-does not.
+`effect_rel`, +26 % `effect_vs_adapter`). So the mechanism, whatever it is,
+is not that flow bases are harder to adapt. It is that less of the
+adaptation becomes action-conditioned.
 
-**⚠ The trade-off this implies, and it must be written rather than left for
-a reader to find.** H1 cuts against the D3 result:
+> ⚠ **Do not extend the curvature argument to cover this. Considered and
+> rejected 2026-08-07.** The curvature result is about the **shortcut target
+> construction** — the arithmetic mean of two tangents is not the chord, and
+> the true field is not a fixed point of the averaging rule. It involves no
+> model and no conditional distribution, which is why it can be verified
+> synthetically. A claim that *"a curved trajectory leaves the base less
+> committed, so actions matter more"* is a different proposition that
+> happens to share the word *curvature*. Trajectory geometry and conditional
+> entropy are not the same quantity and nothing here links them. The
+> unified "one property explains both halves of the thesis" story is
+> attractive and unsupported.
 
-> **Curvature hurts the shortcut target and helps the adapter.** A curved
-> arc makes the velocity-averaging target biased, which is why the shortcut
-> objective is learnable on flow and not on diffusion. The same curvature
-> leaves the base less committed at a given state, which is why action
-> conditioning is more specific on diffusion.
-
-If it holds, the thesis has a **trade-off rather than a preference**: the
-geometry that makes acceleration easy makes conditioning harder. One
-property then explains the whole D2/D3 split, which is a stronger §6.1 than
-"diffusion is better suited".
-
-**Test:** H1 predicts higher action-attributable variance in the objective
-on diffusion at matched conditions. That is what the **IDM ceiling** (B5 in
-[[open-experiments-for-thesis]]) measures, and it costs minutes of GPU.
+**If a mechanism is wanted**, the measurable quantity is action-attributable
+variance in the objective per backbone, which the **IDM ceiling** (B5 in
+[[open-experiments-for-thesis]]) reports in minutes of GPU. Until then write
+it as: *measured, robust across two independent model families, mechanism
+open.*
 
 **Why it is one claim rather than three.** Actions are worth ~0.45 % of a
 teacher-forced denoising loss, so they already lose the gradient competition
