@@ -91,11 +91,11 @@ tables ([[../30_Knowledge/writing/rubric/_index]]).
 _Function: pose the question, tell the arc end-to-end, state the
 contributions._
 
-- 1.1 Motivation: pretrained generative models as world-model priors — **stub** — src: [[../10_now/positioning]]
-- 1.2 Problem: **when and why** adaptation works — not *can it* — **stub**
-- 1.3 **The arc** — AVID works → planning → too slow → shortcut → curvature → flow/Wan → the pathway result → the economics bound. **Told end-to-end here and nowhere else.** — **stub** — src: [[../30_Knowledge/writing/thesis-storyline]]
+- 1.1 Motivation: pretrained generative models as world-model priors — **draft-complete** (2026-08-07) — src: [[../10_now/positioning]]
+- 1.2 Problem: **when and why** adaptation works, not *can it* — **draft-complete** (2026-08-07)
+- 1.3 **The arc** — **draft-complete** (2026-08-07, ~7 paragraphs) — AVID as the starting point, the cost argument, the **three-reason** flow pivot with its confound named, the pathway result, the economics, and the pre-registered acceleration prediction. Told end-to-end here and nowhere else. src: [[../30_Knowledge/writing/thesis-storyline]]
 - 1.4 Contributions — **drafting** (prose written 2026-08-03, ~1 pp) — the four-part delta vs AVID, **explicit**: (a) the conditions under which it works (the pathway principle, *with its scope of validity*); (b) the bound on why it stops (the objective economics); (c) step-size conditioning (D3, genuinely untouched by AVID); (d) the framework (D1, demonstrated by porting AVID's recipe to a new base family in AVID's own repo). src: [[../10_now/positioning]], [[../30_Knowledge/writing/rubric/01-originality]]
-- 1.5 Thesis structure — **stub**
+- 1.5 Thesis structure — **draft-complete** (2026-08-07)
 
 ## 2. Related work — `chapters/20-related-work.tex` · **5 pp**
 

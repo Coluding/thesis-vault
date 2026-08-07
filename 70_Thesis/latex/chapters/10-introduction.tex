@@ -6,16 +6,140 @@
 
 \section{Motivation}
 \label{sec:motivation}
-\todo{Pretrained generative models as world-model priors. src: 10_now/positioning}
+
+A world model is a learned simulator: given a state and an action, it
+predicts what happens next. If the prediction is accurate enough and cheap
+enough, an agent can search over imagined futures instead of acting in the
+world, which is the appeal of the idea and the reason it recurs.
+
+Video generative models are an unlikely but attractive starting point for
+building one. They are not trained to be simulators and they are not given
+actions, yet in learning to produce plausible video at scale they acquire a
+great deal of what a simulator needs: objects that persist, contacts that
+resolve, motion that continues along its trajectory. That competence is
+expensive to obtain. The largest video models are trained on data and
+compute that a single project cannot reproduce, and a growing number are
+released as weights that can be sampled but not retrained.
+
+Two things stand between such a model and a world model. It has no notion
+of an action, so nothing distinguishes the future that follows from one
+control input rather than another. And it is slow: a rollout costs one
+network evaluation per denoising step per frame, which is tolerable for
+generating a clip and prohibitive for searching over hundreds of candidate
+futures.
+
+Both gaps could be closed by retraining, and both would then cost what the
+original training cost. The alternative is to leave the pretrained model
+frozen and to learn a small module that composes with it, adding what is
+missing without disturbing what is already there. This is the adapter
+approach that has become standard for adapting large models in other
+settings, and \citet{\nv{rigter2024avid}} have shown that it can produce an
+action-conditioned world model from a frozen video diffusion model.
+
+This thesis takes that result as its starting point and asks what governs
+whether it works.
 
 \section{Problem statement}
 \label{sec:problem}
-\todo{Frame as WHEN AND WHY adaptation works, not CAN IT. See rubric/01-originality.}
+
+The question is not whether a frozen video model can be adapted into an
+action-conditioned world model. That is established. The question is
+\emph{when} the approach works, \emph{why} it stops working, and whether the
+same composition can also absorb the second thing a world model needs, which
+is the ability to roll out in few steps.
+
+These are different questions from the one the literature has answered, and
+they are the ones a practitioner faces. An adapter that improves every
+quality metric on a frozen base may or may not be using the actions it is
+given. An adapter that uses them on one backbone may fail on another for
+reasons that have nothing to do with the backbone's capability. And an
+adapter asked to learn two things at once may learn neither.
+
+Answering them requires measuring something that is not normally measured.
+The readouts used to monitor a conditional generative model, that is the
+training loss, the composition weight, and perceptual sample quality, are
+all insensitive to whether the conditioning is used at all. We show a case
+in which they point the wrong way, and we develop the instruments needed to
+tell the difference (\cref{sec:probes}).
 
 \section{The arc}
 \label{sec:arc}
-\todo{AVID works -> planning -> too slow -> shortcut -> curvature -> flow/Wan
--> the pathway result -> the economics bound. src: writing/thesis-storyline}
+
+The investigation is easiest to follow in the order it happened, because
+each step was forced by the limitation of the one before it. We give that
+chronology here; the chapters that follow are organised by deliverable and
+report their evidence separately.
+
+\paragraph{Adapting a frozen base works, and it is not our result.} The
+starting point is \citet{\nv{rigter2024avid}}, who train an
+action-conditioned adapter on a frozen video diffusion model using only the
+base's own predictions. We reproduce that behaviour and find it robust: on
+our data, the unmodified published recipe follows actions where three of our
+own adapters did not (\cref{sec:res-working-cell}). Action conditioning on a
+frozen video base is therefore not a gap in the literature, and this thesis
+does not claim it.
+
+\paragraph{A working world model is too slow to plan with.} Rollout cost is
+linear in the number of sampling steps, and a planner evaluating candidate
+action sequences pays that cost once per candidate per step of the search.
+On the measurements in \cref{sec:res-d1} a single planning step on the
+smaller of our two bases runs into hours at a realistic candidate count.
+This is what makes sampling cost a research question here rather than an
+engineering detail: it is the difference between a world model that can be
+searched over and one that can only be watched.
+
+\paragraph{Three reasons to move to a flow-matching base.} Reducing the
+number of sampling steps points toward rectified-flow models, for three
+reasons that are worth separating because they are not equally strong.
+Flow-based samplers are designed for short schedules, so the base is already
+cheaper to sample. Recent flow-based video models generate substantially
+better video than the earlier diffusion models available to us, and a world
+model is bounded by the quality of the video it can produce. Finally, and
+more speculatively, a straight interpolant makes the published shortcut
+objective exact as written, which a curved diffusion trajectory does not
+(\cref{sec:curvature}).
+
+\emph{This move changes two things at once}, the training objective and the
+capability of the base, and much of the empirical work in this thesis
+consists of separating them again. We flag it here because it is the
+confound that shapes the experimental design in \cref{ch:experiments}.
+
+\paragraph{Conditioning does not survive every injection site.} On the
+stronger base the adapter improved the video and ignored the actions. It
+took a purpose-built set of probes to establish that this was happening at
+all, and a single-variable comparison to establish why: the same action
+signal, supplied through a different injection site on the same backbone and
+the same data, is used or discarded depending on how it enters relative to
+the network's residual stream (\cref{sec:res-pathway}). This is the thesis's
+central architectural finding.
+
+\paragraph{Underneath the architecture is an objective that does not pay for
+actions.} Even where the signal arrives intact, what the adapter extracts
+from it is thin: a scalar summary of how much motion to produce rather than a
+directional command (\cref{sec:res-decomposition}). The reason is economic.
+Under a teacher-forced denoising objective the input already contains a
+noised view of the answer, so the actions account for a very small fraction
+of the loss at the margin, and appearance correction is always the cheaper
+gradient. The solution that uses actions is substantially better on the same
+objective; the difficulty is that the training landscape offers no visible
+path to it (\cref{sec:boundary}).
+
+\paragraph{The same economics predicts where acceleration can live.} If a
+conditioning signal is already losing the competition for gradient, then
+asking one adapter to learn conditioning and step-size behaviour together
+should make it worse. We wrote that prediction down before running the
+comparison, and organised the final experiments around three placements of
+the few-step behaviour: in the adapter, in a second module on the base, or
+in the base itself (\cref{sec:res-shortcut}). What the comparison shows is
+that the two jobs have opposite requirements, which is where the thesis
+ends.
+
+\bigskip
+
+The result is not a system that does everything at once. It is an account of
+which parts compose and which compete, with the mechanism named in each
+case, and an instrument for telling the difference that we did not have when
+we started.
 
 \section{Contributions}
 \label{sec:contributions}
@@ -110,3 +234,20 @@ that point in the text.
 
 \section{Thesis structure}
 \label{sec:structure}
+
+\Cref{ch:related-work} places the work against adapter methods for large
+pretrained models, action-conditioned video and world models, and the
+few-step sampling literature. \Cref{ch:method} defines the composition
+interface, the conditioning and step-size inputs, and the shortcut training
+objective, and derives the curvature bias that motivates the choice of base.
+\Cref{ch:experiments} describes the datasets, the backbones, the probe suite
+on which every claim in this thesis depends, and the design of the ablation;
+it closes with an account of the measurements that were invalidated during
+the work and how they were caught. \Cref{ch:results} reports the findings, in
+the order the argument needs rather than the order they were obtained.
+\Cref{ch:discussion} states the boundary the results describe, the
+limitations, and what would move them.
+
+Readers interested only in the central architectural result may read
+\cref{sec:probes}, then \cref{sec:res-pathway} and
+\cref{sec:res-blindness}.
