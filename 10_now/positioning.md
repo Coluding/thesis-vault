@@ -50,6 +50,40 @@ suitable for planning workloads.
 > rather than as a deliverable list. The four deliverables below still
 > describe the *work* — the *ordering* is now efficiency-first.
 
+> **🛑 POSITIONING UPDATE 2026-08-07 — the literature scan.** Our cell has
+> other occupants and the framing must change.
+>
+> **"Frozen base plus a trained adapter" is no longer a contribution.**
+> [[../30_Knowledge/related-work/avid]] (RLC 2025) and
+> [[../30_Knowledge/related-work/adapower]] (arXiv:2512.03538, Dec 2025) both
+> occupy it, on different base families; DWS (arXiv:2502.07825) may be a
+> third. Full landscape:
+> [[../30_Knowledge/related-work/frozen-base-world-model-landscape]].
+>
+> **State the contribution as a conjunction**, because each element alone is
+> taken or thin and together they are not:
+> 1. a **comparative taxonomy** of adapter families under one composition
+>    interface, on the same task (every frozen-base paper commits to one
+>    design and does not ablate across families);
+> 2. that interface spanning **both diffusion and flow matching** (all tier-5
+>    work is diffusion-only);
+> 3. **step-size conditioning on a frozen base** (no frozen-base adapter
+>    paper conditions on `d`).
+>
+> **And name the composition difference.** AVID uses a *convex mask-mix*,
+> `ε_pre ⊙ m + ε_adapt ⊙ (1−m)`; ours is a *gated additive residual*,
+> `f_base + g(d)·Δ_φ`. That difference is what makes step-size conditioning
+> expressible at all: the gate is a function of `d`, which a convex mask over
+> two predictions does not naturally accommodate.
+>
+> ⚠ **The objection now has a name.**
+> [[../30_Knowledge/related-work/vid2world]] (ICLR 2026) fine-tunes
+> **DynamiCrafter** and evaluates on **RT-1** — our base, our dataset. "Why
+> not just fine-tune?" is no longer hypothetical. Three citable answers
+> (closed weights; AVID's finding that the split is functional; parameter
+> economy) plus one measurement nobody has made: frozen-adapter versus full
+> fine-tuning on a matched backbone and dataset.
+
 ## The four deliverables
 
 The proposal commits to four deliverables. The contribution per
