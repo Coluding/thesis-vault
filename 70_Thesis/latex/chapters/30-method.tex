@@ -5,21 +5,222 @@
 
 \section{The composition interface}
 \label{sec:composition}
-\todo{\composition -- port from draft/30-method.md}
+
+Everything in this thesis is an instance of one rule. A frozen pretrained
+model $\fbase$ is composed with a trainable adapter $\adapter$ through a
+gate $\gate$:
+\begin{equation}
+  \label{eq:composition}
+  \composition .
+\end{equation}
+
+The base is evaluated with its own inputs only, the state $\xt$ and the
+diffusion time $t$, and its parameters are never updated. The adapter
+receives those same inputs together with the two conditioning variables the
+base does not have: the action $\at$ and the sampling step size $\dstep$.
+Its output is a residual on the base's prediction rather than a replacement
+for it, and the gate scales that residual as a function of the step size.
+
+Three properties of \cref{eq:composition} are worth drawing out, because the
+rest of the thesis turns on them.
+
+\paragraph{The base is a black box.} Only $\fbase(\xt,t)$ is required, not
+its weights, its activations or its gradients. This is what makes the method
+applicable to models that are released for sampling but not for training,
+and it is the constraint under which \cref{sec:families} selects an adapter
+family.
+
+\paragraph{The composition is additive and gated, not a mixture.} An
+alternative is to combine the two predictions convexly, as
+\citet{\nv{rigter2024avid}} do with a learned mask $m$, giving
+$\hat{y} = \hat{y}_{\text{base}} \odot m + \hat{y}_{\text{adapt}} \odot
+(1-m)$. We use an additive residual with a multiplicative gate instead. The
+difference matters for a specific reason: $\gate$ is a function of
+$\dstep$, so the amount by which the adapter is allowed to move the
+prediction can itself depend on the size of the step being taken. A convex
+mixture of two predictions does not naturally accommodate that, and
+step-size conditioning is what \cref{sec:shortcut} needs to express.
+
+\paragraph{The adapter's conditioning surface is closed.} The variables
+$(\at, \dstep)$ are what $\adapter$ is given. The base may consume further
+inputs of its own; those are discussed in \cref{sec:conditioning} and they
+lie outside this interface by construction.
+
+Sections~\ref{sec:conditioning} and~\ref{sec:shortcut} specify the two
+conditioning inputs, and \cref{sec:cost} reports what
+\cref{eq:composition} costs to train.
 
 \section{Adapter families and the selection}
 \label{sec:families}
-\todo{Was a separate chapter in the old outline; merged here for the 40-page
-limit. Derive ONE decision (the output adapter) via the two criteria:
-weight/internals access, gradients through the frozen base.}
+
+The framework implements four families of adapter behind
+\cref{eq:composition}: low-rank weight updates, hidden-state adapters,
+hypernetworks that emit weights, and output-level residual adapters. All of
+the empirical work in this thesis uses the last. This section derives that
+choice, because a taxonomy that is implemented and then not used is
+decoration, and because the criterion that selects it is the same one that
+explains a cost result in \cref{sec:res-d1}.
+
+\subsection{Two criteria}
+
+\paragraph{Does the family require access to the base's internals?}
+Low-rank updates modify the base's weight matrices; hidden-state adapters
+read and write intermediate activations; hypernetworks emit parameters for
+some part of the base. Each therefore requires the base to be open in a way
+that goes beyond being callable. An output-level adapter requires only
+$\fbase(\xt, t)$, and is the only family that survives the black-box
+constraint of \cref{sec:composition}. This is
+\citeauthor{\nv{rigter2024avid}}'s argument as well, and it is a claim about
+the direction the field is moving in rather than about any particular model:
+the strongest video generators are increasingly released as weights that can
+be sampled but not inspected.
+
+\paragraph{Does training require gradients through the frozen base?} This
+criterion is less obvious and it is the one with a measurable cost. An
+output-level adapter can be trained with the base's prediction detached: the
+base is evaluated once under \code{no\_grad}, and the backward pass touches
+only the adapter. The interior families cannot. Because their trainable
+parameters sit inside the base, the forward pass must be differentiable
+through it, and the activation memory that this retains then forces
+gradient checkpointing at video scale.
+
+The consequence is measured rather than argued. At matched effective batch
+on the same frozen base, a low-rank adapter costs \num{3.1} times the
+wall-clock per optimiser step of an output-level adapter, running at
+\num{66} against \num{205} steps per hour, while being the \emph{smaller}
+module of the two at \SI{26.0}{\mega\nothing} against
+\SI{34.9}{\mega\nothing} trainable parameters.\prov{25183721}{\nv{ckpt}}{\nv{commit}}
+Parameter count is the wrong axis: where the parameters live dominates what
+they cost.
+
+\subsection{Why four families are implemented}
+
+If the output adapter wins on both criteria, the natural question is why the
+other three exist in the framework at all. Two reasons, and they are
+different in kind.
+
+The first is that a selection is only a result if the alternatives were
+available. Implementing the taxonomy behind a single interface is what turns
+``we used an output adapter'' into ``an output adapter is what the
+constraints select'', and it is what allowed the cost measurement above to
+be made on a matched setup rather than quoted from another paper.
+
+The second is that the interface is the contribution of
+\cref{sec:res-d1}, and an interface with one implementation demonstrates
+nothing. The claim that swapping the frozen base is a configuration change
+is only meaningful if swapping the adapter is one too.
+
+\subsection{A tension worth stating}
+
+There is an argument against our own choice and it should be made here
+rather than left for a reader to find. A weight update that depends on the
+step size is, definitionally, a hypernetwork: a network emitting parameters
+as a function of $\dstep$. So the hypernetwork family is arguably the
+natural home for \cref{sec:shortcut}, and by selecting the output adapter we
+are conditioning on $\dstep$ as an \emph{input} rather than realising it as
+a \emph{weight update}.
+
+We make that choice on the cost grounds above rather than on expressiveness
+grounds, and we do not claim the two are equivalent. What can be said is
+that the second criterion applies to a $\dstep$-dependent hypernetwork with
+full force: it must emit parameters for something inside the base, so
+training it requires differentiating through the base at every step, at the
+scale where \cref{sec:cost} shows the base already dominates. That is a
+statement about tractability, not about which formulation is better, and we
+mark it as a limitation in \cref{sec:limitations}.
 
 \section{Conditioning interfaces}
 \label{sec:conditioning}
-\todo{Action, step-size, the fs boundary. PROSE EXISTS in draft/30-method.md.}
+
+\Cref{eq:composition} lists the framework's conditioning variables
+explicitly: the state $\xt$, the time $t$, the action $\at$ and the step
+size $\dstep$. The action enters the adapter as an embedded vector; the step
+size enters both the adapter and the gate, and is specified in
+\cref{sec:shortcut}. What requires comment is a third input that the base
+consumes and the adapter does not.
+
+\subsection{The frame-stride boundary}
+
+A frozen base may take inputs that are part of \emph{its own} training
+contract rather than of ours. In the DynamiCrafter case there is a
+frame-stride scalar, routed into the base U-Net's time embedding through a
+learned embedding network. These base-private inputs sit \textbf{outside}
+the framework's conditioning surface: they reach $\fbase$ and do not enter
+$\adapter$.
+
+For the adapter wirings we audited, the frame stride reaches the frozen base
+only. The adapter's explicit conditioning inputs remain $(\at, \dstep)$; any
+temporal-resolution information $\adapter$ consumes is \emph{indirect},
+mediated by the base activations it reads through its feature hooks.
+
+We adopt this as a deliberate framework choice rather than an oversight. The
+composition rule is action- and step-conditioned, not frame-rate
+conditioned. Were a later result to motivate making the frame stride an
+explicit input to $\adapter$, that would extend \cref{eq:composition} and is
+better treated as a change to the interface than as a configuration detail.
+
+One consequence is worth recording because it affects how the datasets are
+described: the numerical value fed to the base's frame-stride channel is a
+data-side property, not a framework parameter, and it is specified in
+\cref{sec:datasets}.
 
 \section{Shortcut training}
 \label{sec:shortcut}
-\todo{Target construction. PROSE EXISTS in draft/30-method.md.}
+
+Step-size conditioning is trained with a self-consistency objective: the
+model's prediction for a step of size $2\dstep$ is supervised against a
+target built by composing two steps of size $\dstep$. This section specifies
+how that target is constructed, because the construction is where
+\cref{sec:curvature} finds a problem.
+
+Both constructions below are written for diffusion with a velocity
+parameterisation (\cfg{model\_type} \code{diffusion},
+\cfg{prediction\_type} \code{velocity}) and both rely on a single-step DDIM
+micro-step under the training schedule. Per-sample timesteps are supported,
+so a batch may carry heterogeneous $(t, t')$ pairs without scheduler-side
+bookkeeping.
+
+\paragraph{Base-anchored two-step.} Given the frozen base velocity
+$\vel_0 = \fbase(\xt, t)$, advance one schedule step to
+$t' = \max(0,\, t-1)$ by a DDIM micro-step, evaluate the base again at the
+advanced state and time, $\vel_1 = \fbase(x_{\text{mid}}, t')$, and form
+\begin{equation}
+  \label{eq:base-anchored}
+  y_{\text{target}} = \tfrac{1}{2}\,(\vel_0 + \vel_1).
+\end{equation}
+This is the average of velocities at the two endpoints, anchored on the
+frozen base. It carries no risk of collapse, because the target does not
+depend on the adapter; correspondingly, the adapter's step-size input is
+decorative under this mode, since the supervision does not vary with it. The
+construction uses the state and time pair the adapter sees at the training
+step, so target and prediction live in the same schedule frame.
+
+\paragraph{Self-consistency.} Given a sampled step size $\dstep$, the target
+is the average of two calls of the \emph{adapted} model at the half step,
+chained across one micro-step of that size:
+\begin{align}
+  \vel_1 &= \fadapted(\xt,\, t,\, \dstep/2), \nonumber \\
+  x_{\text{mid}} &= \mathrm{ddim}(\xt,\, \vel_1,\, t,\, t-\dstep), \nonumber \\
+  \vel_2 &= \fadapted(x_{\text{mid}},\, t-\dstep,\, \dstep/2), \nonumber \\
+  y_{\text{target}} &= \tfrac{1}{2}\,(\vel_1 + \vel_2),
+  \label{eq:self-consistency}
+\end{align}
+with both model calls taken without gradient. Here the adapter is its own
+teacher and the frozen base contributes only implicitly, through the
+composition inside $\fadapted$. Because a self-supervised target of this
+form admits degenerate solutions, anchoring at the finest step is provided
+by a standard diffusion loss applied with a fixed probability.
+
+\paragraph{Both constructions honour the temporal advance.} The second
+velocity is sampled at the \emph{advanced} time, not at $t$. This is the
+single mathematical statement the self-distillation relies on, and an
+earlier intermediate implementation of ours evaluated the second call at the
+same $t$; we record it here so that the claim to evaluate against the
+published target is unambiguous.
+
+\Cref{eq:self-consistency} is the published formulation, and
+\cref{sec:curvature} shows that it is exact only under a condition our first
+base does not satisfy.
 
 \section{The curvature bias in the shortcut target}
 \label{sec:curvature}
@@ -127,6 +328,54 @@ second-order bias that compounds up the doubling tower otherwise.} That is a
 statement about a target construction, and it is what the derivation and the
 numerical check jointly support.
 
-\section{Computational profile}
+\section{Computational profile of the composition}
 \label{sec:cost}
-\todo{PROSE EXISTS in draft/30-method.md (WAN-2.2 sourced).}
+
+\Cref{eq:composition} has a direct consequence for training cost, and it
+shapes two framework-level decisions: the frozen base is evaluated on
+\emph{every} optimiser step, and the pixel-to-latent encode is factored
+\emph{out} of the training loop. Both are justified below.
+
+The measurements are from the flow-based base with the output adapter on one
+environment, at \SI{768}{\pixel} square with 65-frame windows and batch size
+one, profiled with CUDA-synchronised per-phase timers. They should be read
+as characterising this operating point, not as
+architecture-independent constants.
+
+\subsection{The frozen base dominates the step}
+
+Because $\adapter$ is a residual \emph{on} $\fbase$, the base forward cannot
+be cached across steps: it depends on the freshly sampled $(\xt, t)$, so it
+is recomputed every step under \code{no\_grad}. Measured per step on the
+cached-latent path: base forward \SI{480}{\milli\second}, adapter forward
+\SI{28}{\milli\second}, backward \SI{54}{\milli\second}, optimiser
+\SI{3}{\milli\second}, for a total step of
+\SI{580}{\milli\second}.\prov{8cug8wfq}{\nv{ckpt}}{\nv{commit}}
+
+The frozen base is therefore about \SI{83}{\percent} of the step, while the
+trainable adapter, the only part carrying gradients, is under a fifth. This
+is the defining cost signature of adapting a large frozen prior:
+\textbf{parameter efficiency does not translate into a proportionally cheap
+step}, because the frozen forward is on the critical path. Here the adapter
+is \SI{34.97}{\mega\nothing} trainable of \SI{5.03}{\giga\nothing} total,
+\SI{0.69}{\percent} of parameters and roughly \SI{17}{\percent} of the time.
+
+The practical implication, taken up in \cref{sec:limitations}, is that the
+throughput ceiling lives on the base side: any speedup must target the
+frozen forward through kernels or compilation, not the adapter.
+
+\subsection{Latent precompute is a throughput decision, not a memory one}
+
+At this geometry the online pixel-to-latent encode costs approximately
+\SI{3.66}{\second} per clip, against the \SI{0.58}{\second} training
+step.\prov{hswppa8s}{\nv{ckpt}}{\nv{commit}} The encode alone is thus about
+six times the entire step, and online encoding runs at roughly
+\num{0.24} steps per second against \num{1.44} from a warm latent cache.
+
+The encode transient coexists comfortably in memory with the resident base,
+peaking at about \SI{26}{\giga\byte} reserved on an \SI{80}{\giga\byte}
+device, so unlike an earlier native-resolution regime in which precompute
+was an out-of-memory workaround, the justification here is purely
+wall-clock. We therefore keep an offline latent-precompute stage as the
+framework default and treat online encoding as a fallback for cases a static
+cache cannot cover, such as unbounded random-window sampling.

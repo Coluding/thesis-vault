@@ -115,12 +115,12 @@ delta ([[../30_Knowledge/writing/thesis-style-guide]] §6)._
 
 _Function: what the system **is**. No results, no motivation._
 
-- 3.1 The composition interface `\composition` — **stub** — src: [[../10_now/architecture]]
-- 3.2 **Adapter families and the selection** — **stub** — *(was a standalone chapter; merged for the page limit.)* Derive **one** decision — the AVID-style output adapter — via two criteria: (a) weight/internals access required? (b) gradients through the frozen base required? src: [[../30_Knowledge/theory/interior-vs-output-adapters-backward-cost]], [[../30_Knowledge/theory/unicon-output-adapters-detached-backward]]. Must answer head-on: *if output adapters win on principle, why implement four families?* — and note that a `d`-dependent weight update is definitionally a hypernetwork
-- 3.3 Conditioning interfaces (action, step-size, the `fs` boundary) — **drafting** — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/frame-stride-conditioning]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]]
-- 3.4 Shortcut training and target construction — **drafting** — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/shortcut-training-modes]], [[../50_Decisions/decided/shortcut-anchor-schedule]]
+- 3.1 The composition interface — **draft-complete** (2026-08-07) — src: [[../10_now/architecture]]
+- 3.2 **Adapter families and the selection** — **draft-complete** (2026-08-07) — *(was a standalone chapter; merged for the page limit.)* Derive **one** decision — the AVID-style output adapter — via two criteria: (a) weight/internals access required? (b) gradients through the frozen base required? src: [[../30_Knowledge/theory/interior-vs-output-adapters-backward-cost]], [[../30_Knowledge/theory/unicon-output-adapters-detached-backward]]. Must answer head-on: *if output adapters win on principle, why implement four families?* — and note that a `d`-dependent weight update is definitionally a hypernetwork
+- 3.3 Conditioning interfaces — **draft-complete** (ported 2026-08-07) — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/frame-stride-conditioning]], [[../50_Decisions/decided/per-sample-frame-stride-sampling]]
+- 3.4 Shortcut training and target construction — **draft-complete** (ported 2026-08-07) — ⬅ **port from [[draft/30-method]]** — src: [[../30_Knowledge/tech/shortcut-training-modes]], [[../50_Decisions/decided/shortcut-anchor-schedule]]
 - 3.5 **The curvature bias (D3 theory)** — **drafting** (prose written 2026-08-07, ~2 pp) — the *proven* node: **derive** the sagitta argument, don't assert it. Eq. (4) averages velocities: exact for straight interpolants, biased on a VP arc; the true field is not a fixed point, so the bias compounds up the doubling tower. Two escapes: endpoint inversion (coordinates) or flow matching (geometry). **Phrase precisely** — "shortcut modelling fails on diffusion" is false and attackable. src: [[../30_Knowledge/theory/shortcut-v-averaging-bias]], [[../50_Decisions/decided/shortcut-target-endpoint-vs-v-averaging]]
-- 3.6 Computational profile of the composition — **drafting** — ⬅ **port from [[draft/30-method]]** (WAN-2.2 sourced)
+- 3.6 Computational profile — **draft-complete** (ported 2026-08-07) — ⬅ **port from [[draft/30-method]]** (WAN-2.2 sourced)
 
 ## 4. Experiments — `chapters/40-experiments.tex` · **7 pp**
 
