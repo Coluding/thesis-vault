@@ -56,7 +56,7 @@ probability-flow trajectory is curved, and the two velocities being averaged
 are tangents at two distinct points of an arc. Their arithmetic mean is the
 \emph{Euclidean} centroid of the two tangent directions, whereas the
 quantity the objective requires is the direction of the chord that actually
-connects the endpoints --- a Riemannian mean along the arc.
+connects the endpoints, a Riemannian mean along the arc.
 
 The discrepancy between the two is the \emph{sagitta} of the arc: for a
 trajectory of curvature $\curv$ traversed over a step $\delta$, the chord
@@ -67,7 +67,7 @@ departs from the averaged tangent by
 \end{equation}
 so the error is second order in the step size and vanishes only as
 $\curv \to 0$. \Cref{eq:shortcut-target} is therefore not an approximation
-that improves with training --- it is a systematically wrong target whenever
+that improves with training; it is a systematically wrong target whenever
 $\curv \neq 0$, and it is wrong by an amount that grows quadratically with
 the step being taken.
 
@@ -76,7 +76,7 @@ the step being taken.
 The consequence that matters is not the size of the error at one step but
 its behaviour under the doubling tower the objective constructs. A training
 objective whose target is biased can still converge to the correct field if
-the true field is a \emph{fixed point} of the target-construction rule ---
+the true field is a \emph{fixed point} of the target-construction rule:
 that is, if substituting the true velocities into \cref{eq:shortcut-target}
 returns the true double-step velocity. On a curved trajectory it does not:
 substituting the exact tangents returns the averaged tangent, which differs
@@ -92,8 +92,8 @@ because the objective's optimum is not the true field.
 
 The argument above is about the target construction, not about any model, so
 it can be checked with the model removed. Substituting exact velocities into
-the two candidate constructions under the training schedule --- so that the
-only error present is the construction's own --- the velocity-averaging
+the two candidate constructions under the training schedule, so that the
+only error present is the construction's own, the velocity-averaging
 target of \cref{eq:shortcut-target} departs from the true displacement by
 \SI{5.1}{\percent}, \SI{16.1}{\percent} and \SI{24.1}{\percent} at
 $s = \nicefrac{1}{4}$, $\nicefrac{1}{2}$ and $\nicefrac{3}{4}$ respectively,

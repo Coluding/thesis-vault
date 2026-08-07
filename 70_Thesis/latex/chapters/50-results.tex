@@ -81,7 +81,7 @@ paired control isolates the action directly: identical weights, identical
 conditioning frame, identical seed, with only another clip's actions
 substituted. Per-clip motion in the adapted rollout tracks ground-truth
 motion better than in the shuffled-action rollout in \textbf{four of four
-draws} --- gains of $+0.069$, $+0.168$, $+0.122$ and $+0.213$, mean
+draws}: gains of $+0.069$, $+0.168$, $+0.122$ and $+0.213$, mean
 $+0.143$, sign test $p \approx 0.06$ one-tailed.\prov{mo3k2639}{outputs/wan22turbo-action-robotarm/checkpoints/}{\nv{commit}}
 Because the two rollouts differ in exactly one respect, this is a causal
 quantity rather than a correlational one.
@@ -98,8 +98,8 @@ leaving $0.9998$.
 Taken together these are not three separate findings:
 
 \begin{quote}
-\emph{The adapter reads the action as a scalar --- roughly, ``how much
-movement'' --- rather than as a directional command.}
+\emph{The adapter reads the action as a scalar (roughly, ``how much
+movement'') rather than as a directional command.}
 \end{quote}
 
 A scalar response accounts for all three measurements at once, and it
@@ -114,7 +114,7 @@ about the adapter.
 
 It explains the loss gap. Squared error penalises motion of the right
 magnitude in a slightly wrong place as heavily as no motion at all, so a
-model that has learned how much the arm should move --- but not where ---
+model that has learned how much the arm should move, but not where,
 gains nothing on the objective. The magnitude information is real, and the
 metric cannot see it.
 
@@ -179,8 +179,8 @@ distribution of this environment's videos, which is a genuine and useful
 thing to learn, and it is not the thing we asked it to learn.
 
 The complementary case makes the same point from the other side. The
-DynamiCrafter cell of \cref{sec:res-working-cell} does follow actions --- all
-three structure probes clear chance on held-out data --- and \emph{no run in
+DynamiCrafter cell of \cref{sec:res-working-cell} does follow actions (all
+three structure probes clear chance on held-out data), and \emph{no run in
 that campaign logs a single quality metric}. Across eighteen runs there is
 no FID, no FVD, and no LPIPS. The cell that demonstrably uses its actions is
 the one for which we cannot report the numbers a reader would expect, and
@@ -196,7 +196,7 @@ insensitive by construction.
 \emph{Training loss} is dominated by appearance. On this data actions
 explain approximately \SI{0.45}{\percent} of the teacher-forced denoising
 objective \provshort{25097452}, so a model that ignored actions entirely
-would forfeit less than one percent of the quantity being minimised ---
+would forfeit less than one percent of the quantity being minimised,
 comfortably inside the noise of a training curve.
 
 \emph{Gate and contribution statistics} measure how far the adapter moves
@@ -211,13 +211,13 @@ depends on the conditioning at all.
 \emph{Pixel metrics} are worse than uninformative: they reward the
 mean-regression behaviour that action-blindness produces. The RT-1 cells
 improve on PSNR and MSE while degrading on FID and LPIPS
-\provshort{0fqjrqjl} --- the signature of a model hedging toward the
+\provshort{0fqjrqjl}: the signature of a model hedging toward the
 conditional mean.
 
 \emph{Visual inspection} fails for the reason the others do. A reader
 comparing adapted samples against the frozen base sees a real improvement
-and has no access to the counterfactual --- what this model would have
-produced under a different action --- which is the only comparison that
+and has no access to the counterfactual, namely what this model would have
+produced under a different action, which is the only comparison that
 carries the answer.
 
 \subsection{What this cost, and what it implies}
@@ -231,7 +231,7 @@ Two interventions we had characterised as mechanism repairs are themselves
 gain increases, and for a period the distinction was unavailable to us.
 Separating them required a probe whose null is a \emph{shape} rather than a
 magnitude, and the resolution came from a temporal control in which the
-pooled arm's per-frame response rows proved bit-identical --- a degeneracy
+pooled arm's per-frame response rows proved bit-identical, a degeneracy
 that no amount of gain can produce (\cref{sec:integrity}).
 
 The generalisable statement is therefore narrower and more useful than
@@ -241,7 +241,7 @@ signal}; only a measurement with internal structure can. Practitioners
 adapting a frozen generative model to a new conditioning variable, and
 monitoring the adaptation through loss, gate statistics and sample quality,
 have no instrument in that set capable of reporting whether the conditioning
-is used --- and, on the evidence here, those readouts will look their best
+is used; and, on the evidence here, those readouts will look their best
 in precisely the case where it is not.
 
 \section{Shortcut on flow versus diffusion (D3)}

@@ -183,6 +183,29 @@ sensitivity` · `base parity` · `action-informativeness` · `base strength`
 | "state-of-the-art" as a claim about our work | name the comparison and the metric | Unsourceable as written |
 | "it should be noted that", "in order to", "due to the fact that" | delete / "to" / "because" | Padding |
 
+### Punctuation: no em dashes
+
+**Do not use em dashes (`—`), en dashes as parenthetical breaks, or the
+"thinking dash" construction.** Stated preference, 2026-08-07; applies to
+the LaTeX draft and to every artefact written for this thesis.
+
+Replace with whichever fits the actual relation between the clauses, which
+is usually clearer than the dash was:
+
+| Dash was doing | Use instead |
+|---|---|
+| introducing an explanation or expansion | a colon |
+| joining two closely related independent clauses | a semicolon |
+| fencing an aside | parentheses, or commas |
+| trailing an afterthought | a new sentence |
+
+If none of those fit, the sentence is carrying two ideas and should be
+split. In LaTeX, note that `---` renders as an em dash; use `:`, `;`, `(`
+or a full stop instead.
+
+**Ranges keep the en dash** (`5--10`, `\SI{}` ranges, page spans); the rule
+is about the dash as a *rhetorical* break, not about numeric ranges.
+
 **Acronyms:** expand on first use in the body (the abstract expands
 separately), then use the acronym exclusively. D1–D4 are defined in §1.4
 and used everywhere after. Keep a notation table

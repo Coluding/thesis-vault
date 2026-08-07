@@ -31,7 +31,7 @@ statistic.
 \begin{enumerate}
   \item \textbf{Sensitivity.} Does perturbing the conditioning change the
     prediction at all?
-  \item \textbf{Structure.} Does it change it in the \emph{right way} ---
+  \item \textbf{Structure.} Does it change it in the \emph{right way}:
     is the response directional, placed in the frames the action governs,
     and localised on the parts of the scene that move?
   \item \textbf{Control.} Does that structure convert into rollout-level
@@ -71,8 +71,8 @@ has a trivially small action effect; and the loss gap, since a model may
 move without moving usefully. We treat a relative movement below
 \SI{1}{\percent} as action-blind, applied to the bootstrap confidence
 interval rather than the mean, and report \emph{inconclusive} where the
-interval straddles it. The threshold is deliberately generous --- far below
-what could drive a planner --- so failing it is unambiguous while passing it
+interval straddles it. The threshold is deliberately generous, far below
+what could drive a planner, so failing it is unambiguous while passing it
 establishes little.
 
 \subsection{Rung 2: the structure triad}
@@ -144,7 +144,7 @@ regrouping table live in rubric/03-experimental-evaluation.md.}
 Several measurements taken during this work were invalid, and the campaign
 that produced the results in \cref{ch:results} also produced the audits that
 retracted them. We record those here rather than in an appendix, because
-which numbers were withdrawn --- and how they were caught --- is part of
+which numbers were withdrawn, and how they were caught, is part of
 what the remaining numbers mean.
 
 \paragraph{Evaluation was in-sample.} Two dataset families were evaluated on
@@ -167,8 +167,8 @@ this thesis. We now log the retained fraction after every filter.
 
 \paragraph{A capped gate could not move.} The gate cap was set equal to the
 gate's initialisation, so the composition weight was frozen for the whole
-run. The affected comparison --- an early flow-versus-diffusion consistency
-ratio --- was re-run with a live gate, and the re-measurement supersedes it
+run. The affected comparison, an early flow-versus-diffusion consistency
+ratio, was re-run with a live gate, and the re-measurement supersedes it
 (\cref{sec:res-shortcut}). We report the superseded figure as superseded
 rather than removing it, since the correction is what makes the replacement
 credible.
@@ -197,7 +197,7 @@ discarding is part of the instrument.
 \paragraph{One confound we did not remove.} The cross-backbone shortcut
 comparison varies the consistency target and the training depth alongside
 the base, so it does not isolate the geometry of the base. The within-arm
-comparisons --- each against its own matched control, at matched depth ---
+comparisons, each against its own matched control at matched depth,
 are unaffected, and they are the only form in which we state that result.
 The experiment that would resolve it varies one factor and is described in
 \cref{sec:future-work}.

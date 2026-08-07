@@ -26,7 +26,7 @@ AVID~\citep{\nv{rigter2024avid}}, which trains an action-conditioned adapter
 on a frozen base using only that base's predictions. We take that result as
 our starting point. What is not established is \emph{when} the approach
 works, \emph{why} it stops working, and whether the same composition can
-carry a second conditioning variable --- the sampling step size --- that
+carry a second conditioning variable (the sampling step size) that
 would make the resulting world model fast enough to plan through. Those are
 the questions this thesis answers.
 
@@ -38,8 +38,8 @@ rather than as a property of one system:
 \emph{Conditioning must enter the network scale-free relative to the
 residual stream.} Supplied as a per-frame modulation of \emph{normalised}
 activations, an action signal survives and is used. Supplied as
-cross-attention tokens --- which add into an unnormalised residual stream
---- the same signal survives the attention layers and is then attenuated to
+cross-attention tokens, which add into an unnormalised residual stream,
+the same signal survives the attention layers and is then attenuated to
 irrelevance at the residual addition, at every scale and temporal alignment
 we tested.
 \end{quote}
@@ -67,8 +67,9 @@ an objective that pays for actions (\cref{sec:res-decomposition}).
 \paragraph{Step-size conditioning through the adapter.} AVID does not
 address sampling cost. We extend the composition with a step-size argument
 and train it with the shortcut self-consistency objective, so that few-step
-behaviour is carried entirely by the adapter while the prior stays frozen
---- unlike consistency and shortcut models, which retrain the prior. We show
+behaviour is carried entirely by the adapter while the prior stays frozen.
+This is unlike consistency and shortcut models, which retrain the prior. We
+show
 that this is learnable in the adapter setting, against a matched control, on
 two independent statistics (\cref{sec:res-shortcut}), and we derive why the
 published velocity-averaging target is exact only on a straight interpolant
@@ -87,7 +88,7 @@ repository as a third branch, running their recipe unchanged
 \paragraph{A diagnostic methodology, and the reason it was necessary.} None
 of the above is visible in the readouts normally used to monitor such a
 model. Loss, gate statistics, sample quality and perceptual metrics are all
-blind to whether a conditioned model uses its conditioning --- we exhibit a
+blind to whether a conditioned model uses its conditioning. We exhibit a
 cell that improves on every quality metric we record while carrying no
 recoverable action information (\cref{sec:res-blindness}). We therefore
 develop a probe suite that measures the \emph{structure} of the response
@@ -96,9 +97,12 @@ contribution in its own right, and we report the case in which our own first
 instrument misled us and what was required to correct it
 (\cref{sec:integrity}).
 
-\paragraph{What we do not claim.} We do not demonstrate rollout-level
-control: that a swapped action sequence sends the trajectory where it should
-go is not established on any cell. We do not claim competitive few-step
+\paragraph{What we do not claim.} We do not demonstrate trajectory control.
+A paired shuffled-action comparison shows a modest, consistently-signed
+effect on how much the arm moves per clip, but supplying the \emph{correct}
+action does not reduce prediction error relative to a wrong one on any cell
+we measure: what the adapter takes from the action is its magnitude, not its
+direction (\cref{sec:res-decomposition}). We do not claim competitive few-step
 video generation, a planning or reinforcement-learning contribution, or
 state-of-the-art quality on any benchmark. Where a result rests on a single
 seed, or on a comparison whose confound we could not remove, we say so at
