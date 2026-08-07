@@ -103,6 +103,18 @@ a temporal VAE —
 **with the search scope stated**. An absence with its scope is a finding; a
 silent absence looks like an omission.
 
+> **Status 2026-08-07: deferred by decision, not blocked.** Lukas will do
+> the literature pass later. Recorded so it stops reading as an open gap in
+> the queue. Two consequences worth holding on to:
+>
+> - **Ch2 stays at ~20 words until then**, and Ch3 §3.2 (the family
+>   selection) leans on `lora.md` / `controlnet.md` that do not exist. Both
+>   are *writable* once the notes land; neither blocks any other chapter.
+> - **§2.2 (FiLM / adaLN-Zero) is the one with knock-on value.** It is what
+>   makes the injection-pathway principle read as *principled* rather than
+>   as a lucky ablation, so it feeds [[01-originality]], not only this item.
+>   Worth doing first when the pass happens.
+
 ## Optimisation queue
 
 - [ ] **Q5a — Write `lora.md` and `controlnet.md`.** Blocks Ch3 and the
