@@ -87,6 +87,66 @@ consumes the action without learning the action-conditioned dynamics.
 "Wan fails" narrows to a statement about that base's adaptability, and the
 objective joins the pathway as a governing variable.
 
+### Why flow, and why a more capable base (2026-08-07)
+
+The pivot node needs three reasons, not one. Only the third depends on the
+curvature argument, which is now a hypothesis, so the motivation does not
+rest on it.
+
+1. **Flow models sample in fewer steps natively.** Rectified-flow bases are
+   designed for short sampling schedules; the whole thesis is about rollout
+   cost, so a base that is already cheap to sample is the natural substrate.
+2. **Modern flow-based video models generate better.** Wan2.2 is a stronger
+   generator than DynamiCrafter, which is a 2023-era video diffusion model.
+   A world model is only as good as the video it can produce, and the
+   quality gap is not incidental to the thesis question.
+3. **κ = 0 makes the published shortcut target exact as written**
+   (\cref to the curvature section). This is the theoretical reason, and it
+   is the one to present as motivation rather than as an established
+   explanation.
+
+⚠ **Name the confound in the same breath:** the pivot changes the objective
+*and* the base capability together, which is exactly what the D2 campaign
+later has to disentangle. Reasons 1 and 2 are about the base; reason 3 is
+about the geometry. Say so.
+
+### ⭐ SYNTHESIS 2026-08-07b — where the trainable part must sit
+
+The PDD result
+([[../experiments/20260806-pdd-parallel-decoding-works-on-the-lora-base-not-the-adapter]])
+makes a pattern visible that three separate measurements now support. Unlike
+the curvature unification, which was rejected because nothing linked its two
+halves, this one is the **same variable measured three times**: how much
+access the trainable part has to the frozen prior's own computation.
+
+| measurement | access | outcome |
+|---|---|---|
+| **PDD** | B's heads read the LoRA-modulated 1.4B backbone; A's read a from-scratch 11.2M/146M network | **B decodes, A does not** — at matched capacity, with A fitting the objective 5× better |
+| **The oracle** (`condition_on_base_outputs`) | the adapter is given the base's own prediction | prediction becomes **~100×** more sensitive to `base_pred` than to actions; disabling it stops the erosion |
+| **Composition-interface ablation** | same flag, one change | oracle on wins **every quality metric** (FVD +63.7 % vs +45.1 %) and follows actions **25 % less** |
+
+Read together:
+
+> **Access to the prior's computation helps you reproduce it and hurts you
+> when you must add to it.** Acceleration and distillation are
+> *reproduction* tasks: the trajectory already exists in the frozen model
+> and the job is to traverse it in fewer calls, so the trainable part needs
+> the prior's features. Action conditioning is an *addition* task: the
+> information is not in the prior at all, and the same access supplies a
+> cheaper gradient — copy the base — than the one that learns the action.
+
+This is why PDD-A fails from noise alone, why the oracle buys quality and
+costs action-following, and why the two jobs pull the composition interface
+in opposite directions. It is also a design rule with a scope: **put the
+trainable capacity inside the prior for acceleration, and keep the base's
+answer out of it for conditioning.**
+
+⚠ **Status:** a synthesis over three sourced measurements, not a separately
+tested claim. The three agree in direction and each has its own control, but
+no experiment was run to test the generalisation itself. Present it as an
+observation with its three receipts, and say plainly that it was assembled
+after the fact.
+
 ### ⭐ SYNTHESIS 2026-08-07 — two capabilities, and why they do not fit in one adapter
 
 Restated after the EA results and the action-free/action-conditioned split.
