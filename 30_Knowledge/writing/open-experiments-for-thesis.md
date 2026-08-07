@@ -225,6 +225,23 @@ no level may be written as having worked.
 | B4 | **Structure triad on the binned RT-1 checkpoint** (`0fqjrqjl`) | never run, and it is the intervention most likely to change the Wan verdict | ☐ |
 | B5 | **IDM ceiling on DC latents** — `(z_t, z_{t+1}) → a_t` on ground-truth transitions | calibrates *every* number in the campaign: is action information present in the data at all? No world model, no new labels, minutes of GPU | ☐ carried over from [[storyline-experiment-requirements]] |
 
+### ⚠ A0.5 — The horizon numbers (reported, never landed)
+
+**Why it matters more than it did.** The "why Wan" argument now rests on
+three things planning needs: **horizon**, **capability**, and **speed**. Two
+are measured. Horizon is not.
+
+Reported (Lukas, 2026-08-02): **~241 frames on an H100, decoding to ~35–40 s
+of video**, against ~9–10 s for the DynamiCrafter baseline. ⚠ **Not in the
+vault.** The largest `temporal_length` in any committed Wan config is 97.
+
+Needed: run id, frame count, resolution, VRAM, decoded seconds, and the
+**matched DC number**. Without them the pivot argument stands on capability
+and speed alone, and the horizon sentence in §1.3 has to be cut.
+
+➜ Cheapest of any outstanding item: it is a generation pass on a checkpoint
+that exists, not a training run.
+
 ### A0 — Evidence that EXISTS but is not in the vault (collect, don't re-run)
 
 | # | Evidence | Why it matters | Status |

@@ -88,21 +88,30 @@ This is what makes sampling cost a research question here rather than an
 engineering detail: it is the difference between a world model that can be
 searched over and one that can only be watched.
 
-\paragraph{Three reasons to move to a flow-matching base.} Reducing the
-number of sampling steps points toward rectified-flow models, for three
-reasons that are worth separating because they are not equally strong.
-Flow-based samplers are designed for short schedules, so the base is already
-cheaper to sample. Recent flow-based video models generate substantially
-better video than the earlier diffusion models available to us, and a world
-model is bounded by the quality of the video it can produce. Finally, and
-more speculatively, a straight interpolant makes the published shortcut
-objective exact as written, which a curved diffusion trajectory does not
-(\cref{sec:curvature}).
+\paragraph{What planning needs, and what the base has to supply.} Searching
+over imagined futures imposes three requirements on the model at once, and
+they are not independent. The horizon must be long enough that the futures
+being compared differ in anything that matters; a window of about a second
+bounds the planner regardless of how good the planner is. The predictions
+must be accurate enough that candidate action sequences can be told apart at
+all, which is a statement about the capability of the base. And the rollout
+must be cheap enough to run hundreds of times, which is a statement about
+the number of sampling steps.
 
-\emph{This move changes two things at once}, the training objective and the
-capability of the base, and much of the empirical work in this thesis
-consists of separating them again. We flag it here because it is the
-confound that shapes the experimental design in \cref{ch:experiments}.
+The base we began from satisfies none of these comfortably. Moving to
+Wan2.2 addresses all three: it is a more capable generator than the earlier
+diffusion model, it trains and rolls out over substantially longer windows,
+and being flow-based it is designed for short sampling schedules. A fourth
+consideration is theoretical rather than practical: a straight interpolant
+makes the published shortcut objective exact as written, which a curved
+diffusion trajectory does not (\cref{sec:curvature}).
+
+\emph{This move changes several things at once}, the training objective, the
+capability of the base, and the usable horizon, and much of the empirical
+work in this thesis consists of separating them again. We flag it here
+because it is the confound that shapes the experimental design in
+\cref{ch:experiments}: results that appear to be about flow matching may be
+about capability, and the ablation exists to tell those apart.
 
 \paragraph{Conditioning does not survive every injection site.} On the
 stronger base the adapter improved the video and ignored the actions. It
