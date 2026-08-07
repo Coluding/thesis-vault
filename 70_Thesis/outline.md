@@ -180,6 +180,7 @@ Ch2 proceeds in parallel as the missing literature notes land.
 
 ## Related
 
+- [[../30_Knowledge/writing/chapter-checklists]] — **per-section gates: drafted / writable today / blocked and on what**
 - [[../30_Knowledge/writing/evidence-map]] — **cells → sections → topics → rubric**, with the caveats that travel with each number
 - [[index]] — chapter → source map
 - [[../30_Knowledge/writing/rubric/_index]] — the ten graded items + queue
