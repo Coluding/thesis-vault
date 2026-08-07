@@ -87,6 +87,59 @@ consumes the action without learning the action-conditioned dynamics.
 "Wan fails" narrows to a statement about that base's adaptability, and the
 objective joins the pathway as a governing variable.
 
+### ⭐ SYNTHESIS 2026-08-07 — two capabilities, and why they do not fit in one adapter
+
+Restated after the EA results and the action-free/action-conditioned split.
+The thesis demonstrates **two separate things an adapter on a frozen video
+prior can do**, and then shows they compete for the same gradient.
+
+**(1) In-domain fine-tuning: strong, and worth stating positively.** The
+adapter reshapes a frozen base substantially in-domain. On Wan × ACWM it
+beats the frozen base on **6/6** quality metrics (FVD 1118 → 406, −64 %); on
+EasyAnimate it cuts denoising loss **−74.9 %** and contributes **0.52** of
+the prediction. This was first written up as the *negative* half of the
+pathway contrast, because it carries no action information. It is also a
+capability in its own right and should be named as one: **as a
+domain adapter the method works well**, and the frozen base is a
+configuration choice while doing it.
+
+⚠ **Scope:** the Wan quality win is ACWM-only; on RT-1 the same adapter is a
+net perceptual regression. And on Wan the adapter that produces those
+metrics is *cosmetic* by contribution (`adapter_base_cosine` 0.9989),
+whereas on EA it genuinely reshapes; the Wan ceiling was **base-specific,
+not intrinsic to output adapters**.
+
+**(2) Action conditioning: works, under conditions.** Per-frame modulation
+of normalised activations carries the action (2.49× at matched contribution
+and mask); cross-attention does not. What is carried is a **scalar**, how
+much motion rather than which direction. And the **objective** decides how
+much of the adaptation becomes action-conditioned at all: at matched video
+backbone the two objectives adapt equally well (−74.9 % vs −73.6 %) while
+`effect_rel` differs by **+36 %** in favour of diffusion, with both diffusion
+backbones above both flow backbones across independent families.
+
+**(3) The two do not fit in one adapter.** This is the pre-registered H-E
+prediction, and the evidence now speaks to both branches:
+
+| level | arrangement | outcome |
+|---|---|---|
+| **L1** shortcut adapter | **entangled** — one adapter learns actions *and* step size | few-step works **action-free**; **does not work** with actions |
+| **L3** distilled base + action adapter | **separable** — acceleration lives in the base | action effect present and causally isolated |
+
+⚠ **Pending characterisation** (2026-08-07): the exact form of the L1
+action-conditioned failure, and the matched controls on both arms. H-E
+predicts specifically that *action-following* degrades; a different failure
+mode would be a different finding. See
+[[open-experiments-for-thesis]] A0.4 and A7.
+
+**Why it is one claim rather than three.** Actions are worth ~0.45 % of a
+teacher-forced denoising loss, so they already lose the gradient competition
+to appearance. In-domain fine-tuning is what that objective *pays for*;
+action conditioning is what it barely pays for; and a consistency objective
+added to the same parameters is a second, larger claim on the same budget.
+Separating acceleration from conditioning is therefore not a convenience,
+it is what the loss economics requires.
+
 ### ⭐ SYNTHESIS 2026-08-06 — what the adapter actually extracts from the action
 
 Three results that looked separate resolve into one statement:
