@@ -280,3 +280,18 @@ to generation.
 
 What stands: **1 call vs 8** (structural), and the matched-batch cost measurement
 (A 20.3 GiB / 0.08 steps/s vs B 39.8 GiB / 0.05).
+
+## 2026-08-07 — capacity test: hypothesis excluded, conclusion survives
+
+Lukas asked whether A's 11.2M adapter was simply too small. Tested at **matched trainable
+parameters** (A 146,373,664 vs B 146,405,408, 0.02% apart; jobs `25302987`/`25302988`).
+
+- A's loss improved **4×** (0.524 → 0.128) and still produces an unusable rollout.
+- B at **5× worse loss** (~0.64) still produces a recognisable scene.
+- **Capacity is excluded.** The original conclusion survives a fair test.
+- The degenerate-fixed-point mechanism I proposed is **refuted**: A's rollout latents
+  measure std 1.009–1.027 vs GT on 16/16 clips, i.e. no variance collapse.
+
+Full write-up and the four backwards-ranking metrics:
+[[../../30_Knowledge/experiments/20260806-pdd-parallel-decoding-works-on-the-lora-base-not-the-adapter]]
+(Addendum 2026-08-07).

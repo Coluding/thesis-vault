@@ -49,6 +49,7 @@ hand-edited.
 
 | Date | Category | Deliverable | Entry |
 |---|---|---|---|
+| 2026-08-07 | finding | D3 | [[entries/2026-08-07-pdd-the-adapter-cannot-decode-and-the-loss-cannot-tell]] |
 | 2026-08-06 | finding | D2 | [[entries/2026-08-06-paired-control-turns-a-false-positive-into-a-small-true-one]] |
 | 2026-08-06 | finding | D2 | [[entries/2026-08-06-objective-governs-action-specificity-not-capacity]] |
 | 2026-08-05 | finding | D2 | [[entries/2026-08-05-turbo-action-effect-without-accuracy]] |

@@ -329,6 +329,71 @@ conditioning-only control per level*
 ([[../../50_Decisions/decided/efficiency-axis-as-thesis-spine]]) rather than
 comparing each level to the frozen base — the same error, one level up.
 
+---
+
+## I11 — Model selection rewarded the failure
+
+**Expectation.** `best.pt` selected on `eval_loss` picks the best
+checkpoint.
+
+**Detection.** Decoding the selected checkpoints and looking at them.
+
+**The defect.** On the PDD adapter arm the training objective and the
+generation quality are **anti-correlated**. That arm fits the targets 5×
+better than the arm that works (0.128 vs ~0.64) and decodes to mush. The
+checkpoint chosen as "best" is therefore not the one that generates best,
+and **no loss-based criterion would have caught it**.
+
+**Damage.** None reported; the arms were compared by decoding. The exposure
+is that every earlier checkpoint selection in the campaign used the same
+criterion.
+
+**Correction.** Any future PDD run needs a generation-based or perceptual
+selection criterion. This is a limitation of the current training loop, not
+a property of PDD.
+
+**Transferable lesson:** when the objective and the deliverable are
+anti-correlated, model selection silently optimises for the wrong one. Worth
+stating alongside the blindness result, because it is the same fact with an
+operational consequence: a metric that cannot rank models also cannot select
+them.
+
+---
+
+## I12 — A unit conversion that looked like a confirmed prediction
+
+**Expectation.** The PDD mean-velocity target, built on the timestep grid.
+
+**Detection.** Reading the per-interval loss log.
+
+**The defect.** The discretisation was built in **timestep units**
+(dt ≈ 125 for 8 intervals) while the network predicts velocity with respect
+to **normalised time**, so the target arrived ~1000× too small (0.0004–0.0014
+against a teacher velocity of ~0.79). The dominant gradient was a unit
+conversion.
+
+**How it hid, and this is the instructive part.** Both arms started at
+`eval_loss` ≈ 0.387, and that was read as *confirming* the paper's
+teacher-initialisation result. It does predict a **small** initial loss; it
+does not predict an **equal** one. 0.387 was simply `E[‖v‖²]`, because the
+target was approximately zero. A theoretical prediction appeared to be
+confirmed by a bug that made the quantity vanish.
+
+**The real tell** was in the same log throughout: `pdd_loss_k000..k007` flat
+to three decimal places. Eight intervals of a diffusion trajectory cannot be
+equally hard. After the fix the step-0 profile spans 100× monotonically
+(0.021 → 2.666), tracking trajectory curvature, which is the gradient across
+the schedule the N heads exist to absorb.
+
+**Correction.** Two regression tests, both verified non-vacuous by forcing
+the old behaviour, which is the check I7 taught.
+
+**Transferable lesson:** a result that matches a prediction is not thereby
+confirmed. Ask what *else* produces that number. Here a near-zero target
+produces exactly the "small initial loss" the theory predicts, and the
+degenerate uniformity across intervals was the signature that told them
+apart.
+
 ## What the section should conclude
 
 Not an apology. The closing move is the transferable one:

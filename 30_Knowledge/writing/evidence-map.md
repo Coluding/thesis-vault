@@ -358,6 +358,85 @@ wrong (the first being `effect_rel`'s gain confound).
   0.00005, `action_cos` at 0.99995. The effect-without-accuracy dissociation
   is unchanged.
 
+## P-ab — PDD: parallel decoding works base-side, not adapter-side (**L2**)
+
+**Runs.** `uusbz707` (A @146M) / `75fikn1t` (B @rank294); generation
+`25313706`; matched-capacity jobs `25302987` / `25302988`; earlier 11.2M
+pair `25262886` / `25262887` / `25264058`.
+Note: [[../experiments/20260806-pdd-parallel-decoding-works-on-the-lora-base-not-the-adapter]].
+
+**Design.** Two formulations of Parallel Decoding Distillation on a frozen
+DynamiCrafter base, action-free, N = grid = 8, one network call emitting N
+mean velocities. **A** = N heads on a separate additive adapter.
+**B** = LoRA on the backbone with its final conv replicated N times
+(paper-faithful). Trainable parameters matched to **0.02 %** (146,373,664 vs
+146,405,408).
+
+**Result: B decodes in parallel, A does not.** Same noise, same conditioning
+frame, same grid. B produces a recognisable robot arm on the box with floor
+lines visible in **one network call**; A produces featureless mush. Not
+marginal: "scene" versus "no scene".
+
+**Two explanations excluded by the matched-capacity re-run:**
+- **Capacity.** A fits the PDD targets **5× better** than B (eval_loss
+  0.128 vs ~0.64) and still cannot decode.
+- **Variance collapse.** A's rollout latents sit at std **1.009–1.027** of
+  ground truth across all 16 clips. No collapse; the degenerate-fixed-point
+  prediction on record is refuted.
+
+**What remains:** **A's heads never see pretrained features.** B's heads
+read from the 1.4B backbone that LoRA modulates; A's read from a network
+trained from scratch, with the frozen base contributing a single velocity
+evaluated once and identical across all eight heads.
+
+**Topics it licenses**
+- **L2 works, base-side.** Acceleration can live in the base; it cannot live
+  in a separate additive adapter, at matched capacity.
+- **The strongest metric-blindness instance in the campaign** (below).
+- Cost: at matched batch, A is **20.3 GiB / 0.08 steps/s** against B's
+  **39.8 GiB / 0.05 steps/s**, since B backprops through the whole 2.6B UNet.
+  So the formulation that works is the expensive one.
+
+**§.** §5.7 (L2, primary) · §5.6 (blindness) · §3.2 (where capacity sits) ·
+§6.1.
+**Rubric.** **1 Originality** · **5 Reflection** · 2 Technical skills ·
+3 Experimental evaluation.
+
+**Caveats**
+- ⚠ **Result 1 is qualitative**, read from decoded panels. FID/FVD on the
+  generations is the only way to make it a number, and it is the top
+  follow-up.
+- ⚠ **No wandb run for any arm** (`video_logging: {enable: false}` is a
+  legacy alias for the entire wandb block). Metrics in stdout and
+  `metrics.jsonl`.
+- ⚠ Uncommitted working tree at launch (~135 files).
+- An earlier pair was **discarded** for a units bug: the mean-velocity
+  target was built in timestep units against a network predicting w.r.t.
+  normalised time, making it ~1000× too small.
+
+### ⭐ Why this is the strongest metric-blindness evidence we have
+
+**Four independent latent-space scalars rank the two arms backwards:**
+
+| metric | A | B | scalar says | pixels say |
+|---|---|---|---|---|
+| PSNR vs GT | **17.85** | 16.33 | A | **B** |
+| latent MSE vs GT | **0.44** | ~2.0 | A | **B** |
+| implied latent correlation | **~0.78** | ~0 | A | **B** |
+| PDD eval_loss | **0.128** | ~0.64 | A | **B** |
+
+Plus an in-run consistency check that fails on its own terms: **`seq-50 <
+seq-8` on every arm**. More sampling steps cannot mean worse generation, so
+the metric is measuring the wrong thing before any arm comparison is made.
+
+This is stronger than the FVD-versus-probes contrast in §5.6, because there
+the metrics were merely *blind* to the conditioning. Here they are
+**actively inverted**: every scalar available prefers the model that
+produces nothing. The safe thesis statement is the negative one:
+
+> **No latent-space scalar we tried can rank these models. Only decoded
+> perceptual comparison separates them.**
+
 ## The D3 cells
 
 | # | Cell | Verdict | § | Rubric |

@@ -3,13 +3,17 @@ type: experiment
 date: 2026-08-06
 config: configs/dynamicrafter/{diffusion_dc_pddA_adapter_actionfree_robotarm, diffusion_dc_pddA_adapter_bs8lr5e5_control, diffusion_dc_pddB_lora_actionfree_robotarm}.yaml
 commit: (⚠️ WORKING TREE, not a commit — ~135 uncommitted files at launch)
-wandb_run_id: NONE — see "Logging defect"
+wandb_run_id: uusbz707 (A @146M), 75fikn1t (B @rank294); the 11.2M pair has none
 ckpt_path: outputs/{dc-pddA-adapter-actionfree-robotarm, dc-pddA-adapter-bs8lr5e5-control, dc-pddB-lora-actionfree-robotarm}/checkpoints/best.pt
 status: completed
 deliverable: D3
 metrics:
-  train_jobs: "25262886 (A bs24), 25262887 (B bs8), 25264058 (A control bs8) — all TIMEOUT at their caps"
-  generate_job: 25284685
+  train_jobs_11m: "25262886 (A bs24), 25262887 (B bs8), 25264058 (A control bs8)"
+  train_jobs_146m: "25302987 (A), 25302988 (B) — capacity-matched, 0.02% apart"
+  params_matched: "A 146,373,664 / B 146,405,408"
+  eval_loss_146m: "A 0.128 / B ~0.64"
+  latent_std_vs_gt_146m: "A 1.009-1.027 (no collapse) / B 2.21-2.24"
+  generate_jobs: "25284685 (11.2M), 25313706 (146M, 16 clips), 25315512 (collapse diagnostic)"
   eval_loss_A_control_1100: 0.524
   eval_loss_B_1100: 0.495
   vram_matched_bs8_A_GiB: 20.3
@@ -141,3 +145,103 @@ Fix: `training.extra.wandb: {enable: true, require_vae: false}`.
 2. **Head fusion (Eq. 15)**, still deferred — would let a rollout use fewer steps than heads.
 3. A's failure is the interesting one: does more adapter capacity, or conditioning the
    adapter on the interval index rather than relying on separate heads, recover it?
+
+---
+
+# Addendum (2026-08-07): the capacity hypothesis, cleanly excluded
+
+Jobs `25302987` (A @146M) / `25302988` (B @rank294), generation `25313706`, collapse
+diagnostic `25315512`. wandb: `uusbz707` (A), `75fikn1t` (B).
+
+**Why this ran.** Lukas: *"maybe the 11.2m adapter is not enough."* In the first pair,
+formulation and trunk capacity were confounded: A's 8 heads read features from an 11.2M
+network, B's from the full 1.4B backbone. So the original conclusion attributed to the
+composition rule something that could have been a size effect.
+
+**Design.** Trainable parameters matched to **0.02%**: A at `model_channels: 96`
+(**146,373,664**, measured on the built model) vs B at LoRA **rank 294**
+(**146,405,408** = 294 x 497,664 + 92,192 heads). Identical objective, N=8 grid, bs=8,
+lr=5e-5, action-free, same data. Both start at the same eval_loss (0.885 / 0.846), which
+is the Eq. 12 teacher init behaving correctly and independent of capacity.
+
+## Result A1 (SOURCED): capacity transformed the LOSS
+
+| | 11.2M / rank16 | 146M / rank294 |
+|---|---|---|
+| A best eval_loss | 0.524 | **0.128** |
+| B best eval_loss | 0.456 | ~0.64 |
+
+A improved **4x** and reached the same loss roughly 3x faster in steps. On the training
+objective the capacity hypothesis is strongly supported.
+
+## Result A2 (SOURCED, decisive): capacity did NOT fix the rollout
+
+Generation over 16 held-out clips per arm, same noise / conditioning / grid:
+
+| arm | parallel decode, 1 network call |
+|---|---|
+| **A @146M** | **still unusable**: mottled blue-black noise texture, no arm, no box, no floor |
+| **B @rank294** | **recognisable robot arm on the box, floor grid visible**, sharper than at rank 16 |
+
+So A fits the PDD targets **5x better than B** (0.128 vs 0.64) and cannot decode, while B
+fits them 5x worse and produces the scene. **The capacity hypothesis is excluded**, and
+the original conclusion survives a fair test.
+
+## Result A3 (SOURCED, refutes the stated mechanism)
+
+The prediction on record before this measurement was that A had found a **degenerate
+fixed point**: PDD's target is evaluated at states the student itself reaches, so a
+student that steers into a smooth low-curvature region matches the teacher there and
+generates nothing. That predicts **low-variance** rollout latents.
+
+Measured std of the parallel rollout latents relative to ground truth, 16 clips:
+
+| arm | std vs GT | latent MSE vs GT |
+|---|---|---|
+| **A** | **1.009 – 1.027** (all 16 clips within 3% of 1.0) | 0.43 – 0.46 |
+| **B** | **2.21 – 2.24** | ~2.0 |
+
+**No collapse.** A's rollout carries almost exactly the data's spread. The
+low-variance-region story is **refuted**. If anything B is the statistically odd one, at
+2.2x over-dispersed, which matches its crushed high-contrast look.
+
+## Result A4 (SOURCED): three latent-space metrics rank the arms BACKWARDS
+
+| metric | A | B | which looks better | pixels say |
+|---|---|---|---|---|
+| PSNR vs GT | **17.85** | 16.33 | A | **B** |
+| latent MSE vs GT | **0.44** | ~2.0 | A | **B** |
+| implied latent correlation | **~0.78** | ~0 | A | **B** |
+
+A is closer to the ground-truth latent by every scalar available and produces visibly
+worse video. Adding to the earlier `seq-50 < seq-8` PSNR inversion, this is now four
+independent quantitative signals pointing the wrong way.
+
+**Working explanation (NOT established):** latent MSE is dominated by low-frequency
+content while the VAE decoder needs correct local structure. A can be ~78% correlated at
+coarse scale with wrong high-frequency detail everywhere, which is precisely what a
+mottled noise texture is. B is globally off (exposure, 2.2x dispersion) but locally
+structured. Untested; the check would be decoding A's rollout at each of the 8
+intermediate steps to see whether it ever denoises.
+
+**For the thesis, the safe statement is the negative one: no latent-space scalar we have
+tried can rank these models. Only decoded perceptual comparison separates them.**
+
+## What remains as the explanation for A's failure
+
+Not capacity (A2), not variance collapse (A3). The untested asymmetry: **B's heads read
+features from the 1.4B pretrained backbone that LoRA modulates; A's read from a network
+trained from scratch**, with the frozen base contributing a single velocity evaluated
+once at t_0 and identical across all eight heads. A's `Delta_j` must encode, from noise
+alone, where the trajectory should be at eight different times.
+
+So the finding is sharper than the original note's framing: it is not "additive vs
+in-place composition", it is that **A's heads never see pretrained features**.
+
+## Consequence for methodology
+
+`best.pt` is selected on eval_loss. On arm A that metric rewards the failure: the
+checkpoint chosen as best is not the one that generates best, and no loss-based criterion
+would have caught it. **Any future PDD run needs a generation-based or perceptual
+selection criterion.** This is a real limitation of the current training loop, not a
+property of PDD.
