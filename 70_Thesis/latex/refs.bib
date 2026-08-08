@@ -18,14 +18,112 @@
 %  Preliminaries: diffusion, flow matching, samplers   (§2.1, §2.5)
 % ---------------------------------------------------------------------
 
+% --- diffusion foundations (metadata verified 2026-08-08 against PMLR /
+%     NeurIPS proceedings / arXiv author-supplied comments) ---
+
+@inproceedings{sohldickstein2015diffusion,
+  title     = {Deep Unsupervised Learning using Nonequilibrium Thermodynamics},
+  author    = {Sohl-Dickstein, Jascha and Weiss, Eric A. and
+               Maheswaranathan, Niru and Ganguli, Surya},
+  booktitle = {Proceedings of the 32nd International Conference on Machine
+               Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {37},
+  pages     = {2256--2265},
+  year      = {2015},
+  eprint    = {1503.03585},
+  archivePrefix = {arXiv},
+  url       = {https://proceedings.mlr.press/v37/sohl-dickstein15.html},
+  note      = {PMLR lists the second author as ``Eric Weiss''; arXiv gives
+               ``Eric A. Weiss''},
+}
+
+@inproceedings{song2019ncsn,
+  title     = {Generative Modeling by Estimating Gradients of the Data
+               Distribution},
+  author    = {Song, Yang and Ermon, Stefano},
+  booktitle = {Advances in Neural Information Processing Systems 32 (NeurIPS)},
+  year      = {2019},
+  eprint    = {1907.05600},
+  archivePrefix = {arXiv},
+  url       = {https://proceedings.neurips.cc/paper/2019/hash/3001ef257407d5a371a96dcd947c7d93-Abstract.html},
+  note      = {Oral},
+}
+
 @inproceedings{ho2020ddpm,
   title     = {Denoising Diffusion Probabilistic Models},
   author    = {Ho, Jonathan and Jain, Ajay and Abbeel, Pieter},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  booktitle = {Advances in Neural Information Processing Systems 33 (NeurIPS)},
   year      = {2020},
   eprint    = {2006.11239},
   archivePrefix = {arXiv},
-  note      = {NOT verified in the 2026-08-07 scan; standard reference, confirm before submission},
+  url       = {https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html},
+  note      = {Venue verified 2026-08-08 against the NeurIPS proceedings.
+               NeurIPS metadata renders the second author as ``Ajay N. Jain''},
+}
+
+@inproceedings{song2021ddim,
+  title     = {Denoising Diffusion Implicit Models},
+  author    = {Song, Jiaming and Meng, Chenlin and Ermon, Stefano},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  eprint    = {2010.02502},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2010.02502},
+}
+
+@inproceedings{song2021sde,
+  title     = {Score-Based Generative Modeling through Stochastic
+               Differential Equations},
+  author    = {Song, Yang and Sohl-Dickstein, Jascha and Kingma, Diederik P.
+               and Kumar, Abhishek and Ermon, Stefano and Poole, Ben},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  eprint    = {2011.13456},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2011.13456},
+  note      = {Oral; ICLR 2021 Outstanding Paper Award},
+}
+
+@inproceedings{nichol2021iddpm,
+  title     = {Improved Denoising Diffusion Probabilistic Models},
+  author    = {Nichol, Alexander Quinn and Dhariwal, Prafulla},
+  booktitle = {Proceedings of the 38th International Conference on Machine
+               Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  pages     = {8162--8171},
+  year      = {2021},
+  eprint    = {2102.09672},
+  archivePrefix = {arXiv},
+  url       = {https://proceedings.mlr.press/v139/nichol21a.html},
+}
+
+@inproceedings{karras2022edm,
+  title     = {Elucidating the Design Space of Diffusion-Based Generative
+               Models},
+  author    = {Karras, Tero and Aittala, Miika and Aila, Timo and
+               Laine, Samuli},
+  booktitle = {Advances in Neural Information Processing Systems 35 (NeurIPS)},
+  year      = {2022},
+  eprint    = {2206.00364},
+  archivePrefix = {arXiv},
+  url       = {https://proceedings.neurips.cc/paper_files/paper/2022/hash/a98846e9d9cc01cfb87eb694d946ce6b-Abstract-Conference.html},
+  note      = {NeurIPS 2022 Outstanding Paper Award},
+}
+
+% --- flow matching / stochastic interpolants ---
+
+@inproceedings{lipman2023flowmatching,
+  title     = {Flow Matching for Generative Modeling},
+  author    = {Lipman, Yaron and Chen, Ricky T. Q. and Ben-Hamu, Heli and
+               Nickel, Maximilian and Le, Matt},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  eprint    = {2210.02747},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2210.02747},
+  note      = {Presentation format (oral/notable) unverified},
 }
 
 @inproceedings{liu2023rectifiedflow,
@@ -37,6 +135,47 @@
   eprint    = {2209.03003},
   archivePrefix = {arXiv},
   url       = {https://arxiv.org/abs/2209.03003},
+  note      = {Oral; notable-top-25\%},
+}
+
+@inproceedings{albergo2023interpolants,
+  title     = {Building Normalizing Flows with Stochastic Interpolants},
+  author    = {Albergo, Michael S. and Vanden-Eijnden, Eric},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  eprint    = {2209.15571},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2209.15571},
+  note      = {Venue from the authors' arXiv comment field; not
+               independently confirmed against the proceedings},
+}
+
+@article{albergo2025stochasticinterpolants,
+  title   = {Stochastic Interpolants: A Unifying Framework for Flows and
+             Diffusions},
+  author  = {Albergo, Michael S. and Boffi, Nicholas M. and
+             Vanden-Eijnden, Eric},
+  journal = {Journal of Machine Learning Research},
+  volume  = {26},
+  number  = {209},
+  pages   = {1--80},
+  year    = {2025},
+  eprint  = {2303.08797},
+  archivePrefix = {arXiv},
+  url     = {https://jmlr.org/papers/v26/23-1605.html},
+}
+
+@article{tong2024cfm,
+  title   = {Improving and Generalizing Flow-Based Generative Models with
+             Minibatch Optimal Transport},
+  author  = {Tong, Alexander and Fatras, Kilian and Malkin, Nikolay and
+             Huguet, Guillaume and Zhang, Yanlei and Rector-Brooks, Jarrid
+             and Wolf, Guy and Bengio, Yoshua},
+  journal = {Transactions on Machine Learning Research},
+  year    = {2024},
+  eprint  = {2302.00482},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2302.00482},
 }
 
 @inproceedings{lu2022dpmsolver,
@@ -510,14 +649,17 @@
   archivePrefix = {arXiv},
 }
 
-@article{ha2018worldmodels,
-  title   = {World Models},
-  author  = {Ha, David and Schmidhuber, J{\"u}rgen},
-  journal = {arXiv preprint arXiv:1803.10122},
-  year    = {2018},
-  eprint  = {1803.10122},
+@inproceedings{ha2018worldmodels,
+  title     = {Recurrent World Models Facilitate Policy Evolution},
+  author    = {Ha, David and Schmidhuber, J{\"u}rgen},
+  booktitle = {Advances in Neural Information Processing Systems 31 (NeurIPS)},
+  pages     = {2455--2467},
+  year      = {2018},
+  eprint    = {1809.01999},
   archivePrefix = {arXiv},
-  note    = {A NeurIPS 2018 version is commonly cited but was NOT verified},
+  url       = {https://proceedings.neurips.cc/paper/2018/hash/2de5d16682c3c35007e4e92982f1a2ba-Abstract.html},
+  note      = {Oral. Peer-reviewed version of arXiv:1803.10122 ``World Models'';
+               verified 2026-08-08. Cite this, not the preprint},
 }
 
 @inproceedings{hafner2019planet,
@@ -553,15 +695,18 @@
 }
 
 @article{hafner2025dreamerv3,
-  title   = {Mastering Diverse Control Tasks through World Models},
-  author  = {Hafner, Danijar and Pasukonis, Jurgis and Ba, Jimmy
-             and Lillicrap, Timothy},
+  title   = {Mastering diverse control tasks through world models},
+  author  = {Hafner, Danijar and Pasukonis, Jurgis and Ba, Jimmy and
+             Lillicrap, Timothy},
   journal = {Nature},
   volume  = {640},
+  number  = {8059},
   pages   = {647--653},
   year    = {2025},
+  doi     = {10.1038/s41586-025-08744-2},
   eprint  = {2301.04104},
   archivePrefix = {arXiv},
+  note    = {Title uses Nature's own sentence casing},
 }
 
 @inproceedings{alonso2024diamond,
@@ -589,13 +734,23 @@
 
 @inproceedings{bruce2024genie,
   title     = {Genie: Generative Interactive Environments},
-  author    = {Bruce, Jake and Dennis, Michael and Edwards, Ashley
-               and Parker-Holder, Jack and Shi, Yuge and Hughes, Edward},
-  booktitle = {International Conference on Machine Learning (ICML)},
+  author    = {Bruce, Jake and Dennis, Michael D. and Edwards, Ashley and
+               Parker-Holder, Jack and Shi, Yuge and Hughes, Edward and
+               Lai, Matthew and Mavalankar, Aditi and Steigerwald, Richie and
+               Apps, Chris and Aytar, Yusuf and Bechtle, Sarah Maria Elisabeth and
+               Behbahani, Feryal and Chan, Stephanie C. Y. and Heess, Nicolas and
+               Gonzalez, Lucy and Osindero, Simon and Ozair, Sherjil and
+               Reed, Scott and Zhang, Jingwei and Zolna, Konrad and Clune, Jeff and
+               De Freitas, Nando and Singh, Satinder and Rockt{\"a}schel, Tim},
+  booktitle = {Proceedings of the 41st International Conference on Machine
+               Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {235},
+  pages     = {4603--4623},
   year      = {2024},
   eprint    = {2402.15391},
   archivePrefix = {arXiv},
-  note      = {Oral. Author list incomplete},
+  note      = {Oral; ICML 2024 Best Paper Award},
 }
 
 @inproceedings{wu2024ivideogpt,
@@ -617,7 +772,8 @@
   year      = {2024},
   eprint    = {2310.06114},
   archivePrefix = {arXiv},
-  note      = {Oral. Known as UniSim. From-scratch status inferred from absence of a statement},
+  note      = {Oral; ICLR 2024 Outstanding Paper Award. Known as UniSim.
+               From-scratch status inferred from absence of a statement},
 }
 
 @article{nvidia2025cosmos,
@@ -696,6 +852,8 @@
   eprint    = {2505.14357},
   archivePrefix = {arXiv},
   url       = {https://arxiv.org/abs/2505.14357},
+  note      = {ICLR 2026 claimed by the authors' repo and page but NOT confirmed
+               against proceedings.iclr.cc; verify before submission},
 }
 
 @article{liao2025genieenvisioner,
@@ -774,17 +932,18 @@
 %  The direct antecedent                               (§2.4, §3.1, §3.2)
 % ---------------------------------------------------------------------
 
-@inproceedings{rigter2024avid,
-  title     = {{AVID}: Adapting Video Diffusion Models to World Models},
-  author    = {Rigter, Marc and Gupta, Tarun and Hilmkil, Agrin and Ma, Chao},
-  booktitle = {Reinforcement Learning Conference (RLC)},
-  journal   = {Reinforcement Learning Journal},
-  volume    = {6},
-  pages     = {737--764},
-  year      = {2025},
-  eprint    = {2410.12822},
+@article{rigter2024avid,
+  title   = {{AVID}: Adapting Video Diffusion Models to World Models},
+  author  = {Rigter, Marc and Gupta, Tarun and Hilmkil, Agrin and Ma, Chao},
+  journal = {Reinforcement Learning Journal},
+  volume  = {6},
+  pages   = {737--764},
+  year    = {2025},
+  eprint  = {2410.12822},
   archivePrefix = {arXiv},
-  url       = {https://arxiv.org/abs/2410.12822},
+  url     = {https://arxiv.org/abs/2410.12822},
+  note    = {Presented at RLC 2025. Key retains the arXiv year; venue year is 2025.
+             An ICLR 2025 workshop poster also exists -- do NOT cite that version},
 }
 
 
@@ -1006,4 +1165,47 @@
   eprint  = {2603.07799},
   archivePrefix = {arXiv},
   note    = {TITLE AND AUTHOR LIST NOT VERIFIED. Nearest adjacent risk to D3; read before citing},
+}
+
+
+% --- world-model canon added 2026-08-08 (venue status verified) ---
+
+@techreport{lecun2022path,
+  title       = {A Path Towards Autonomous Machine Intelligence,
+                 Version 0.9.2, 2022-06-27},
+  author      = {LeCun, Yann},
+  institution = {Courant Institute, New York University and Meta AI},
+  year        = {2022},
+  url         = {https://openreview.net/forum?id=BZ5a1r-kVsf},
+  note        = {NO PEER-REVIEWED VENUE. Position paper hosted on OpenReview;
+                 not on arXiv. Flag its status in prose if cited},
+}
+
+@article{ding2025worldmodelsurvey,
+  title   = {Understanding World or Predicting Future? A Comprehensive Survey
+             of World Models},
+  author  = {Ding, Jingtao and Zhang, Yunke and Shang, Yu and Zhang, Yuheng and
+             Zong, Zefang and Feng, Jie and Yuan, Yuan and Su, Hongyuan and
+             Li, Nian and Sukiennik, Nicholas and Xu, Fengli and Li, Yong},
+  journal = {ACM Computing Surveys},
+  volume  = {58},
+  number  = {3},
+  pages   = {1--38},
+  year    = {2025},
+  doi     = {10.1145/3746449},
+  eprint  = {2411.14499},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{schmidhuber1990online,
+  title     = {An on-line algorithm for dynamic reinforcement learning and
+               planning in reactive environments},
+  author    = {Schmidhuber, J{\"u}rgen},
+  booktitle = {Proceedings of the IEEE/INNS International Joint Conference on
+               Neural Networks (IJCNN)},
+  volume    = {2},
+  pages     = {253--258},
+  year      = {1990},
+  note      = {The much-cited ``Making the world differentiable'' (FKI-126-90)
+               is a TU Munich technical report, not peer reviewed},
 }

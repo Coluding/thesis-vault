@@ -10,68 +10,107 @@
 \chapter{Related work}
 \label{ch:related-work}
 
-\section{Preliminaries: diffusion and flow matching}
-\label{sec:preliminaries}
+\section{Diffusion and flow matching}
+\label{sec:rw-generative}
 
-This section fixes the notation and the two facts about generative
-trajectories that the rest of the thesis relies on, including the few-step
-literature reviewed in \cref{sec:rw-few-step}. It is deliberately minimal:
-we state what is used later and no more.
+The models this thesis adapts all generate by transporting noise to data
+along a learned trajectory. This section introduces the two families that
+do so, fixes the notation used throughout, and isolates the two properties
+of the trajectory that later chapters depend on.
 
-\subsection{Forward process and prediction target}
+\subsection{Diffusion models}
 
-Both model classes we work with define a path between data and noise. Given
-a sample $x_0$ and Gaussian noise $\noisepred \sim \mathcal{N}(0, I)$, an
-intermediate state is a mixture of the two, indexed by a time $t$:
+Diffusion models were introduced by \citet{sohldickstein2015diffusion} as a
+pair of Markov chains: a fixed forward chain that destroys the structure of
+the data by repeated Gaussian noising, and a learned reverse chain of the
+same functional form that undoes it. Because both directions are Gaussian
+for small enough steps, the generative model is tractable to sample and to
+evaluate.
+
+\citet{ho2020ddpm} made the construction practical by reparameterising the
+variational bound as \emph{noise prediction}: the network is trained to
+recover the noise $\noisepred$ that was added to a clean sample $x_0$ to
+produce a corrupted state
 \begin{equation}
-  \label{eq:interpolant}
+  \label{eq:forward}
   \xt = \alpha_t\, x_0 + \sigma_t\, \noisepred ,
+  \qquad \noisepred \sim \mathcal{N}(0, I),
 \end{equation}
-with $\alpha_t$ and $\sigma_t$ set by the schedule. Training samples $t$,
-constructs $\xt$, and regresses a network on a target derived from
-$(x_0, \noisepred)$.
+under a simplified loss weighting. Subsequent work refined the schedule and
+the learned variances~\citep{nichol2021iddpm} and, in
+\citet{karras2022edm}, separated the design into independent axes of
+network preconditioning, noise distribution, discretisation and sampler.
+The parameterisation used in most current systems follows the latter.
 
-\emph{Which} target is a choice, and it matters enough that we state it
-everywhere it is relevant. A model may predict the noise $\noisepred$, the
-clean sample $x_0$, or the velocity $\vel$; the three are related by
-invertible transformations at fixed $t$, but the loss surfaces and the
-downstream algebra differ. We therefore carry two labels with every model:
-\cfg{model\_type}, which is \code{diffusion} or \code{flow}, and
-\cfg{prediction\_type}, which is \code{noise}, \code{x0} or
-\code{velocity}. All backbones in this thesis use velocity prediction; only
-the model type varies. That is an accident of which models were available
-rather than a design choice, and \cref{sec:res-pathway} makes use of it.
+\citet{song2021sde} recast the discrete construction in continuous time as
+a stochastic differential equation, with a reverse-time SDE and an
+equivalent deterministic \emph{probability-flow ODE} sharing the same
+marginals. This is the view we adopt, because it is what allows the second
+family below to be introduced as a variation rather than as a separate
+object.
 
-\subsection{The sampling trajectory, and why its shape matters}
+\subsection{Flow matching}
 
-Sampling integrates a deterministic trajectory from noise to data. Its
-instantaneous direction is the velocity field, and the geometry of the path
-it traces is the property \cref{sec:curvature} turns on.
+Flow matching takes the deterministic view as the starting point.
+\citet{lipman2023flowmatching} train a continuous normalising flow without
+simulating it, by regressing the network directly on a \emph{conditional}
+velocity field defined along a prescribed probability path between noise and
+data. Diffusion paths are recovered as one choice of path, and other choices
+are available.
 
-Under a \textbf{variance-preserving diffusion} schedule, $\alpha_t$ and
-$\sigma_t$ vary non-linearly, and the trajectory from noise to data is
-\emph{curved}: the velocity at one point of the path does not equal the
-velocity at another. We write $\curv$ for that curvature.
+The choice that matters here is the linear one. Rectified
+flow~\citep{liu2023rectifiedflow} takes the interpolant of
+\cref{eq:forward} to be linear in $t$, so that the transport between a noise
+sample and a data sample follows a straight line. The same construction is
+developed as a general framework by
+\citet{albergo2023interpolants, albergo2025stochasticinterpolants}, who show
+that the probability-flow ODE and a family of SDEs share a single learned
+drift.
 
-Under \textbf{rectified flow matching}, the interpolant of
-\cref{eq:interpolant} is taken to be linear in $t$, so the path between a
-noise sample and a data sample is a straight line, the velocity is constant
-along it, and $\curv = 0$.
+\subsection{What distinguishes them, for our purposes}
 
-This is the whole of the distinction we need. Flow matching is not treated
-here as a different family of model but as \emph{the case in which the
-sampling trajectory is straight}, and the consequences of that appear in
-\cref{sec:shortcut} and \cref{sec:curvature}.
+Presented this way the two families differ in one respect that matters to
+this thesis: \textbf{the shape of the sampling trajectory}.
 
-\subsection{Step size}
+Under a variance-preserving diffusion schedule, $\alpha_t$ and $\sigma_t$
+vary non-linearly and the path traced from noise to data is \emph{curved};
+the velocity at one point of the path differs from the velocity at another.
+We write $\curv$ for that curvature. Under a rectified-flow construction the
+path is straight, the velocity is constant along it, and $\curv = 0$.
 
-Sampling proceeds in a finite number of steps. We write $\dstep$ for the
-size of a step, that is the interval of $t$ traversed by one network
-evaluation, and \emph{few-step sampling} means increasing $\dstep$ so that
-fewer evaluations cover the same path. A model that is conditioned on
-$\dstep$ can in principle be asked for a step of any size at inference,
-which is the property \cref{sec:shortcut} trains for and
-\cref{sec:res-shortcut} evaluates.
+We therefore treat flow matching not as a different kind of model but as
+\emph{the case in which the sampling trajectory is straight}. This is a
+narrow reading of a broad literature, and it is the reading the rest of the
+thesis needs: \cref{sec:curvature} shows that a widely used training
+objective for few-step sampling is exact when $\curv = 0$ and biased
+otherwise, and \cref{sec:backbones} selects backbones accordingly.
+
+\subsection{Prediction targets, and why we always name them}
+
+A model on either side of this distinction may be trained to predict the
+noise $\noisepred$, the clean sample $x_0$, or the velocity $\vel$. At a
+fixed $t$ the three are related by invertible transformations, but the loss
+surfaces differ and, more importantly for us, so does the algebra of any
+objective built on top of them. Confusing them is the most common way to
+misstate a result in this area.
+
+We therefore label every model with two attributes and repeat them wherever
+a loss or a target is defined: \cfg{model\_type}, which is \code{diffusion}
+or \code{flow}, and \cfg{prediction\_type}, which is \code{noise},
+\code{x0} or \code{velocity}. Every backbone in this thesis predicts
+velocity; only the model type varies. That is a consequence of which
+pretrained models were available rather than a design choice, and
+\cref{sec:res-pathway} makes use of it.
+
+\subsection{Sampling cost}
+
+Sampling integrates the trajectory in a finite number of steps, and each
+step costs one network evaluation. We write $\dstep$ for the size of a step,
+that is the interval of $t$ it traverses, and refer to the total as the
+number of function evaluations. Reducing it is the subject of
+\cref{sec:rw-few-step}; a model conditioned on $\dstep$ can in principle be
+asked for a step of any size at inference, which is the property
+\cref{sec:shortcut} trains for.
 
 \section{Adapting frozen generative models}
 \label{sec:rw-adapters}
