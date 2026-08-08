@@ -112,70 +112,211 @@ number of function evaluations. Reducing it is the subject of
 asked for a step of any size at inference, which is the property
 \cref{sec:shortcut} trains for.
 
-\section{Adapting frozen generative models}
+\section{World models}
+\label{sec:rw-world-models}
+
+A world model is a learned model of environment dynamics that an agent can
+query instead of acting: given a state and an action, it predicts what
+follows. The idea is longstanding~\citep{schmidhuber1990online}, and
+\citet{ha2018worldmodels} gave it its modern form, training a compact latent
+dynamics model and then evolving a controller entirely inside the model's
+own rollouts. \citet{lecun2022path} argues for predictive world models as
+the organising principle for autonomous agents more broadly; we cite it for
+the framing and note that it is a position paper rather than a
+peer-reviewed result. \citet{ding2025worldmodelsurvey} survey the area.
+
+For our purposes the literature is best sorted by a single question:
+\textbf{how much of the generative model is trained, and from what?} That
+axis is what places the present work, and it separates four regimes.
+
+\paragraph{Learned from scratch, in a compact latent space.} The Dreamer
+line learns a recurrent latent dynamics model per environment and trains a
+policy on imagined rollouts~\citep{hafner2019planet, hafner2020dreamer,
+hafner2021dreamerv2}, reaching a wide range of tasks under a single
+configuration in \citet{hafner2025dreamerv3}. Actions condition the latent
+transition. These models are cheap per task and carry no visual prior: they
+are trained on the environment they will be used in, and transfer nothing
+from elsewhere.
+
+\paragraph{Learned from scratch, generatively.} A second group keeps the
+full generative machinery but still trains it from
+scratch. \citet{alonso2024diamond} train a diffusion world model per Atari
+game and show that visual detail matters for the resulting policy.
+\citet{bruce2024genie} scale the idea to unlabelled internet video at
+eleven billion parameters, and, importantly for us, learn a \emph{latent}
+action space rather than consuming ground-truth actions. Both pay the full
+training cost, and Genie's action interface is a different problem from
+ours: we have action labels and wish to condition on them.
+
+\paragraph{Started from a pretrained model, then fully fine-tuned.} The
+most common recent recipe begins from an existing generative model and
+updates all of its weights. \citet{valevski2025gamengen} repurpose a
+text-to-image diffusion model into a real-time game engine this way, and
+\citet{yang2024unisim} train a large video simulator conditioned on both
+language and low-level control. This regime inherits the prior and then
+overwrites it; it is the natural comparison for anything that claims a
+pretrained model is worth preserving.
+
+\paragraph{Pretrained model held frozen, with a trained module.} Finally,
+\citet{rigter2024avid} keep the pretrained video diffusion model entirely
+fixed, without access to its parameters, and train a small adapter that
+modifies its outputs under action conditioning. This is the regime the
+present work occupies, and AVID is its direct antecedent rather than a gap
+we identify.
+
+\medskip
+
+The distinction between the last two regimes is the one this thesis turns
+on. Full fine-tuning is a strictly larger hypothesis class and will, given
+enough data and compute, do at least as well. The case for keeping the base
+frozen is that the strongest video models are increasingly released as
+weights that can be sampled but not retrained; that the prior is what makes
+the model worth using at all, so overwriting it is a cost rather than a
+neutral choice; and that the resulting module is small enough to be trained
+on a domain-specific dataset. \Cref{sec:families} makes the corresponding
+architectural argument, and \cref{sec:limitations} states what we give up.
+
+\section{Adapting a pretrained generative model}
 \label{sec:rw-adapters}
 
-Adapting a large pretrained model without retraining it is by now a standard
-practice, and the methods differ mainly in \emph{how much of the base they
-need}. We present them in that order, from those that modify the model's
-weights to those that require only its output, because the resulting
-gradient is what \cref{sec:families} uses to select among them.
+Given a pretrained model and a new conditioning signal, the methods
+available differ along two independent axes. The first is \emph{what is
+changed} in the model, which determines what access is required and what a
+training step costs. The second is \emph{how the conditioning signal
+enters}, which turns out to determine whether it is used at all. We take
+them in turn.
 
-\paragraph{Inside the weights.} The original adapters of
-\citet{houlsby2019adapters} insert a small bottleneck module into each layer
-of a frozen transformer, initialised near the identity so that the model
-begins unchanged. \citet{hu2022lora} instead leave the architecture
-untouched and learn a low-rank update to the weight matrices themselves,
-which can be merged back into the base at inference. Both leave the
-pretrained parameters frozen in the sense that they are not updated; both
-require the model to be open enough to insert modules into, or to add
-matrices to.
+\subsection{What is changed}
+\label{sec:rw-what-changes}
 
-\paragraph{Inside the activations.} For conditional image generation the
-dominant approach adds a second, trainable pathway that reads and writes the
-base's intermediate features. ControlNet~\citep{zhang2023controlnet} makes a
-trainable copy of the frozen encoder and feeds its features back into the
-frozen network through zero-initialised convolutions, so that the untrained
-branch contributes nothing at initialisation and grows from there.
-T2I-Adapter~\citep{mou2024t2iadapter} does something lighter, encoding the
-condition with a small convolutional network and adding its features to the
-frozen encoder's features at several scales.
-IP-Adapter~\citep{ye2023ipadapter} adds a parallel set of key and value
-projections beside each existing cross-attention layer and sums the two
-attention outputs. These methods require access to intermediate activations,
-and in ControlNet's case to enough of the architecture to duplicate it.
+\paragraph{All parameters.} The baseline is to fine-tune the model, which
+requires the weights, the optimiser state for all of them, and a dataset
+large enough not to destroy the prior. Low-rank
+adaptation~\citep{hu2022lora} reduces the cost by restricting the update to
+a low-rank factorisation that can be merged back into the weights at
+inference, and the earlier bottleneck adapters of
+\citet{houlsby2019adapters} insert small trainable modules between the
+frozen layers. Both leave the pretrained values untouched, but both are
+still \emph{weight-level} interventions: they require the model to be open
+enough to modify, and the forward pass must remain differentiable through
+it.
 
-\paragraph{Outside the model entirely.} AVID~\citep{rigter2024avid} makes
-the strongest assumption about availability and the weakest about access. It
-treats the pretrained video diffusion model as a black box, using only its
-prediction, and trains an adapter that emits both its own prediction and a
-mask that blends the two. The base's weights, activations and gradients are
-never touched.
+\paragraph{Hidden states.} A second group leaves the weights alone and
+instead reads and writes the model's intermediate activations.
+ControlNet~\citep{zhang2023controlnet} duplicates the frozen encoder as a
+trainable branch and injects its features back through zero-initialised
+convolutions. T2I-Adapter~\citep{mou2024t2iadapter} does the same more
+cheaply, encoding the condition with a small convolutional network and
+adding its features at several scales. IP-Adapter~\citep{ye2023ipadapter}
+adds a parallel set of key and value projections beside each cross-attention
+layer and sums the two attention outputs. These require access to
+activations, and in ControlNet's case to enough of the architecture to
+replicate it.
 
-\paragraph{A convention worth noticing.} Every method above initialises its
-new pathway so that it contributes nothing at the start of training:
+\paragraph{Output only.} The weakest requirement is to treat the model as a
+function and modify only what it returns. AVID~\citep{rigter2024avid} does
+this: the pretrained video diffusion model is a black box, and a trained
+adapter combines its own prediction with the base's through a learned mask.
+Nothing inside the model is read or written.
+
+\medskip
+
+The three are ordered by access, and that ordering has a consequence that
+\cref{sec:families} develops: only the last is available when the base
+cannot be opened, and only the last can be trained without differentiating
+through the base.
+
+\paragraph{A shared convention.} Every method above initialises its new
+pathway to contribute nothing at the start of training, whether by
 near-identity bottlenecks, zero convolutions, zero-initialised output
-projections, gated attention with the gate at zero. The motivation is always
-the same and always about safety, that an untrained branch should not
-disturb a working model. The question of whether such a pathway subsequently
-grows to contribute anything is rarely asked; two works reframe the coupling
-as a bandwidth problem~\citep{zavadski2024controlnetxs} or replace the
-zero-initialisation with a normalisation-based
-alternative~\citep{peng2024controlnext}, and neither frames the issue as the
-conditioning going unused. We return to this in \cref{sec:res-scale}.
+projections or gated attention with the gate at zero. The justification is
+always that an untrained branch should not disturb a working model. Whether
+such a pathway subsequently grows to contribute anything is rarely asked;
+\citet{zavadski2024controlnetxs} reframe the coupling as a bandwidth
+problem and \citet{peng2024controlnext} replace the zero-initialisation with
+a normalisation-based alternative, but neither frames the issue as the
+conditioning going unused. We return to it in \cref{sec:res-scale}.
 
-\section{Conditioning mechanisms}
+\subsection{How the conditioning enters}
 \label{sec:rw-conditioning}
-\todo{FiLM / adaLN-Zero / cross-attention. This section underwrites the
-pathway result -- write it so Ch.5's finding lands as principled rather
-than lucky. BLOCKED on the FiLM/DiT notes.}
 
-\section{Action-conditioned video and world models}
-\label{sec:rw-world-models}
-\todo{AVID as the STARTING POINT, not a gap. Place our frozen-base setting
-against retrain-from-scratch world models.}
+Orthogonally to what is changed, a conditioning signal must be combined with
+the network's activations somehow, and the available mechanisms are not
+interchangeable.
 
-\section{Few-step generation}
+The oldest is feature-wise modulation: a conditioner emits per-channel
+scale and shift parameters that are applied to normalised activations. This
+was introduced for language-conditioned vision by
+\citet{devries2017cbn} and generalised as FiLM by \citet{perez2018film}. In
+diffusion models the same construction appears as adaptive group
+normalisation~\citep{dhariwal2021adm} and, in transformers, as adaptive
+layer normalisation. The alternative is to supply the condition as a
+sequence of tokens attended to by the network, which is how latent diffusion
+models consume text~\citep{rombach2022ldm}.
+
+\citet{peebles2023dit} compare these directly for class-conditional
+generation and find modulation better, by a substantial margin, and cheaper.
+\citet{chen2024gentron} compare the same two mechanisms for \emph{text} and
+find the reverse, arguing that modulation acts globally on the whole feature
+map whereas cross-attention treats spatial positions individually, which
+free-form text requires.
+
+The disagreement is instructive rather than contradictory: what differs
+between the two studies is the conditioning signal itself, global and
+low-dimensional in one case, spatially varying and high-dimensional in the
+other. An action vector is squarely in the first regime, and both studies
+train the conditioning and the host network together. \Cref{sec:res-pathway}
+reports what happens at that point on the axis when the host is frozen.
+
+\section{Reducing the number of sampling steps}
 \label{sec:rw-few-step}
-\todo{Shortcut models, consistency, distillation, solvers. The honest D3
-baseline is not 50-step DDIM alone.}
+
+Sampling cost is the second obstacle to using a video model as a world
+model, and the literature attacks it in three ways that differ in what has
+to change.
+
+\paragraph{Better solvers, changing nothing.} The probability-flow ODE of
+\cref{sec:rw-generative} can simply be integrated more cleverly.
+DDIM~\citep{song2021ddim} constructs a non-Markovian forward process with
+the same marginals, giving a deterministic sampler that reuses a trained
+model at a fraction of the steps, and DPM-Solver~\citep{lu2022dpmsolver,
+lu2022dpmsolverpp} exploits the semi-linear structure of the ODE to reach
+comparable quality in around ten. These require no training at all, which
+makes them the floor against which any trained method must be measured.
+
+\paragraph{Distilling into a new model.} A second family trains a student to
+take larger steps than its teacher. Progressive
+distillation~\citep{salimans2022progressive} repeatedly halves the step
+count, each round producing a new network. Consistency
+models~\citep{song2023consistency} instead train a model to map any point on
+a trajectory to its endpoint, so that generation can be done in one step,
+and admit both distillation and from-scratch
+training~\citep{song2024ict, luo2023lcm}. Distribution-matching
+approaches~\citep{yin2024dmd, yin2024dmd2} and adversarial
+variants~\citep{sauer2023add, sauer2024ladd} push to one or two steps at the
+cost of an adversarial objective. In all of these the prior is replaced.
+
+\paragraph{Conditioning the model on the step size.} A third approach keeps
+one network and makes the step size an input, so that a single model can be
+asked for a coarse or a fine step at inference. Shortcut
+models~\citep{frans2025shortcut} train this way with a self-consistency
+objective: the prediction for a step of size $2\dstep$ is supervised against
+the composition of two steps of size $\dstep$. The construction is analysed
+in \cref{sec:curvature}. \citet{chen2025homo} observe that shortcut training
+degrades where the trajectory is strongly curved and propose higher-order
+supervision, and \citet{geng2025meanflow} derive the exact relation between
+average and instantaneous velocity that the averaging construction
+approximates.
+
+\paragraph{Where the acceleration lives.} Cutting across these,
+a smaller literature asks whether few-step behaviour can be added to a
+model that is kept frozen. LCM-LoRA~\citep{luo2023lcmlora} distils
+consistency behaviour into a low-rank module that plugs into unmodified
+checkpoints, and \citet{cai2025scfm} shortcut a pretrained flow model with
+LoRA on frozen weights, though explicitly \emph{without} an explicit
+step-size input. Parallel decoding
+distillation~\citep{shaul2026pdd} takes a different route again, emitting
+several steps from one network evaluation. This is the group the present
+work belongs to, and \cref{sec:res-shortcut} compares the placements
+directly.
+

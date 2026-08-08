@@ -26,9 +26,10 @@ rest of the thesis turns on them.
 
 \paragraph{The base is a black box.} Only $\fbase(\xt,t)$ is required, not
 its weights, its activations or its gradients. This is what makes the method
-applicable to models that are released for sampling but not for training,
-and it is the constraint under which \cref{sec:families} selects an adapter
-family.
+applicable to models released for sampling but not for training, and it is
+the constraint under which \cref{sec:families} selects an adapter family.
+\Cref{sec:access-ladder} makes the requirement precise, and states what it
+does \emph{not} extend to.
 
 \paragraph{The composition is additive and gated, not a mixture.} An
 alternative is to combine the two predictions convexly, as
@@ -56,42 +57,169 @@ conditioning inputs, and \cref{sec:cost} reports what
 The framework implements four families of adapter behind
 \cref{eq:composition}: low-rank weight updates, hidden-state adapters,
 hypernetworks that emit weights, and output-level residual adapters. All of
-the empirical work in this thesis uses the last. This section derives that
-choice, because a taxonomy that is implemented and then not used is
-decoration, and because the criterion that selects it is the same one that
-explains a cost result in \cref{sec:res-d1}.
+the empirical work in this thesis uses the last, and this section derives
+that choice from two criteria, because a taxonomy that is implemented and
+then not used is decoration. The criteria are what the family requires the
+frozen base to expose, which determines the set of bases it can be applied
+to at all, and whether training it requires gradients to flow through the
+base, which determines what it costs once it can. The first is the
+architectural argument and the second turns out to carry a measurable
+number.
 
-\subsection{Two criteria}
+\subsection{A ladder of base access}
+\label{sec:access-ladder}
 
-\paragraph{Does the family require access to the base's internals?}
-Low-rank updates modify the base's weight matrices; hidden-state adapters
-read and write intermediate activations; hypernetworks emit parameters for
-some part of the base. Each therefore requires the base to be open in a way
-that goes beyond being callable. An output-level adapter requires only
-$\fbase(\xt, t)$, and is the only family that survives the black-box
-constraint of \cref{sec:composition}. This is
-\citeauthor{rigter2024avid}'s argument as well, and it is a claim about
-the direction the field is moving in rather than about any particular model:
-the strongest video generators are increasingly released as weights that can
-be sampled but not inspected.
+Methods for repurposing a pretrained generative model differ in what they
+demand of the base, and those demands are nested rather than merely
+different. Sorting the families by that demand, rather than by what they
+look like architecturally, produces the ladder in \cref{tab:access-ladder}.
 
-\paragraph{Does training require gradients through the frozen base?} This
-criterion is less obvious and it is the one with a measurable cost. An
-output-level adapter can be trained with the base's prediction detached: the
-base is evaluated once under \code{no\_grad}, and the backward pass touches
-only the adapter. The interior families cannot. Because their trainable
-parameters sit inside the base, the forward pass must be differentiable
-through it, and the activation memory that this retains then forces
-gradient checkpointing at video scale.
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabularx}{\linewidth}{@{}c l X@{}}
+    \toprule
+    & \textbf{What the base must expose} & \textbf{Methods at this rung} \\
+    \midrule
+    1 & Writable weights                & Full fine-tuning \citep{huang2026vid2world, valevski2025gamengen} \\
+    2 & Readable weights, differentiable forward & Low-rank updates \citep{hu2022lora}; hypernetworks; bottleneck adapters \citep{houlsby2019adapters} \\
+    3 & Intermediate activations, readable and writable & Hidden-state adapters; side networks \citep{zhang2023controlnet, mou2024t2iadapter, ye2023ipadapter} \\
+    4 & A callable denoiser, and nothing else & \textbf{Output-level adapters} \citep{rigter2024avid} \textbf{--- this thesis} \\
+    \midrule
+    \multicolumn{3}{@{}l@{}}{\emph{No adaptation method operates below rung 4.}} \\
+    5 & Finished samples only & (empty) \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Adaptation methods sorted by what they require of the frozen
+  base. The rungs are nested: a method at rung $k$ runs on any base that
+  supports rung $k$ or above, and on no other. The output adapter occupies
+  the least demanding rung that any method occupies.}
+  \label{tab:access-ladder}
+\end{table}
 
-The consequence is measured rather than argued. At matched effective batch
-on the same frozen base, a low-rank adapter costs \num{3.1} times the
-wall-clock per optimiser step of an output-level adapter, running at
-\num{66} against \num{205} steps per hour, while being the \emph{smaller}
-module of the two at \SI{26.0}{\mega\nothing} against
-\SI{34.9}{\mega\nothing} trainable parameters.\prov{25183721}{\nv{ckpt}}{\nv{commit}}
-Parameter count is the wrong axis: where the parameters live dominates what
-they cost.
+The nesting is what gives the ladder its force. A method at rung~1 can be
+applied only to a base whose weights we may overwrite; a method at rung~3
+runs equally well on such a base, but also on one that is merely
+introspectable. The output adapter sits at the bottom of the occupied
+range. It requires the frozen base to be a callable denoiser, evaluated on
+latents we supply at timesteps we choose, and requires nothing further: no
+weight tensors, no intermediate activations, no gradients.
+
+In our implementation this is literal rather than aspirational. The base
+forward is executed inside a \code{no\_grad} region and its prediction
+enters the adapter as a constant, so the frozen model never appears in the
+autograd graph. Where our adapters use mechanisms that are elsewhere
+associated with interior injection, notably adaptive layer normalisation
+and cross-attention, those mechanisms operate inside the adapter's own
+trunk. The adapter is a small denoiser in its own right whose output is
+added to the base's; it does not modulate the base.
+
+\paragraph{The rung below is empty, and we do not reach it either.} It is
+tempting to describe an output adapter as working with a model available
+only through an interface, and the temptation should be resisted, because
+the statement is false in the strongest sense a reader will assume. Every
+method in \cref{tab:access-ladder}, ours included, needs the base evaluated
+at \emph{intermediate} states of the generative trajectory. A service that
+returns a finished video for a prompt exposes none of those states and
+supports no adaptation method at all. The sense in which the output adapter
+tolerates a closed base is precise and narrower: the base may be a model
+whose weights we can sample from but may not train, inspect or modify.
+
+\paragraph{Why that rung is the one worth occupying.} Three reasons, in
+increasing order of how well we can support them.
+
+The first is a claim about where capable video models are found. The
+argument is \citeauthor{rigter2024avid}'s rather than ours: they adapt a
+frozen base explicitly ``without access to the parameters of the pretrained
+model'', on the reasoning that the strongest generators are increasingly
+distributed as artefacts to be sampled rather than as training targets. We
+inherit the argument and do not claim it.
+
+The second is portability, and here we do have direct evidence. A method
+that consumes only the base's output does not need to know how that output
+was produced. The same interface accordingly spans a U-Net operating on
+per-frame latents and a diffusion transformer operating on temporally
+compressed ones, and spans a diffusion base and a flow-matching one,
+without either the adapter or the training loop changing. \Cref{sec:res-d1}
+reports that demonstration. An interior method must be re-derived against
+each new architecture, because the sites it attaches to are architecture
+specific.
+
+The third is cost, and it is measured. It is the second criterion, and it
+is the subject of the next section.
+
+\subsection{The cost of a differentiable base}
+\label{sec:differentiable-cost}
+
+The second criterion is less visible than the first and it is the one with
+a number attached. An output-level adapter is trained with the base's
+prediction detached: the base is evaluated once under \code{no\_grad}, it
+stores no activations, and the backward pass touches only the adapter. The
+interior families cannot do this. Because their trainable parameters sit
+inside the base, the forward pass must be differentiable through it, and
+autograd must retain the activations of every layer between the injection
+site and the output. Freezing the base saves the weight gradients; it does
+not save the activation graph.
+
+At video scale that graph is the binding constraint rather than a tax on
+throughput. On the flow base used here, one training sample is
+\num{14175} tokens, so a differentiable pass exhausts a
+\SI{93}{\giga\byte} device at a per-device batch of six, and gradient
+checkpointing is required for the run to proceed at all. Checkpointing then
+recomputes each block during the backward pass, which costs time to buy the
+memory back.
+
+The end-to-end consequence is measured. At matched effective batch on the
+same frozen base, the same data and the same schedule, a low-rank adapter
+costs \num{3.1} times the wall-clock per optimiser step of an output-level
+adapter, running at \num{66} against \num{205} steps per hour, while being
+the \emph{smaller} module of the two at \SI{26.0}{\mega\nothing} against
+\SI{34.9}{\mega\nothing} trainable
+parameters.\prov{25183721, vy9tcuco}{\nv{ckpt}}{\nv{commit}} We measured
+this on one environment with the 5B flow base and a single run per arm, so
+the factor characterises this operating point rather than the families in
+general. We estimate that roughly \num{1.5} of the \num{3.1} is
+attributable to checkpointing and the remainder to the differentiable base
+pass itself, on the standard recompute trade; the split is not separately
+measured, because separating it requires a configuration that fits without
+checkpointing and none exists at this sequence length.\estimate{split of
+the 3.1 factor}
+
+The direction of the result is what matters, and it inverts the axis the
+term ``parameter-efficient'' points at. The cheaper module by parameter
+count is the more expensive one to train, by a factor of three, because its
+parameters live somewhere that forces the frozen base into the gradient
+graph. \textbf{Where the parameters sit dominates how many there are.}
+
+\subsection{Why not fine-tune the base instead?}
+\label{sec:why-not-finetune}
+
+The adjacent question is not which adapter family to use but whether to use
+one. Full fine-tuning sits at rung~1 of \cref{tab:access-ladder} and is the
+dominant recipe in the surrounding literature; \citet{huang2026vid2world}
+fine-tune the same diffusion base we adapt, and evaluate on one of the same
+datasets. The objection is therefore concrete rather than hypothetical, and
+it deserves an answer here rather than an implicit one.
+
+Three considerations favour the frozen split, and they are of different
+strengths. Access is the first: fine-tuning demands the top rung and
+therefore forecloses every base that does not grant it, which is the whole
+argument of \cref{sec:access-ladder}. Economy is the second: the adapter
+trains well under one percent of the parameters of the composed model
+(\cref{sec:cost}), and one frozen base can carry several adapters for
+several conditioning variables without being duplicated per task. The third is a finding rather than a
+preference, and it is \citeauthor{rigter2024avid}'s: the division of labour
+between a frozen generative prior and a small conditioned correction is
+functional, in that the frozen model supplies visual quality the adapter
+would otherwise have to relearn.
+
+What we do not have is the measurement that would settle it. A comparison
+of a frozen base with an adapter against the same base fully fine-tuned, on
+matched data and matched compute, is not part of this thesis, and no work
+we are aware of reports it on a shared setup. We therefore make the weaker
+claim that the frozen split is defensible on access and cost, and we record
+the missing comparison as a limitation in \cref{sec:limitations} rather
+than treating the question as closed.
 
 \subsection{Why four families are implemented}
 
