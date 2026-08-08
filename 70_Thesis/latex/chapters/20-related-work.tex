@@ -75,8 +75,55 @@ which is the property \cref{sec:shortcut} trains for and
 
 \section{Adapting frozen generative models}
 \label{sec:rw-adapters}
-\todo{Adapter/PEFT lineage. BLOCKED: needs related-work/lora.md and
-related-work/controlnet.md -- neither exists (rubric/06-literature).}
+
+Adapting a large pretrained model without retraining it is by now a standard
+practice, and the methods differ mainly in \emph{how much of the base they
+need}. We present them in that order, from those that modify the model's
+weights to those that require only its output, because the resulting
+gradient is what \cref{sec:families} uses to select among them.
+
+\paragraph{Inside the weights.} The original adapters of
+\citet{houlsby2019adapters} insert a small bottleneck module into each layer
+of a frozen transformer, initialised near the identity so that the model
+begins unchanged. \citet{hu2022lora} instead leave the architecture
+untouched and learn a low-rank update to the weight matrices themselves,
+which can be merged back into the base at inference. Both leave the
+pretrained parameters frozen in the sense that they are not updated; both
+require the model to be open enough to insert modules into, or to add
+matrices to.
+
+\paragraph{Inside the activations.} For conditional image generation the
+dominant approach adds a second, trainable pathway that reads and writes the
+base's intermediate features. ControlNet~\citep{zhang2023controlnet} makes a
+trainable copy of the frozen encoder and feeds its features back into the
+frozen network through zero-initialised convolutions, so that the untrained
+branch contributes nothing at initialisation and grows from there.
+T2I-Adapter~\citep{mou2024t2iadapter} does something lighter, encoding the
+condition with a small convolutional network and adding its features to the
+frozen encoder's features at several scales.
+IP-Adapter~\citep{ye2023ipadapter} adds a parallel set of key and value
+projections beside each existing cross-attention layer and sums the two
+attention outputs. These methods require access to intermediate activations,
+and in ControlNet's case to enough of the architecture to duplicate it.
+
+\paragraph{Outside the model entirely.} AVID~\citep{rigter2024avid} makes
+the strongest assumption about availability and the weakest about access. It
+treats the pretrained video diffusion model as a black box, using only its
+prediction, and trains an adapter that emits both its own prediction and a
+mask that blends the two. The base's weights, activations and gradients are
+never touched.
+
+\paragraph{A convention worth noticing.} Every method above initialises its
+new pathway so that it contributes nothing at the start of training:
+near-identity bottlenecks, zero convolutions, zero-initialised output
+projections, gated attention with the gate at zero. The motivation is always
+the same and always about safety, that an untrained branch should not
+disturb a working model. The question of whether such a pathway subsequently
+grows to contribute anything is rarely asked; two works reframe the coupling
+as a bandwidth problem~\citep{zavadski2024controlnetxs} or replace the
+zero-initialisation with a normalisation-based
+alternative~\citep{peng2024controlnext}, and neither frames the issue as the
+conditioning going unused. We return to this in \cref{sec:res-scale}.
 
 \section{Conditioning mechanisms}
 \label{sec:rw-conditioning}
