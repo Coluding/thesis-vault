@@ -19,53 +19,206 @@ do so, fixes the notation used throughout, and isolates the two properties
 of the trajectory that later chapters depend on.
 
 \subsection{Diffusion models}
+\label{sec:rw-diffusion}
 
-Diffusion models were introduced by \citet{sohldickstein2015diffusion} as a
-pair of Markov chains: a fixed forward chain that destroys the structure of
-the data by repeated Gaussian noising, and a learned reverse chain of the
-same functional form that undoes it. Because both directions are Gaussian
-for small enough steps, the generative model is tractable to sample and to
-evaluate.
-
-\citet{ho2020ddpm} made the construction practical by reparameterising the
-variational bound as \emph{noise prediction}: the network is trained to
-recover the noise $\noisepred$ that was added to a clean sample $x_0$ to
-produce a corrupted state
+Denoising diffusion probabilistic models define a fixed forward process
+that destroys data by adding noise, and a learned reverse process that
+inverts it. Let $p(x_0)$ be the data distribution. The forward process
+corrupts a sample $x_0 \sim p(x_0)$ over $T$ steps through a Markov chain
+with a variance schedule $\{\beta_t\}_{t=1}^{T}$,
 \begin{equation}
-  \label{eq:forward}
-  \xt = \alpha_t\, x_0 + \sigma_t\, \noisepred ,
+  \label{eq:forward-step}
+  q(\xt \mid x_{t-1}) \;=\; \mathcal{N}\!\left(\xt \,;\, \sqrt{1-\beta_t}\,x_{t-1},\; \beta_t I\right),
+  \qquad t = 1,\dots,T,
+\end{equation}
+so that $x_T$ is approximately isotropic Gaussian. Writing
+$\alpha_t = 1-\beta_t$ and $\bar{\alpha}_t = \prod_{i=1}^{t}\alpha_i$, the
+chain admits a closed form for any $t$ directly from $x_0$,
+\begin{equation}
+  \label{eq:forward-marginal}
+  \xt \;=\; \sqrt{\bar{\alpha}_t}\,x_0 \;+\; \sqrt{1-\bar{\alpha}_t}\,\noisepred,
   \qquad \noisepred \sim \mathcal{N}(0, I),
 \end{equation}
-under a simplified loss weighting. Subsequent work refined the schedule and
-the learned variances~\citep{nichol2021iddpm} and, in
-\citet{karras2022edm}, separated the design into independent axes of
-network preconditioning, noise distribution, discretisation and sampler.
-The parameterisation used in most current systems follows the latter.
+which is what makes training tractable: any noise level can be sampled in
+one operation rather than by simulating the chain.
 
-\citet{song2021sde} recast the discrete construction in continuous time as
-a stochastic differential equation, with a reverse-time SDE and an
-equivalent deterministic \emph{probability-flow ODE} sharing the same
-marginals. This is the view we adopt, because it is what allows the second
-family below to be introduced as a variation rather than as a separate
-object.
+Generation reverses this. The exact reverse conditional
+$q(x_{t-1} \mid \xt)$ is intractable, so it is approximated by a learned
+Gaussian
+\begin{equation}
+  p_\theta(x_{t-1} \mid \xt) \;=\; \mathcal{N}\!\left(\mu_\theta(\xt,t),\, \Sigma(\xt,t)\right),
+\end{equation}
+with the variance commonly fixed to a time-dependent constant
+$\sigma_t^2 I$ rather than learned. Under this parameterisation the optimal
+mean can be written in terms of the noise that produced $\xt$,
+\begin{equation}
+  \label{eq:optimal-mean}
+  \mu(\xt, t) \;=\; \frac{1}{\sqrt{\alpha_t}}\left(\xt - \frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}}\, \mathbb{E}\!\left[\noisepred \mid \xt\right]\right),
+\end{equation}
+so that the only unknown is the conditional expectation of the noise. A
+network $s_\theta$ is trained to approximate it by denoising score
+matching,
+\begin{equation}
+  \label{eq:dsm}
+  \min_\theta \;\; \mathbb{E}_{x_0,\,t,\,\noisepred}
+  \left[\, \left\lVert s_\theta(\xt, t) - \noisepred \right\rVert_2^2 \,\right],
+  \qquad \xt \text{ as in \cref{eq:forward-marginal}},
+\end{equation}
+which is a plain regression problem: predict the noise that was added.
+Substituting the trained network into \cref{eq:optimal-mean} gives the
+sampler
+\begin{equation}
+  \label{eq:reverse-sampler}
+  p_\theta(x_{t-1}\mid \xt) \;=\; \mathcal{N}\!\left(\frac{1}{\sqrt{\alpha_t}}\left(\xt - \frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}}\,s_\theta(\xt,t)\right),\; \sigma_t^2 I\right),
+\end{equation}
+and sampling proceeds by drawing $x_T \sim \mathcal{N}(0,I)$ and iterating
+until $x_0$ is reached. The cost of that loop, one network evaluation per
+step, is the quantity \cref{sec:rw-few-step} is concerned with.
+
+\paragraph{Conditional generation.} The construction extends to conditional
+distributions with little change. Given paired data
+$(x_0, z_0) \sim p(x_0, z_0)$ and a target $p(x_0 \mid z_0)$, the forward
+process is untouched, since it acts on $x$ alone, and only the reverse
+process gains an argument:
+\begin{equation}
+  p(x_{t-1} \mid \xt, z_0) \;=\; \mathcal{N}\!\left(\frac{1}{\sqrt{\alpha_t}}\left(\xt - \frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}}\,\mathbb{E}\!\left[\noisepred \mid \xt, z_0\right]\right),\; \sigma_t^2 I\right).
+\end{equation}
+The training objective changes correspondingly, the network simply taking
+the conditioning variable as a further input,
+\begin{equation}
+  \label{eq:conditional-dsm}
+  \min_\theta \;\; \mathbb{E}_{(x_0,z_0),\,t,\,\noisepred}
+  \left[\, \left\lVert s_\theta(\xt, z_0, t) - \noisepred \right\rVert_2^2 \,\right].
+\end{equation}
+This thesis is concerned with exactly this step, in the case where $z_0$ is
+an action and $s_\theta$ is a model we may not retrain. Note that
+\cref{eq:conditional-dsm} says nothing about \emph{how} $z_0$ reaches the
+network; that choice is the subject of \cref{sec:rw-conditioning} and, as
+\cref{sec:res-pathway} shows, it is not incidental.
+
+\paragraph{The continuous-time view.} Taking the number of steps to
+infinity, the forward chain of \cref{eq:forward-step} becomes a stochastic
+differential equation
+\begin{equation}
+  \label{eq:forward-sde}
+  \mathrm{d}x \;=\; f(x,t)\,\mathrm{d}t \;+\; g(t)\,\mathrm{d}w,
+\end{equation}
+with $w$ a Wiener process, and generation corresponds to integrating the
+associated reverse-time SDE, which depends on the data only through the
+score $\nabla_x \log p_t(x)$. Crucially, there is also a deterministic
+\emph{probability-flow ODE},
+\begin{equation}
+  \label{eq:pf-ode}
+  \frac{\mathrm{d}x}{\mathrm{d}t} \;=\; f(x,t) - \tfrac{1}{2}g(t)^2 \nabla_x \log p_t(x),
+\end{equation}
+whose marginals match those of \cref{eq:forward-sde} at every $t$. Sampling
+may therefore be performed by solving an ODE rather than simulating noise,
+which is what allows deterministic and low-step samplers to be built on a
+model trained with \cref{eq:dsm}, and it is the object whose \emph{shape}
+matters in \cref{sec:curvature}.
+
+\paragraph{Practical variants.} Several choices in the above are free, and
+the literature has explored them systematically: the noise schedule and
+whether the reverse variance is learned; the network's prediction target,
+which may be the noise $\noisepred$, the clean sample $x_0$, or a velocity
+$\vel$ combining the two; and the preconditioning, discretisation and
+sampler, which can be treated as independent design axes. Most current
+systems follow the last of these formulations. The construction above is due
+to \citet{sohldickstein2015diffusion} and \citet{ho2020ddpm}, its
+score-matching interpretation to \citet{song2019ncsn}, the continuous-time
+formulation to \citet{song2021sde}, and the refinements just described to
+\citet{nichol2021iddpm} and \citet{karras2022edm}.
 
 \subsection{Flow matching}
+\label{sec:rw-flowmatching}
 
-Flow matching takes the deterministic view as the starting point.
-\citet{lipman2023flowmatching} train a continuous normalising flow without
-simulating it, by regressing the network directly on a \emph{conditional}
-velocity field defined along a prescribed probability path between noise and
-data. Diffusion paths are recovered as one choice of path, and other choices
-are available.
+Flow matching starts from the deterministic view rather than arriving at
+it. Instead of defining a noising chain and deriving a reverse process, one
+\emph{chooses} a path between the noise distribution $p_0$ and the data
+distribution $p_1$ and learns the velocity field that transports along it.
 
-The choice that matters here is the linear one. Rectified
-flow~\citep{liu2023rectifiedflow} takes the interpolant of
-\cref{eq:forward} to be linear in $t$, so that the transport between a noise
-sample and a data sample follows a straight line. The same construction is
-developed as a general framework by
-\citet{albergo2023interpolants, albergo2025stochasticinterpolants}, who show
-that the probability-flow ODE and a family of SDEs share a single learned
-drift.
+Let $p_t$ be a probability path with $p_0 = \mathcal{N}(0,I)$ and
+$p_1 = p_{\text{data}}$, generated by a time-dependent velocity field
+$u_t$ through the ordinary differential equation
+\begin{equation}
+  \label{eq:flow-ode}
+  \frac{\mathrm{d}x}{\mathrm{d}t} \;=\; u_t(x), \qquad t \in [0,1].
+\end{equation}
+If $u_t$ were known, generation would amount to integrating
+\cref{eq:flow-ode} from a noise sample. The natural objective is therefore
+to regress a network on it,
+\begin{equation}
+  \label{eq:fm}
+  \mathcal{L}_{\text{FM}}(\theta) \;=\; \mathbb{E}_{t,\,x \sim p_t}
+  \left[\, \left\lVert \vel_\theta(x,t) - u_t(x) \right\rVert_2^2 \,\right],
+\end{equation}
+which is useless as written, because neither $p_t$ nor $u_t$ is available
+in closed form for a general path.
+
+\paragraph{The conditional objective.} The difficulty is removed by
+conditioning on a data sample. For a fixed $x_1$ one may specify a
+\emph{conditional} path $p_t(x \mid x_1)$ and its conditional velocity
+field $u_t(x \mid x_1)$ in closed form, and regress on those instead:
+\begin{equation}
+  \label{eq:cfm}
+  \mathcal{L}_{\text{CFM}}(\theta) \;=\; \mathbb{E}_{t,\,x_1 \sim p_1,\,x \sim p_t(\cdot \mid x_1)}
+  \left[\, \left\lVert \vel_\theta(x,t) - u_t(x \mid x_1) \right\rVert_2^2 \,\right].
+\end{equation}
+The key result is that \cref{eq:fm} and \cref{eq:cfm} have the \emph{same
+gradients} with respect to $\theta$: the marginal field $u_t$ is the
+conditional field averaged over the posterior of $x_1$, and regressing on
+the conditional target therefore recovers the marginal one in expectation.
+The intractable objective is thus replaced by a tractable one with the same
+optimum, and every quantity in \cref{eq:cfm} is available by construction.
+
+Choosing Gaussian conditional paths recovers diffusion as a special case,
+which is why the two families can be discussed together at all.
+
+\paragraph{Rectified flow.} The choice that concerns us is the simplest
+one: interpolate linearly between a noise sample $x_0$ and a data sample
+$x_1$,
+\begin{equation}
+  \label{eq:linear-interpolant}
+  x_t \;=\; (1-t)\,x_0 \;+\; t\,x_1,
+\end{equation}
+whose conditional velocity is constant along the segment,
+\begin{equation}
+  \label{eq:rf-target}
+  u_t(x \mid x_0, x_1) \;=\; x_1 - x_0 .
+\end{equation}
+The training objective collapses to regressing the displacement between the
+two endpoints,
+\begin{equation}
+  \label{eq:rf}
+  \min_\theta \;\; \mathbb{E}_{t \sim \mathcal{U}[0,1],\, x_0,\, x_1}
+  \left[\, \left\lVert \vel_\theta\!\left((1-t)x_0 + t x_1,\, t\right) - (x_1 - x_0) \right\rVert_2^2 \,\right],
+\end{equation}
+with no noise schedule to design, no variance to learn, and no
+signal-to-noise reparameterisation. Because the learned marginal field
+averages over pairings, the resulting trajectories are not perfectly
+straight in general; the \emph{reflow} procedure retrains the model on pairs
+generated by its own ODE, which straightens them further and can be
+iterated.
+
+\paragraph{Why this formulation is now generally preferred.} Three reasons,
+and the first is the one that matters here. Straighter trajectories are
+cheaper to integrate: in the limit of a straight path a single Euler step is
+exact, so quality degrades gracefully as the number of steps is reduced,
+whereas a curved trajectory requires either many steps or a higher-order
+solver. Second, the objective is simpler and better conditioned: a single
+regression against a displacement, uniform in $t$, with no schedule to tune
+and no variance weighting to balance. Third, the construction is agnostic
+about the endpoints, so it extends to transporting between arbitrary
+distributions rather than only from Gaussian noise. Recent large text-to-image
+and text-to-video systems are trained this way.
+
+The formulation is due to \citet{lipman2023flowmatching}, with the linear
+interpolant and reflow introduced by \citet{liu2023rectifiedflow}, and the
+general treatment of interpolants, including the relationship between the
+ODE and the associated family of SDEs, developed by
+\citet{albergo2023interpolants} and
+\citet{albergo2025stochasticinterpolants}; \citet{tong2024cfm} generalise
+the coupling between endpoints.
 
 \subsection{What distinguishes them, for our purposes}
 
