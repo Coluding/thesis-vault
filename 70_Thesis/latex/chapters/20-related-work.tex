@@ -328,15 +328,75 @@ velocity; only the model type varies. That is a consequence of which
 pretrained models were available rather than a design choice, and
 \cref{sec:res-pathway} makes use of it.
 
-\subsection{Sampling cost}
+\subsection{Sampling, and what a step costs}
+\label{sec:rw-sampling}
 
-Sampling integrates the trajectory in a finite number of steps, and each
-step costs one network evaluation. We write $\dstep$ for the size of a step,
-that is the interval of $t$ it traverses, and refer to the total as the
-number of function evaluations. Reducing it is the subject of
-\cref{sec:rw-few-step}; a model conditioned on $\dstep$ can in principle be
-asked for a step of any size at inference, which is the property
-\cref{sec:shortcut} trains for.
+Both families generate by solving an initial value problem. Writing the
+trajectory in integral form, a sample is obtained from a noise draw $x_0$ by
+\begin{equation}
+  \label{eq:integral-form}
+  x_1 \;=\; x_0 \;+\; \int_{0}^{1} \vel\big(x(t),\, t\big)\,\mathrm{d}t ,
+\end{equation}
+where $\vel$ is the velocity field of \cref{eq:flow-ode} or, equivalently,
+the probability-flow field of \cref{eq:pf-ode}. The integrand depends on the
+solution, so \cref{eq:integral-form} cannot be evaluated directly and must
+be approximated by a numerical scheme. Every such scheme trades accuracy
+against the number of times the network is evaluated, and that count, the
+\emph{number of function evaluations} or NFE, is the quantity this thesis
+is trying to reduce.
+
+\paragraph{Euler.} The simplest scheme holds the velocity constant across a
+step of size $\dstep$,
+\begin{equation}
+  \label{eq:euler}
+  x_{t+\dstep} \;=\; \xt \;+\; \dstep\,\vel(\xt, t),
+\end{equation}
+at a cost of one evaluation per step. Its local truncation error is
+$\mathcal{O}(\dstep^2)$ and its global error $\mathcal{O}(\dstep)$, so
+halving the step size halves the error and doubles the cost.
+
+\paragraph{Heun.} Second-order accuracy is obtained by evaluating the
+velocity at both ends of the step and averaging. A provisional Euler step
+gives an estimate of the endpoint, at which the velocity is evaluated again:
+\begin{align}
+  \label{eq:heun}
+  \tilde{x} &= \xt + \dstep\,\vel(\xt, t), \nonumber \\
+  x_{t+\dstep} &= \xt + \frac{\dstep}{2}\Big[\vel(\xt, t) + \vel(\tilde{x},\, t+\dstep)\Big].
+\end{align}
+This costs two evaluations per step for a global error of
+$\mathcal{O}(\dstep^2)$. \Cref{eq:heun} is worth noting carefully: the
+correction term is an \emph{average of the velocity at the two endpoints of
+the step}, and the same expression reappears in \cref{sec:shortcut} as the
+target a step-size-conditioned model is trained against. What is a numerical
+correction here becomes a supervision signal there, and
+\cref{sec:curvature} examines when that is legitimate.
+
+\paragraph{Higher order.} The pattern continues. Classical
+Runge--Kutta uses four evaluations per step for a global error of
+$\mathcal{O}(\dstep^4)$, and the diffusion literature has developed solvers
+that exploit the semi-linear structure of \cref{eq:pf-ode} to do better
+still at a given NFE; these are discussed in \cref{sec:rw-few-step}.
+
+\paragraph{The trade-off, and the one case that escapes it.} Higher-order
+schemes reduce error per step but spend more evaluations per step, so for a
+\emph{fixed} NFE budget the better choice depends on how curved the
+trajectory is. Where the path bends sharply, a few accurate steps beat many
+crude ones; where it does not, the extra evaluations are wasted.
+
+The limiting case is the one \cref{sec:rw-flowmatching} identified. If the
+trajectory is exactly straight, the velocity is constant along it, and
+\cref{eq:euler} integrates \cref{eq:integral-form} \emph{exactly} in a
+single step of $\dstep = 1$. Higher-order corrections then buy nothing,
+because there is nothing to correct. This is why the shape of the
+trajectory, rather than the choice of solver, is the property that
+ultimately bounds how few steps a model can be sampled in, and it is the
+reason \cref{sec:backbones} treats the choice of base as a sampling-cost
+decision as well as a quality one.
+
+A different route is to change the model rather than the solver, so that a
+single evaluation covers a larger interval of $t$ than its local velocity
+would justify. That is the subject of \cref{sec:rw-few-step} and the
+deliverable of \cref{sec:shortcut}.
 
 \section{World models}
 \label{sec:rw-world-models}
