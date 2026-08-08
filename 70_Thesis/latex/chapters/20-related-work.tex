@@ -402,38 +402,80 @@ deliverable of \cref{sec:shortcut}.
 \section{World models}
 \label{sec:rw-world-models}
 
-A world model is a learned model of environment dynamics that an agent can
-query instead of acting: given a state and an action, it predicts what
-follows. The idea is longstanding~\citep{schmidhuber1990online}, and
-\citet{ha2018worldmodels} gave it its modern form, training a compact latent
-dynamics model and then evolving a controller entirely inside the model's
-own rollouts. \citet{lecun2022path} argues for predictive world models as
-the organising principle for autonomous agents more broadly; we cite it for
-the framing and note that it is a position paper rather than a
-peer-reviewed result. \citet{ding2025worldmodelsurvey} survey the area.
+\subsection{What we mean by a world model}
 
-For our purposes the literature is best sorted by a single question:
-\textbf{how much of the generative model is trained, and from what?} That
-axis is what places the present work, and it separates four regimes.
+A world model is a learned model of environment dynamics that can be
+queried in place of acting. Throughout this thesis we take it in its
+probabilistic form: given the current state and a conditioning signal, it
+defines a distribution over what happens next,
+\begin{equation}
+  \label{eq:world-model}
+  x_{t+1} \;\sim\; p\big(x_{t+1} \mid x_t,\, c_t\big),
+\end{equation}
+from which futures can be sampled and, by iterating, rolled out. The state
+$x_t$ is an observation or a latent encoding of one; the conditioning signal
+$c_t$ is in most cases an action, and is what distinguishes a world model
+from a video generator. Everything in this thesis concerns the case
+$c_t = \at$.
+
+The distribution in \cref{eq:world-model} is not a formality. Given a state
+and an action the future is genuinely multimodal: contacts resolve one way
+or another, occluded objects may or may not be where they were, and an
+agent that plans over futures needs to see that spread rather than an
+average of it. A model forced to emit a single prediction must return
+something close to the conditional mean, which for video is a blurred frame
+that corresponds to no physically realisable outcome.
+
+\subsection{Probabilistic and deterministic formulations}
+
+Not all world models are probabilistic, and the alternative is worth stating
+because it makes a different trade.
+
+The \emph{joint-embedding predictive} family~\citep{lecun2022path} predicts
+in a learned representation space rather than in observation space, and
+predicts deterministically. The argument is that much of what makes the
+future unpredictable in pixel space, texture, exact positions, lighting, is
+not information a planner needs; if the representation discards it, then a
+deterministic prediction in that space is not an average over meaningfully
+different futures and the blurring problem does not arise. Recent work
+builds world models on frozen self-supervised visual features in exactly
+this way~\citep{dinowm}.\todo{verify DINO-WM metadata; web
+search budget was exhausted 2026-08-08} The cost is that such a model cannot render:
+it predicts representations, so its rollouts cannot be inspected, and it
+commits in advance to what the representation preserves.
+
+The probabilistic and latent choices are independent. The Dreamer line
+below is latent \emph{and} probabilistic, learning a stochastic transition
+over a compact state. This thesis is probabilistic and works in observation
+space, for a reason that is specific to its premise rather than general: we
+are adapting a pretrained \emph{generative} model, which is probabilistic by
+construction and whose value is precisely the observation-space prior it
+already has. Discarding that in favour of a learned representation would
+discard the thing we set out to reuse.
+
+\subsection{How much of the model is trained}
+
+With \cref{eq:world-model} fixed, the literature is best sorted by a single
+question: \textbf{how much of the model is trained, and from what?} That axis
+is what places the present work, and it separates four regimes.
 
 \paragraph{Learned from scratch, in a compact latent space.} The Dreamer
 line learns a recurrent latent dynamics model per environment and trains a
 policy on imagined rollouts~\citep{hafner2019planet, hafner2020dreamer,
 hafner2021dreamerv2}, reaching a wide range of tasks under a single
-configuration in \citet{hafner2025dreamerv3}. Actions condition the latent
-transition. These models are cheap per task and carry no visual prior: they
-are trained on the environment they will be used in, and transfer nothing
-from elsewhere.
+configuration in \citet{hafner2025dreamerv3}. The action conditions the
+latent transition, and the transition is stochastic, so
+\cref{eq:world-model} holds in the latent space. These models are cheap per
+task and carry no visual prior: they are trained on the environment they
+will be used in, and transfer nothing from elsewhere.
 
 \paragraph{Learned from scratch, generatively.} A second group keeps the
 full generative machinery but still trains it from
 scratch. \citet{alonso2024diamond} train a diffusion world model per Atari
 game and show that visual detail matters for the resulting policy.
-\citet{bruce2024genie} scale the idea to unlabelled internet video at
-eleven billion parameters, and, importantly for us, learn a \emph{latent}
-action space rather than consuming ground-truth actions. Both pay the full
-training cost, and Genie's action interface is a different problem from
-ours: we have action labels and wish to condition on them.
+\citet{bruce2024genie} scale the idea to unlabelled internet video and, in
+the absence of action labels, learn a \emph{latent} action space, so their
+$c_t$ is inferred rather than given. Both pay the full training cost.
 
 \paragraph{Started from a pretrained model, then fully fine-tuned.} The
 most common recent recipe begins from an existing generative model and
@@ -441,8 +483,7 @@ updates all of its weights. \citet{valevski2025gamengen} repurpose a
 text-to-image diffusion model into a real-time game engine this way, and
 \citet{yang2024unisim} train a large video simulator conditioned on both
 language and low-level control. This regime inherits the prior and then
-overwrites it; it is the natural comparison for anything that claims a
-pretrained model is worth preserving.
+overwrites it.
 
 \paragraph{Pretrained model held frozen, with a trained module.} Finally,
 \citet{rigter2024avid} keep the pretrained video diffusion model entirely
@@ -462,6 +503,7 @@ the model worth using at all, so overwriting it is a cost rather than a
 neutral choice; and that the resulting module is small enough to be trained
 on a domain-specific dataset. \Cref{sec:families} makes the corresponding
 architectural argument, and \cref{sec:limitations} states what we give up.
+\Citet{ding2025worldmodelsurvey} survey the area more broadly.
 
 \section{Adapting a pretrained generative model}
 \label{sec:rw-adapters}
