@@ -14,6 +14,7 @@
 % --- maths ------------------------------------------------------------
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{bm}
+\usepackage{nicefrac}          % \nicefrac{1}{4} in the curvature section
 
 % --- tables and figures ----------------------------------------------
 \usepackage{booktabs}            % \toprule \midrule \bottomrule; never \hline
@@ -31,8 +32,10 @@
   detect-weight    = true,
   detect-family    = true,
   group-separator  = {\,},
-  round-mode       = places,
-  round-precision  = 3,
+  % NO ROUNDING.  round-mode=places would silently rewrite reported values
+  % (0.00005 -> 0.000, 0.9989 -> 0.999).  Significant figures follow the
+  % source measurement -- see thesis-formal-rules.md section 5.
+  round-mode       = none,
 }
 
 % --- citations --------------------------------------------------------
