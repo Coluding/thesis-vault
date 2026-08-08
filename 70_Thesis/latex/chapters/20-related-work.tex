@@ -21,9 +21,9 @@ of the trajectory that later chapters depend on.
 \subsection{Diffusion models}
 \label{sec:rw-diffusion}
 
-Denoising diffusion probabilistic models define a fixed forward process
-that destroys data by adding noise, and a learned reverse process that
-inverts it. Let $p(x_0)$ be the data distribution. The forward process
+Denoising diffusion probabilistic models~\citep{sohldickstein2015diffusion,
+ho2020ddpm} define a fixed forward process that destroys data by adding
+noise, and a learned reverse process that inverts it. Let $p(x_0)$ be the data distribution. The forward process
 corrupts a sample $x_0 \sim p(x_0)$ over $T$ steps through a Markov chain
 with a variance schedule $\{\beta_t\}_{t=1}^{T}$,
 \begin{equation}
@@ -57,7 +57,7 @@ mean can be written in terms of the noise that produced $\xt$,
 \end{equation}
 so that the only unknown is the conditional expectation of the noise. A
 network $s_\theta$ is trained to approximate it by denoising score
-matching,
+matching~\citep{song2019ncsn},
 \begin{equation}
   \label{eq:dsm}
   \min_\theta \;\; \mathbb{E}_{x_0,\,t,\,\noisepred}
@@ -98,7 +98,7 @@ network; that choice is the subject of \cref{sec:rw-conditioning} and, as
 
 \paragraph{The continuous-time view.} Taking the number of steps to
 infinity, the forward chain of \cref{eq:forward-step} becomes a stochastic
-differential equation
+differential equation~\citep{song2021sde}
 \begin{equation}
   \label{eq:forward-sde}
   \mathrm{d}x \;=\; f(x,t)\,\mathrm{d}t \;+\; g(t)\,\mathrm{d}w,
@@ -117,23 +117,20 @@ which is what allows deterministic and low-step samplers to be built on a
 model trained with \cref{eq:dsm}, and it is the object whose \emph{shape}
 matters in \cref{sec:curvature}.
 
-\paragraph{Practical variants.} Several choices in the above are free, and
-the literature has explored them systematically: the noise schedule and
-whether the reverse variance is learned; the network's prediction target,
-which may be the noise $\noisepred$, the clean sample $x_0$, or a velocity
-$\vel$ combining the two; and the preconditioning, discretisation and
-sampler, which can be treated as independent design axes. Most current
-systems follow the last of these formulations. The construction above is due
-to \citet{sohldickstein2015diffusion} and \citet{ho2020ddpm}, its
-score-matching interpretation to \citet{song2019ncsn}, the continuous-time
-formulation to \citet{song2021sde}, and the refinements just described to
-\citet{nichol2021iddpm} and \citet{karras2022edm}.
+\paragraph{Practical variants.} Several choices in the above are free.
+The noise schedule and whether the reverse variance is learned rather than
+fixed both affect sample quality and likelihood~\citep{nichol2021iddpm}. The
+network's prediction target may be the noise $\noisepred$, the clean sample
+$x_0$, or a velocity $\vel$ combining the two. And the preconditioning,
+noise distribution, discretisation and sampler can be treated as
+independent design axes and tuned separately~\citep{karras2022edm}, which is
+the formulation most current systems follow.
 
 \subsection{Flow matching}
 \label{sec:rw-flowmatching}
 
-Flow matching starts from the deterministic view rather than arriving at
-it. Instead of defining a noising chain and deriving a reverse process, one
+Flow matching~\citep{lipman2023flowmatching} starts from the deterministic
+view rather than arriving at it. Instead of defining a noising chain and deriving a reverse process, one
 \emph{chooses} a path between the noise distribution $p_0$ and the data
 distribution $p_1$ and learns the velocity field that transports along it.
 
@@ -164,8 +161,8 @@ field $u_t(x \mid x_1)$ in closed form, and regress on those instead:
   \mathcal{L}_{\text{CFM}}(\theta) \;=\; \mathbb{E}_{t,\,x_1 \sim p_1,\,x \sim p_t(\cdot \mid x_1)}
   \left[\, \left\lVert \vel_\theta(x,t) - u_t(x \mid x_1) \right\rVert_2^2 \,\right].
 \end{equation}
-The key result is that \cref{eq:fm} and \cref{eq:cfm} have the \emph{same
-gradients} with respect to $\theta$: the marginal field $u_t$ is the
+The key result of \citet{lipman2023flowmatching} is that \cref{eq:fm} and
+\cref{eq:cfm} have the \emph{same gradients} with respect to $\theta$: the marginal field $u_t$ is the
 conditional field averaged over the posterior of $x_1$, and regressing on
 the conditional target therefore recovers the marginal one in expectation.
 The intractable objective is thus replaced by a tractable one with the same
@@ -175,8 +172,8 @@ Choosing Gaussian conditional paths recovers diffusion as a special case,
 which is why the two families can be discussed together at all.
 
 \paragraph{Rectified flow.} The choice that concerns us is the simplest
-one: interpolate linearly between a noise sample $x_0$ and a data sample
-$x_1$,
+one~\citep{liu2023rectifiedflow}: interpolate linearly between a noise
+sample $x_0$ and a data sample $x_1$,
 \begin{equation}
   \label{eq:linear-interpolant}
   x_t \;=\; (1-t)\,x_0 \;+\; t\,x_1,
@@ -196,9 +193,14 @@ two endpoints,
 with no noise schedule to design, no variance to learn, and no
 signal-to-noise reparameterisation. Because the learned marginal field
 averages over pairings, the resulting trajectories are not perfectly
-straight in general; the \emph{reflow} procedure retrains the model on pairs
-generated by its own ODE, which straightens them further and can be
-iterated.
+straight in general; the \emph{reflow} procedure of
+\citet{liu2023rectifiedflow} retrains the model on pairs generated by the
+model's own ODE, which straightens them further and can be iterated. The
+construction generalises to arbitrary pairs of distributions and to a
+family of associated SDEs sharing one learned
+drift~\citep{albergo2023interpolants, albergo2025stochasticinterpolants},
+and to non-independent couplings of the
+endpoints~\citep{tong2024cfm}.
 
 \paragraph{Why this formulation is now generally preferred.} Three reasons,
 and the first is the one that matters here. Straighter trajectories are
@@ -210,15 +212,8 @@ regression against a displacement, uniform in $t$, with no schedule to tune
 and no variance weighting to balance. Third, the construction is agnostic
 about the endpoints, so it extends to transporting between arbitrary
 distributions rather than only from Gaussian noise. Recent large text-to-image
-and text-to-video systems are trained this way.
-
-The formulation is due to \citet{lipman2023flowmatching}, with the linear
-interpolant and reflow introduced by \citet{liu2023rectifiedflow}, and the
-general treatment of interpolants, including the relationship between the
-ODE and the associated family of SDEs, developed by
-\citet{albergo2023interpolants} and
-\citet{albergo2025stochasticinterpolants}; \citet{tong2024cfm} generalise
-the coupling between endpoints.
+and text-to-video systems are trained this way, including the backbone used
+throughout this thesis (\cref{sec:backbones}).
 
 \subsection{What distinguishes them, for our purposes}
 
