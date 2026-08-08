@@ -168,8 +168,46 @@ the conditional target therefore recovers the marginal one in expectation.
 The intractable objective is thus replaced by a tractable one with the same
 optimum, and every quantity in \cref{eq:cfm} is available by construction.
 
-Choosing Gaussian conditional paths recovers diffusion as a special case,
-which is why the two families can be discussed together at all.
+\paragraph{Gaussian conditional paths.} The objective holds for any choice
+of conditional path, so the construction is completed by choosing one. The
+family used throughout is Gaussian,
+\begin{equation}
+  \label{eq:gaussian-path}
+  p_t(x \mid x_1) \;=\; \mathcal{N}\!\left(x \,;\, \mu_t(x_1),\; \sigma_t(x_1)^2 I\right),
+\end{equation}
+with a time-dependent mean $\mu_t$ and a scalar standard deviation
+$\sigma_t$. The boundary conditions are what make it a path between the two
+distributions of interest:
+\begin{equation}
+  \label{eq:path-boundary}
+  \mu_0(x_1) = 0, \quad \sigma_0(x_1) = 1
+  \qquad\text{and}\qquad
+  \mu_1(x_1) = x_1, \quad \sigma_1(x_1) = \sigma_{\min},
+\end{equation}
+so that every conditional path begins at the same standard Gaussian
+$p_0 = \mathcal{N}(0, I)$, regardless of $x_1$, and ends at a Gaussian
+concentrated around $x_1$ for $\sigma_{\min}$ small.
+
+Fixing $\mu_t$ and $\sigma_t$ fixes everything else. The flow that
+transports $p_0$ to $p_t(\cdot \mid x_1)$ is the affine map
+$\psi_t(x) = \sigma_t(x_1)\,x + \mu_t(x_1)$, and differentiating it gives
+the conditional velocity field in closed form,
+\begin{equation}
+  \label{eq:gaussian-velocity}
+  u_t(x \mid x_1) \;=\; \frac{\sigma_t'(x_1)}{\sigma_t(x_1)}\Big(x - \mu_t(x_1)\Big) \;+\; \mu_t'(x_1),
+\end{equation}
+which is the regression target in \cref{eq:cfm}. Every quantity needed to
+train is therefore available analytically once the two scalar functions are
+chosen.
+
+\paragraph{Diffusion as a special case.} Choosing $\mu_t$ and $\sigma_t$ to
+follow the noise schedule of \cref{sec:rw-diffusion} makes
+\cref{eq:gaussian-path} the marginal of \cref{eq:forward-marginal}, and
+\cref{eq:gaussian-velocity} the corresponding score-based field. Diffusion
+is thus one member of the family, distinguished by a particular choice of
+$\mu_t$ and $\sigma_t$ rather than by a different construction. This is why
+the two can be discussed as one object, and it is what allows the same
+adapter interface in \cref{ch:method} to compose with either.
 
 \paragraph{Rectified flow.} The choice that concerns us is the simplest
 one~\citep{liu2023rectifiedflow}: interpolate linearly between a noise
@@ -183,6 +221,13 @@ whose conditional velocity is constant along the segment,
   \label{eq:rf-target}
   u_t(x \mid x_0, x_1) \;=\; x_1 - x_0 .
 \end{equation}
+This is the Gaussian family of \cref{eq:gaussian-path} with
+$\mu_t(x_1) = t\,x_1$ and $\sigma_t$ decreasing linearly from one to
+$\sigma_{\min}$: substituting those into \cref{eq:gaussian-velocity} and
+taking $\sigma_{\min} \to 0$ returns exactly \cref{eq:rf-target}. Rectified
+flow is thus not a separate construction but the member of the family whose
+paths are straight.
+
 The training objective collapses to regressing the displacement between the
 two endpoints,
 \begin{equation}
