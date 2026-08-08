@@ -346,7 +346,7 @@ against the number of times the network is evaluated, and that count, the
 is trying to reduce.
 
 \paragraph{Euler.} The simplest scheme holds the velocity constant across a
-step of size $\dstep$,
+step of size $\dstep$~\citep{hairer1993ode},
 \begin{equation}
   \label{eq:euler}
   x_{t+\dstep} \;=\; \xt \;+\; \dstep\,\vel(\xt, t),
@@ -356,7 +356,8 @@ $\mathcal{O}(\dstep^2)$ and its global error $\mathcal{O}(\dstep)$, so
 halving the step size halves the error and doubles the cost.
 
 \paragraph{Heun.} Second-order accuracy is obtained by evaluating the
-velocity at both ends of the step and averaging. A provisional Euler step
+velocity at both ends of the step and averaging~\citep{hairer1993ode}; this
+is the sampler used by \citet{karras2022edm} for diffusion models. A provisional Euler step
 gives an estimate of the endpoint, at which the velocity is evaluated again:
 \begin{align}
   \label{eq:heun}
@@ -373,7 +374,7 @@ correction here becomes a supervision signal there, and
 
 \paragraph{Higher order.} The pattern continues. Classical
 Runge--Kutta uses four evaluations per step for a global error of
-$\mathcal{O}(\dstep^4)$, and the diffusion literature has developed solvers
+$\mathcal{O}(\dstep^4)$~\citep{hairer1993ode}, and the diffusion literature has developed solvers
 that exploit the semi-linear structure of \cref{eq:pf-ode} to do better
 still at a given NFE; these are discussed in \cref{sec:rw-few-step}.
 
