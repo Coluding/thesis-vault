@@ -186,9 +186,19 @@ reads as concealment ([[rubric/03-experimental-evaluation]]).
 - **`\citep` when the idea carries the sentence; `\citet` when the actors
   matter** — a disagreement, a direct comparison, work we build on
   directly ([[thesis-style-guide]] §6).
-- **Bib hygiene.** Every entry needs author, title, year, and venue *or*
-  an arXiv id. Prefer the published venue over the preprint where one
-  exists. No entry enters `refs.bib` before its
+- **⭐ Peer-reviewed first, and this is a hard rule.** Cite the
+  peer-reviewed version wherever one exists; the arXiv preprint is the
+  citation of record **only** where no peer-reviewed publication does, and
+  the entry says so. Many papers sit on arXiv for a year before their
+  venue, so an arXiv listing is never evidence of status on its own. Check
+  the arXiv `comments` field, the DOI, DBLP and the proceedings site. A
+  bibliography full of preprints where proceedings exist reads as a
+  literature search that stopped at the first result.
+- **Bib hygiene.** Every entry needs a complete author list, title, year,
+  and venue *or* an arXiv id. Any field that could not be confirmed from a
+  primary source carries a `note` (`Venue unverified`, `Author list
+  incomplete`). Those notes render in `plainnat` output, which is the
+  point: an unverified entry says so rather than quietly asserting. No entry enters `refs.bib` before its
   `30_Knowledge/related-work/{slug}.md` note exists — the note is where
   the claim about the paper is verified (hard rule 7a).
 - `refs.bib` currently holds **one** template entry (`lecun2015deep`).

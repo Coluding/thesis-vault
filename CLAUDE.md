@@ -600,6 +600,7 @@ Four project skills live in `.claude/skills/` (committed to the vault):
 | `/log-update` | "log an update", "record this for the meeting", "we found/added X", "I'm blocked on Y" | Writes one curated entry to `60_Updates/entries/` + registers it in the index. Outward-facing distillation, not a raw log. |
 | `/weekly-deck` | "make the weekly deck", "prep slides for the meeting" | Reads recent updates + product-state + sourced experiments + open decisions; writes a slide-spec and runs `build_deck.py` to emit a self-contained HTML deck in `60_Updates/presentations/`. |
 | `/thesis-write` | "write/extend the thesis section X", "write about the newest changes" | Drafts/extends `70_Thesis/draft/{file}.md` from `70_Thesis/outline.md` + linked sources + recent `60_Updates/`. |
+| `/lit-search` | "find papers on X", "what's the literature on X", "verify this citation", or a section blocked on missing related-work notes | Finds, **verifies** and files literature. Enforces peer-reviewed-first; writes the vault note and the `refs.bib` entry; reports explicitly if anything found weakens a claim we make. |
 | `/blog` | "blog about X", "start a post on X", "brainstorm a blog topic", "continue the X blog" | Scaffolds a per-topic subdir `80_Blog/{slug}/` (`brainstorm.md` + `draft.md`) linked to existing vault notes, then brainstorms one-question-at-a-time and co-writes the draft. |
 
 **The outward-facing layers and how they relate to the internal vault:**

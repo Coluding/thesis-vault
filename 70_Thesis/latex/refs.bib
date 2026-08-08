@@ -1,90 +1,73 @@
-% Bibliography.
-% Metadata verified by the literature scans of 2026-08-07 unless marked
-% NEEDS VERIFICATION. Rule: no entry enters this file before its note in
-% 30_Knowledge/related-work/ exists (thesis-formal-rules.md §7).
+% =====================================================================
+%  Bibliography
+%
+%  Metadata verified by the literature scans of 2026-08-07 unless a
+%  `note` field says otherwise.  Conventions (thesis-formal-rules.md §7):
+%
+%   - An entry may be cited once its METADATA is verified.
+%   - A claim ABOUT what a paper argues additionally requires a note in
+%     30_Knowledge/related-work/ ; several are still outstanding.
+%   - `note = {...unverified}` means that field could not be confirmed
+%     from a primary source.  Do not silently drop these notes.
+%   - Author lists marked "incomplete" were truncated in the scan.
+%     Complete them before submission.
+% =====================================================================
 
-@inproceedings{rigter2024avid,
-  title     = {{AVID}: Adapting Video Diffusion Models to World Models},
-  author    = {Rigter, Marc and Gupta, Tarun and Hilmkil, Agrin and Ma, Chao},
-  booktitle = {Reinforcement Learning Conference (RLC)},
-  journal   = {Reinforcement Learning Journal},
-  volume    = {6},
-  pages     = {737--764},
-  year      = {2025},
-  eprint    = {2410.12822},
+
+% ---------------------------------------------------------------------
+%  Preliminaries: diffusion, flow matching, samplers   (§2.1, §2.5)
+% ---------------------------------------------------------------------
+
+@inproceedings{ho2020ddpm,
+  title     = {Denoising Diffusion Probabilistic Models},
+  author    = {Ho, Jonathan and Jain, Ajay and Abbeel, Pieter},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020},
+  eprint    = {2006.11239},
   archivePrefix = {arXiv},
-  primaryClass  = {cs.LG},
-  url       = {https://arxiv.org/abs/2410.12822},
+  note      = {NOT verified in the 2026-08-07 scan; standard reference, confirm before submission},
 }
 
-@inproceedings{peebles2023dit,
-  title     = {Scalable Diffusion Models with Transformers},
-  author    = {Peebles, William and Xie, Saining},
-  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+@inproceedings{liu2023rectifiedflow,
+  title     = {Flow Straight and Fast: Learning to Generate and Transfer
+               Data with Rectified Flow},
+  author    = {Liu, Xingchao and Gong, Chengyue and Liu, Qiang},
+  booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2023},
-  eprint    = {2212.09748},
+  eprint    = {2209.03003},
   archivePrefix = {arXiv},
-  url       = {https://arxiv.org/abs/2212.09748},
+  url       = {https://arxiv.org/abs/2209.03003},
 }
 
-@inproceedings{chen2024gentron,
-  title     = {{GenTron}: Diffusion Transformers for Image and Video Generation},
-  author    = {Chen, Shoufa and Xu, Mengmeng and Ren, Jiawei and Cong, Yuren
-               and He, Sen and Xie, Yanping and Sinha, Animesh and Luo, Ping
-               and Perez-Rua, Juan-Manuel},
-  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-  year      = {2024},
-  eprint    = {2312.04557},
+@inproceedings{lu2022dpmsolver,
+  title     = {{DPM-Solver}: A Fast {ODE} Solver for Diffusion Probabilistic
+               Model Sampling in Around 10 Steps},
+  author    = {Lu, Cheng and Zhou, Yuhao and Bao, Fan and Chen, Jianfei
+               and Li, Chongxuan and Zhu, Jun},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022},
+  eprint    = {2206.00927},
   archivePrefix = {arXiv},
-  url       = {https://arxiv.org/abs/2312.04557},
-  note      = {Author list partially unverified},
+  url       = {https://arxiv.org/abs/2206.00927},
+  note      = {Oral},
 }
 
-@article{zhou2026decoupled,
-  title   = {Decoupled Action Expert: Confining Task Knowledge to the Conditioning Pathway},
-  author  = {Zhou, Jian and Lin, Sihao and Fu, Shuai and Li, Zerui
-             and Zhou, Gengze and Wu, Qi},
-  journal = {arXiv preprint arXiv:2511.12101},
-  year    = {2026},
-  eprint  = {2511.12101},
+@article{lu2022dpmsolverpp,
+  title   = {{DPM-Solver++}: Fast Solver for Guided Sampling of Diffusion
+             Probabilistic Models},
+  author  = {Lu, Cheng and Zhou, Yuhao and Bao, Fan and Chen, Jianfei
+             and Li, Chongxuan and Zhu, Jun},
+  journal = {arXiv preprint arXiv:2211.01095},
+  year    = {2022},
+  eprint  = {2211.01095},
   archivePrefix = {arXiv},
-  url     = {https://arxiv.org/abs/2511.12101},
-  note    = {Venue unverified},
+  note    = {Metadata from arXiv listing, not individually fetched},
 }
 
-@article{motif2026video,
-  title   = {{Motif-Video 2B}: Technical Report},
-  author  = {{Motif Technologies}},
-  journal = {arXiv preprint arXiv:2604.16503},
-  year    = {2026},
-  eprint  = {2604.16503},
-  archivePrefix = {arXiv},
-  url     = {https://arxiv.org/abs/2604.16503},
-}
 
-@article{bai2026ioi,
-  title   = {{IOI}: Decoupling Kinematics and Physics for Interactive World Models},
-  author  = {Bai, Chengyu and Jia, Peidong and Guo, Tiecheng and Wang, Yu-Kai
-             and Ma, Rui and Zhang, Shanghang},
-  journal = {arXiv preprint arXiv:2606.23296},
-  year    = {2026},
-  eprint  = {2606.23296},
-  archivePrefix = {arXiv},
-  url     = {https://arxiv.org/abs/2606.23296},
-  note    = {Author list truncated; venue unverified},
-}
-
-@article{huang2026nano,
-  title   = {Nano World Models: A Minimalist Implementation of Future Video Prediction},
-  author  = {Huang, Siqiao and Kaushik, Partha and Chen, Michael
-             and Pan, Hengkai and Simchowitz, Max},
-  journal = {arXiv preprint arXiv:2605.23993},
-  year    = {2026},
-  eprint  = {2605.23993},
-  archivePrefix = {arXiv},
-  url     = {https://arxiv.org/abs/2605.23993},
-  note    = {Author list truncated; venue unverified},
-}
+% ---------------------------------------------------------------------
+%  Parameter-efficient adaptation                      (§2.2)
+% ---------------------------------------------------------------------
 
 @inproceedings{houlsby2019adapters,
   title     = {Parameter-Efficient Transfer Learning for {NLP}},
@@ -98,6 +81,24 @@
   url       = {https://arxiv.org/abs/1902.00751},
 }
 
+@inproceedings{li2021prefixtuning,
+  title     = {Prefix-Tuning: Optimizing Continuous Prompts for Generation},
+  author    = {Li, Xiang Lisa and Liang, Percy},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL/IJCNLP)},
+  year      = {2021},
+  eprint    = {2101.00190},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{lester2021prompttuning,
+  title     = {The Power of Scale for Parameter-Efficient Prompt Tuning},
+  author    = {Lester, Brian and Al-Rfou, Rami and Constant, Noah},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2021},
+  eprint    = {2104.08691},
+  archivePrefix = {arXiv},
+}
+
 @inproceedings{hu2022lora,
   title     = {{LoRA}: Low-Rank Adaptation of Large Language Models},
   author    = {Hu, Edward J. and Shen, Yelong and Wallis, Phillip
@@ -109,6 +110,251 @@
   archivePrefix = {arXiv},
   url       = {https://arxiv.org/abs/2106.09685},
 }
+
+@inproceedings{liu2022ia3,
+  title     = {Few-Shot Parameter-Efficient Fine-Tuning is Better and Cheaper
+               than In-Context Learning},
+  author    = {Liu, Haokun and Tam, Derek and Muqeeth, Mohammed
+               and Mohta, Jay and Huang, Tenghao and Bansal, Mohit
+               and Raffel, Colin},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022},
+  eprint    = {2205.05638},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{he2022unifiedview,
+  title     = {Towards a Unified View of Parameter-Efficient Transfer Learning},
+  author    = {He, Junxian and Zhou, Chunting and Ma, Xuezhe
+               and Berg-Kirkpatrick, Taylor and Neubig, Graham},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  eprint    = {2110.04366},
+  archivePrefix = {arXiv},
+  note      = {Spotlight},
+}
+
+@inproceedings{zhang2024llamaadapter,
+  title     = {{LLaMA-Adapter}: Efficient Fine-tuning of Language Models with
+               Zero-init Attention},
+  author    = {Zhang, Renrui and Han, Jiaming and Liu, Chris and Gao, Peng
+               and Zhou, Aojun and Hu, Xiangfei and Yan, Shilin and Lu, Pan
+               and Li, Hongsheng and Qiao, Yu},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2303.16199},
+  archivePrefix = {arXiv},
+}
+
+
+% ---------------------------------------------------------------------
+%  Conditioning mechanisms                             (§2.3)
+% ---------------------------------------------------------------------
+
+@inproceedings{devries2017cbn,
+  title     = {Modulating Early Visual Processing by Language},
+  author    = {de Vries, Harm and Strub, Florian and Mary, J{\'e}r{\'e}mie
+               and Larochelle, Hugo and Pietquin, Olivier and Courville, Aaron},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2017},
+  eprint    = {1707.00683},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{perez2018film,
+  title     = {{FiLM}: Visual Reasoning with a General Conditioning Layer},
+  author    = {Perez, Ethan and Strub, Florian and de Vries, Harm
+               and Dumoulin, Vincent and Courville, Aaron},
+  booktitle = {AAAI Conference on Artificial Intelligence},
+  year      = {2018},
+  eprint    = {1709.07871},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/1709.07871},
+}
+
+@article{dumoulin2018featurewise,
+  title   = {Feature-wise Transformations},
+  author  = {Dumoulin, Vincent and Perez, Ethan and Schucher, Nathan
+             and Strub, Florian and de Vries, Harm and Courville, Aaron
+             and Bengio, Yoshua},
+  journal = {Distill},
+  year    = {2018},
+  doi     = {10.23915/distill.00011},
+}
+
+@article{huang2017adain,
+  title   = {Arbitrary Style Transfer in Real-time with Adaptive Instance
+             Normalization},
+  author  = {Huang, Xun and Belongie, Serge},
+  journal = {arXiv preprint arXiv:1703.06868},
+  year    = {2017},
+  eprint  = {1703.06868},
+  archivePrefix = {arXiv},
+  note    = {ICCV 2017 attribution unverified},
+}
+
+@inproceedings{karras2019stylegan,
+  title     = {A Style-Based Generator Architecture for Generative Adversarial
+               Networks},
+  author    = {Karras, Tero and Laine, Samuli and Aila, Timo},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2019},
+  eprint    = {1812.04948},
+  archivePrefix = {arXiv},
+  note      = {Metadata from search index, not individually fetched},
+}
+
+@inproceedings{dhariwal2021adm,
+  title     = {Diffusion Models Beat {GAN}s on Image Synthesis},
+  author    = {Dhariwal, Prafulla and Nichol, Alexander},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  eprint    = {2105.05233},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2105.05233},
+  note      = {Table 3 carries the AdaGN vs Addition+GroupNorm ablation, 13.06 vs 15.08 FID},
+}
+
+@inproceedings{rombach2022ldm,
+  title     = {High-Resolution Image Synthesis with Latent Diffusion Models},
+  author    = {Rombach, Robin and Blattmann, Andreas and Lorenz, Dominik
+               and Esser, Patrick and Ommer, Bj{\"o}rn},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2022},
+  eprint    = {2112.10752},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{peebles2023dit,
+  title     = {Scalable Diffusion Models with Transformers},
+  author    = {Peebles, William and Xie, Saining},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023},
+  eprint    = {2212.09748},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2212.09748},
+  note      = {Figure 5 compares in-context, cross-attention, adaLN and adaLN-Zero},
+}
+
+@inproceedings{chen2024gentron,
+  title     = {{GenTron}: Diffusion Transformers for Image and Video Generation},
+  author    = {Chen, Shoufa and Xu, Mengmeng and Ren, Jiawei and Cong, Yuren
+               and He, Sen and Xie, Yanping and Sinha, Animesh and Luo, Ping
+               and Perez-Rua, Juan-Manuel},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  eprint    = {2312.04557},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2312.04557},
+  note      = {Author list partially unverified. Table 2 reports cross-attention above adaLN-Zero for text},
+}
+
+@inproceedings{alayrac2022flamingo,
+  title     = {Flamingo: a Visual Language Model for Few-Shot Learning},
+  author    = {Alayrac, Jean-Baptiste and Donahue, Jeff and Luc, Pauline
+               and Miech, Antoine and Barr, Iain},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022},
+  eprint    = {2204.14198},
+  archivePrefix = {arXiv},
+  note      = {Author list incomplete (54-page paper, many authors)},
+}
+
+@inproceedings{yang2025cogvideox,
+  title     = {{CogVideoX}: Text-to-Video Diffusion Models with An Expert
+               Transformer},
+  author    = {Yang, Zhuoyi and Teng, Jiayan and Zheng, Wendi and Ding, Ming
+               and Huang, Shiyu},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2408.06072},
+  archivePrefix = {arXiv},
+  note      = {Author list incomplete. The expert-AdaLN scale-mismatch passage is UNVERIFIED},
+}
+
+@article{bachlechner2020rezero,
+  title   = {{ReZero} is All You Need: Fast Convergence at Large Depth},
+  author  = {Bachlechner, Thomas and Majumder, Bodhisattwa Prasad
+             and Mao, Huanru Henry and Cottrell, Garrison W. and McAuley, Julian},
+  journal = {arXiv preprint arXiv:2003.04887},
+  year    = {2020},
+  eprint  = {2003.04887},
+  archivePrefix = {arXiv},
+  note    = {Metadata from search index, not individually fetched},
+}
+
+@article{wang2022deepnet,
+  title   = {{DeepNet}: Scaling Transformers to 1,000 Layers},
+  author  = {Wang, Hongyu and Ma, Shuming and Dong, Li and Huang, Shaohan
+             and Zhang, Dongdong and Wei, Furu},
+  journal = {arXiv preprint arXiv:2203.00555},
+  year    = {2022},
+  eprint  = {2203.00555},
+  archivePrefix = {arXiv},
+  note    = {Metadata from search index, not individually fetched},
+}
+
+@article{figliolia2026nag,
+  title   = {Scaling Adaptive Depth with Norm-Agnostic Residual Networks},
+  author  = {Figliolia, Tom{\'a}s and Millidge, Beren},
+  journal = {arXiv preprint arXiv:2606.16112},
+  year    = {2026},
+  eprint  = {2606.16112},
+  archivePrefix = {arXiv},
+  note    = {Unreviewed preprint. States residual-norm growth suppressing later contributions},
+}
+
+@article{motif2026video,
+  title   = {{Motif-Video 2B}: Technical Report},
+  author  = {{Motif Technologies}},
+  journal = {arXiv preprint arXiv:2604.16503},
+  year    = {2026},
+  eprint  = {2604.16503},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2604.16503},
+  note    = {Unreviewed preprint. Section 6.2 measures cross-attention contribution at 7.6\% of the residual},
+}
+
+@article{plattner2026meltdown,
+  title   = {Meltdown},
+  author  = {Plattner, Maximilian and Paischer, Fabian
+             and Brandstetter, Johannes and Berzins, Arturs},
+  journal = {arXiv preprint arXiv:2602.11130},
+  year    = {2026},
+  eprint  = {2602.11130},
+  archivePrefix = {arXiv},
+  note    = {Unreviewed preprint. Short title unverified},
+}
+
+@article{zhou2026decoupled,
+  title   = {Decoupled Action Expert: Confining Task Knowledge to the
+             Conditioning Pathway},
+  author  = {Zhou, Jian and Lin, Sihao and Fu, Shuai and Li, Zerui
+             and Zhou, Gengze and Wu, Qi},
+  journal = {arXiv preprint arXiv:2511.12101},
+  year    = {2026},
+  eprint  = {2511.12101},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2511.12101},
+  note    = {Venue unverified. Section IV-E reports frozen-backbone conditioning ablation},
+}
+
+@article{yuan2026dexacwm,
+  title   = {Not All Actions Are Equal: Rethinking Conditioning for Dexterous
+             World Model},
+  author  = {Yuan, Zizhao and Liang, Zhengtu and Wang, Taowen
+             and Liang, Qiwei and Wang, Yichi and Xu, Renjing},
+  journal = {arXiv preprint arXiv:2606.27325},
+  year    = {2026},
+  eprint  = {2606.27325},
+  archivePrefix = {arXiv},
+  note    = {Unreviewed preprint. Author list incomplete},
+}
+
+
+% ---------------------------------------------------------------------
+%  Control adapters for image and video generation     (§2.2, §2.3)
+% ---------------------------------------------------------------------
 
 @inproceedings{zhang2023controlnet,
   title     = {Adding Conditional Control to Text-to-Image Diffusion Models},
@@ -143,8 +389,17 @@
   year    = {2023},
   eprint  = {2308.06721},
   archivePrefix = {arXiv},
-  url     = {https://arxiv.org/abs/2308.06721},
   note    = {Venue unverified},
+}
+
+@inproceedings{li2023gligen,
+  title     = {{GLIGEN}: Open-Set Grounded Text-to-Image Generation},
+  author    = {Li, Yuheng and Liu, Haotian and Wu, Qingyang and Mu, Fangzhou
+               and Yang, Jianwei and Gao, Jianfeng and Li, Chunyuan and Lee, Yong Jae},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2023},
+  eprint    = {2301.07093},
+  archivePrefix = {arXiv},
 }
 
 @inproceedings{zavadski2024controlnetxs,
@@ -167,5 +422,588 @@
   year    = {2024},
   eprint  = {2408.06070},
   archivePrefix = {arXiv},
-  note    = {Venue unverified},
+  note    = {Venue unverified. Proposes Cross Normalization replacing zero-convolution},
+}
+
+@inproceedings{ran2024xadapter,
+  title     = {{X-Adapter}: Adding Universal Compatibility of Plugins for
+               Upgraded Diffusion Model},
+  author    = {Ran, Lingmin and Cun, Xiaodong and Liu, Jia-Wei and Zhao, Rui
+               and Zijie, Song and Wang, Xintao and Keppo, Jussi and Shou, Mike Zheng},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  eprint    = {2312.02238},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{sun2025micontrolnet,
+  title     = {Minimal Impact {ControlNet}: Advancing Multi-{ControlNet}
+               Integration},
+  author    = {Sun, Shikun and Zhou, Min and Wang, Zixuan and Li, Xubin},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2506.01672},
+  archivePrefix = {arXiv},
+  note      = {Author list incomplete},
+}
+
+@inproceedings{guo2024animatediff,
+  title     = {{AnimateDiff}: Animate Your Personalized Text-to-Image Diffusion
+               Models without Specific Tuning},
+  author    = {Guo, Yuwei and Yang, Ceyuan and Rao, Anyi and Liang, Zhengyang
+               and Wang, Yaohui and Qiao, Yu and Agrawala, Maneesh
+               and Lin, Dahua and Dai, Bo},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2307.04725},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{guo2024sparsectrl,
+  title     = {{SparseCtrl}: Adding Sparse Controls to Text-to-Video Diffusion
+               Models},
+  author    = {Guo, Yuwei and Yang, Ceyuan and Rao, Anyi and Agrawala, Maneesh
+               and Lin, Dahua and Dai, Bo},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2024},
+  eprint    = {2311.16933},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{guo2024i2vadapter,
+  title     = {{I2V-Adapter}: A General Image-to-Video Adapter for Diffusion
+               Models},
+  author    = {Guo, Xun and Zheng, Mingwu and Hou, Liang and Gao, Yuan
+               and Deng, Yufan and Wan, Pengfei and Zhang, Di},
+  booktitle = {ACM SIGGRAPH Conference Papers},
+  year      = {2024},
+  doi       = {10.1145/3641519.3657407},
+  eprint    = {2312.16693},
+  archivePrefix = {arXiv},
+  note      = {Author list incomplete},
+}
+
+@inproceedings{lin2025ctrladapter,
+  title     = {{Ctrl-Adapter}: An Efficient and Versatile Framework for
+               Adapting Diverse Controls to Any Diffusion Model},
+  author    = {Lin, Han and Cho, Jaemin and Zala, Abhay and Bansal, Mohit},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2404.09967},
+  archivePrefix = {arXiv},
+  note      = {Oral},
+}
+
+
+% ---------------------------------------------------------------------
+%  World models and action-conditioned video           (§2.4)
+% ---------------------------------------------------------------------
+
+@inproceedings{oh2015actionconditional,
+  title     = {Action-Conditional Video Prediction using Deep Networks in
+               Atari Games},
+  author    = {Oh, Junhyuk and Guo, Xiaoxiao and Lee, Honglak
+               and Lewis, Richard L. and Singh, Satinder},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2015},
+  eprint    = {1507.08750},
+  archivePrefix = {arXiv},
+}
+
+@article{ha2018worldmodels,
+  title   = {World Models},
+  author  = {Ha, David and Schmidhuber, J{\"u}rgen},
+  journal = {arXiv preprint arXiv:1803.10122},
+  year    = {2018},
+  eprint  = {1803.10122},
+  archivePrefix = {arXiv},
+  note    = {A NeurIPS 2018 version is commonly cited but was NOT verified},
+}
+
+@inproceedings{hafner2019planet,
+  title     = {Learning Latent Dynamics for Planning from Pixels},
+  author    = {Hafner, Danijar and Lillicrap, Timothy and Fischer, Ian
+               and Villegas, Ruben and Ha, David and Lee, Honglak
+               and Davidson, James},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {2555--2565},
+  year      = {2019},
+  eprint    = {1811.04551},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{hafner2020dreamer,
+  title     = {Dream to Control: Learning Behaviors by Latent Imagination},
+  author    = {Hafner, Danijar and Lillicrap, Timothy and Ba, Jimmy
+               and Norouzi, Mohammad},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2020},
+  eprint    = {1912.01603},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{hafner2021dreamerv2,
+  title     = {Mastering Atari with Discrete World Models},
+  author    = {Hafner, Danijar and Lillicrap, Timothy and Norouzi, Mohammad
+               and Ba, Jimmy},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  eprint    = {2010.02193},
+  archivePrefix = {arXiv},
+}
+
+@article{hafner2025dreamerv3,
+  title   = {Mastering Diverse Control Tasks through World Models},
+  author  = {Hafner, Danijar and Pasukonis, Jurgis and Ba, Jimmy
+             and Lillicrap, Timothy},
+  journal = {Nature},
+  volume  = {640},
+  pages   = {647--653},
+  year    = {2025},
+  eprint  = {2301.04104},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{alonso2024diamond,
+  title     = {Diffusion for World Modeling: Visual Details Matter in Atari},
+  author    = {Alonso, Eloi and Jelley, Adam and Micheli, Vincent
+               and Kanervisto, Anssi and Storkey, Amos and Pearce, Tim
+               and Fleuret, Fran{\c{c}}ois},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  eprint    = {2405.12399},
+  archivePrefix = {arXiv},
+  note      = {Spotlight. Known as DIAMOND},
+}
+
+@inproceedings{valevski2025gamengen,
+  title     = {Diffusion Models Are Real-Time Game Engines},
+  author    = {Valevski, Dani and Leviathan, Yaniv and Arar, Moab
+               and Fruchter, Shlomi},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2408.14837},
+  archivePrefix = {arXiv},
+  note      = {Known as GameNGen. Stable Diffusion 1.4 initialisation, all weights fine-tuned},
+}
+
+@inproceedings{bruce2024genie,
+  title     = {Genie: Generative Interactive Environments},
+  author    = {Bruce, Jake and Dennis, Michael and Edwards, Ashley
+               and Parker-Holder, Jack and Shi, Yuge and Hughes, Edward},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  eprint    = {2402.15391},
+  archivePrefix = {arXiv},
+  note      = {Oral. Author list incomplete},
+}
+
+@inproceedings{wu2024ivideogpt,
+  title     = {{iVideoGPT}: Interactive VideoGPTs are Scalable World Models},
+  author    = {Wu, Jialong and Yin, Shaofeng and Feng, Ningya and He, Xu
+               and Li, Dong and Hao, Jianye and Long, Mingsheng},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  eprint    = {2405.15223},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{yang2024unisim,
+  title     = {Learning Interactive Real-World Simulators},
+  author    = {Yang, Sherry and Du, Yilun and Ghasemipour, Kamyar
+               and Tompson, Jonathan and Kaelbling, Leslie and Schuurmans, Dale
+               and Abbeel, Pieter},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2310.06114},
+  archivePrefix = {arXiv},
+  note      = {Oral. Known as UniSim. From-scratch status inferred from absence of a statement},
+}
+
+@article{nvidia2025cosmos,
+  title   = {Cosmos World Foundation Model Platform for Physical {AI}},
+  author  = {{NVIDIA} and Agarwal, Niket and Balaji, Yogesh
+             and Fidler, Sanja and Fox, Dieter and Liu, Ming-Yu},
+  journal = {arXiv preprint arXiv:2501.03575},
+  year    = {2025},
+  eprint  = {2501.03575},
+  archivePrefix = {arXiv},
+  note    = {Author list incomplete (77 authors)},
+}
+
+@inproceedings{chen2024diffusionforcing,
+  title     = {Diffusion Forcing: Next-Token Prediction Meets Full-Sequence
+               Diffusion},
+  author    = {Chen, Boyuan and Marti Monso, Diego and Du, Yilun
+               and Simchowitz, Max and Tedrake, Russ and Sitzmann, Vincent},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  eprint    = {2407.01392},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{zhu2025irasim,
+  title     = {{IRASim}: A Fine-Grained World Model for Robot Manipulation},
+  author    = {Zhu, Fangqi and Wu, Hongtao and Guo, Song and Liu, Yuxiao
+               and Cheang, Chilam and Kong, Tao},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2025},
+  eprint    = {2406.14540},
+  archivePrefix = {arXiv},
+  note      = {v1 titled differently. Initialisation regime unverified},
+}
+
+@inproceedings{wu2024gr1,
+  title     = {Unleashing Large-Scale Video Generative Pre-training for Visual
+               Robot Manipulation},
+  author    = {Wu, Hongtao and Jing, Ya and Cheang, Chilam and Chen, Guangzeng
+               and Xu, Jiafeng and Li, Xinghang and Liu, Minghuan
+               and Li, Hang and Kong, Tao},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2312.13139},
+  archivePrefix = {arXiv},
+  note      = {Known as GR-1. Author list from search index},
+}
+
+@inproceedings{dws2025,
+  title     = {Pre-Trained Video Generative Models as World Simulators},
+  author    = {Anonymous},
+  booktitle = {AAAI Conference on Artificial Intelligence},
+  year      = {2025},
+  eprint    = {2502.07825},
+  archivePrefix = {arXiv},
+  note      = {AUTHOR LIST NOT VERIFIED. Fine-tunes rather than freezing},
+}
+
+@inproceedings{gao2025adaworld,
+  title     = {{AdaWorld}: Learning Adaptable World Models with Latent Actions},
+  author    = {Gao, Shenyuan and Zhou, Siyuan and Du, Yilun and Zhang, Jun
+               and Gan, Chuang},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2025},
+  eprint    = {2503.18938},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{huang2026vid2world,
+  title     = {{Vid2World}: Crafting Video Diffusion Models to Interactive
+               World Models},
+  author    = {Huang, Siqiao and Wu, Jialong and Zhou, Qixing
+               and Miao, Shangchen and Long, Mingsheng},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  eprint    = {2505.14357},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2505.14357},
+}
+
+@article{liao2025genieenvisioner,
+  title   = {Genie Envisioner: A Unified World Foundation Platform for Robotic
+             Manipulation},
+  author  = {Liao, Yue},
+  journal = {arXiv preprint arXiv:2508.05635},
+  year    = {2025},
+  eprint  = {2508.05635},
+  archivePrefix = {arXiv},
+  note    = {Author list incomplete (AgiBot)},
+}
+
+@article{huang2025adapower,
+  title   = {{AdaPower}},
+  author  = {Huang, Yuhang and Zou, Shilong and Zhang, Jiazhao
+             and Liu, Xinwang and Hu, Ruizhen and Xu, Kai},
+  journal = {arXiv preprint arXiv:2512.03538},
+  year    = {2025},
+  eprint  = {2512.03538},
+  archivePrefix = {arXiv},
+  note    = {Short title unverified. Frozen Cosmos-Predict2-2B base},
+}
+
+@article{gigaworld2026,
+  title   = {{GigaWorld-1}: A Roadmap to Build World Models for Robot Policy
+             Evaluation},
+  author  = {{GigaAI} and {Tsinghua University}},
+  journal = {arXiv preprint arXiv:2607.02642},
+  year    = {2026},
+  eprint  = {2607.02642},
+  archivePrefix = {arXiv},
+  note    = {AUTHOR LIST NOT VERIFIED. Table 3 carries the action-representation comparison},
+}
+
+@inproceedings{du2023unipi,
+  title     = {Learning Universal Policies via Text-Guided Video Generation},
+  author    = {Du, Yilun and Yang, Sherry and Dai, Bo and Dai, Hanjun
+               and Nachum, Ofir and Tenenbaum, Joshua B. and Schuurmans, Dale
+               and Abbeel, Pieter},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  eprint    = {2302.00111},
+  archivePrefix = {arXiv},
+  note      = {Spotlight. Known as UniPi},
+}
+
+@article{bai2026ioi,
+  title   = {{IOI}: Decoupling Kinematics and Physics for Interactive World
+             Models},
+  author  = {Bai, Chengyu and Jia, Peidong and Guo, Tiecheng
+             and Wang, Yu-Kai and Ma, Rui and Zhang, Shanghang},
+  journal = {arXiv preprint arXiv:2606.23296},
+  year    = {2026},
+  eprint  = {2606.23296},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2606.23296},
+  note    = {Author list incomplete; venue unverified. Table 5 ranks Add < Concat < CrossAttn < AdaLN},
+}
+
+@article{huang2026nano,
+  title   = {Nano World Models: A Minimalist Implementation of Future Video
+             Prediction},
+  author  = {Huang, Siqiao and Kaushik, Partha and Chen, Michael
+             and Pan, Hengkai and Simchowitz, Max},
+  journal = {arXiv preprint arXiv:2605.23993},
+  year    = {2026},
+  eprint  = {2605.23993},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2605.23993},
+  note    = {Author list incomplete; venue unverified. Table 3 reports cross-attention worst on RT-1},
+}
+
+
+% ---------------------------------------------------------------------
+%  The direct antecedent                               (§2.4, §3.1, §3.2)
+% ---------------------------------------------------------------------
+
+@inproceedings{rigter2024avid,
+  title     = {{AVID}: Adapting Video Diffusion Models to World Models},
+  author    = {Rigter, Marc and Gupta, Tarun and Hilmkil, Agrin and Ma, Chao},
+  booktitle = {Reinforcement Learning Conference (RLC)},
+  journal   = {Reinforcement Learning Journal},
+  volume    = {6},
+  pages     = {737--764},
+  year      = {2025},
+  eprint    = {2410.12822},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2410.12822},
+}
+
+
+% ---------------------------------------------------------------------
+%  Few-step sampling and distillation                  (§2.5, §5.7)
+% ---------------------------------------------------------------------
+
+@inproceedings{frans2025shortcut,
+  title     = {One Step Diffusion via Shortcut Models},
+  author    = {Frans, Kevin and Hafner, Danijar and Levine, Sergey
+               and Abbeel, Pieter},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2410.12557},
+  archivePrefix = {arXiv},
+  note      = {Oral},
+}
+
+@inproceedings{song2023consistency,
+  title     = {Consistency Models},
+  author    = {Song, Yang and Dhariwal, Prafulla and Chen, Mark
+               and Sutskever, Ilya},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+  eprint    = {2303.01469},
+  archivePrefix = {arXiv},
+}
+
+@article{luo2023lcm,
+  title   = {Latent Consistency Models: Synthesizing High-Resolution Images
+             with Few-Step Inference},
+  author  = {Luo, Simian and Tan, Yiqin and Huang, Longbo and Li, Jian
+             and Zhao, Hang},
+  journal = {arXiv preprint arXiv:2310.04378},
+  year    = {2023},
+  eprint  = {2310.04378},
+  archivePrefix = {arXiv},
+}
+
+@article{luo2023lcmlora,
+  title   = {{LCM-LoRA}: A Universal Stable-Diffusion Acceleration Module},
+  author  = {Luo, Simian and Tan, Yiqin and Patil, Suraj and Gu, Daniel
+             and von Platen, Patrick and Passos, Apolin{\'a}rio
+             and Huang, Longbo and Li, Jian and Zhao, Hang},
+  journal = {arXiv preprint arXiv:2311.05556},
+  year    = {2023},
+  eprint  = {2311.05556},
+  archivePrefix = {arXiv},
+  note    = {Technical report. Few-step behaviour entirely in LoRA on a frozen checkpoint},
+}
+
+@inproceedings{song2024ict,
+  title     = {Improved Techniques for Training Consistency Models},
+  author    = {Song, Yang and Dhariwal, Prafulla},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2310.14189},
+  archivePrefix = {arXiv},
+  note      = {Metadata from arXiv listing, not individually fetched},
+}
+
+@inproceedings{salimans2022progressive,
+  title     = {Progressive Distillation for Fast Sampling of Diffusion Models},
+  author    = {Salimans, Tim and Ho, Jonathan},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  eprint    = {2202.00512},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{kim2024ctm,
+  title     = {Consistency Trajectory Models: Learning Probability Flow {ODE}
+               Trajectory of Diffusion},
+  author    = {Kim, Dongjun and Lai, Chieh-Hsin and Liao, Wei-Hsiang
+               and Murata, Naoki and Takida, Yuhta and Uesaka, Toshimitsu
+               and He, Yutong and Mitsufuji, Yuki and Ermon, Stefano},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2310.02279},
+  archivePrefix = {arXiv},
+  note      = {Metadata from arXiv listing, not individually fetched},
+}
+
+@inproceedings{yin2024dmd,
+  title     = {One-step Diffusion with Distribution Matching Distillation},
+  author    = {Yin, Tianwei and Gharbi, Micha{\"e}l and Zhang, Richard
+               and Shechtman, Eli and Durand, Fr{\'e}do and Freeman, William T.
+               and Park, Taesung},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  eprint    = {2311.18828},
+  archivePrefix = {arXiv},
+}
+
+@inproceedings{yin2024dmd2,
+  title     = {Improved Distribution Matching Distillation for Fast Image
+               Synthesis},
+  author    = {Yin, Tianwei and Gharbi, Micha{\"e}l and Park, Taesung
+               and Zhang, Richard and Shechtman, Eli and Durand, Fr{\'e}do
+               and Freeman, William T.},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  eprint    = {2405.14867},
+  archivePrefix = {arXiv},
+  note      = {Oral},
+}
+
+@article{sauer2023add,
+  title   = {Adversarial Diffusion Distillation},
+  author  = {Sauer, Axel and Lorenz, Dominik and Blattmann, Andreas
+             and Rombach, Robin},
+  journal = {arXiv preprint arXiv:2311.17042},
+  year    = {2023},
+  eprint  = {2311.17042},
+  archivePrefix = {arXiv},
+  note    = {Known as SDXL-Turbo},
+}
+
+@inproceedings{sauer2024ladd,
+  title     = {Fast High-Resolution Image Synthesis with Latent Adversarial
+               Diffusion Distillation},
+  author    = {Sauer, Axel and Boesel, Frederic and Dockhorn, Tim
+               and Blattmann, Andreas and Esser, Patrick and Rombach, Robin},
+  booktitle = {SIGGRAPH Asia},
+  year      = {2024},
+  eprint    = {2403.12015},
+  archivePrefix = {arXiv},
+  note      = {Venue from ACM DL listing},
+}
+
+@article{lin2024sdxllightning,
+  title   = {{SDXL-Lightning}: Progressive Adversarial Diffusion Distillation},
+  author  = {Lin, Shanchuan and Wang, Anran and Yang, Xiao},
+  journal = {arXiv preprint arXiv:2402.13929},
+  year    = {2024},
+  eprint  = {2402.13929},
+  archivePrefix = {arXiv},
+}
+
+@article{shaul2026pdd,
+  title   = {Parallel Decoding Distillation for Fast Image and Video Generation},
+  author  = {Shaul, Neta and Liu, Chao and Vahdat, Arash and Berner, Julius},
+  journal = {arXiv preprint arXiv:2607.26004},
+  year    = {2026},
+  eprint  = {2607.26004},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2607.26004},
+  note    = {Preprint, no peer-reviewed venue. Compatible with pretrained models; frozen-base status NOT stated},
+}
+
+@article{cai2025scfm,
+  title   = {Shortcutting Pre-trained Flow Matching Diffusion Models},
+  author  = {Cai, Yuanzhi},
+  journal = {arXiv preprint arXiv:2510.17858},
+  year    = {2025},
+  eprint  = {2510.17858},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2510.17858},
+  note    = {AUTHOR LIST NOT VERIFIED. Frozen weights plus LoRA; explicitly no explicit step-size parameter},
+}
+
+@article{chen2025homo,
+  title   = {High-Order Matching for One-Step Shortcut Diffusion Models},
+  author  = {Chen, Bo},
+  journal = {arXiv preprint arXiv:2502.00688},
+  year    = {2025},
+  eprint  = {2502.00688},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2502.00688},
+  note    = {AUTHOR LIST NOT VERIFIED; no venue. Prior art on the curvature limitation},
+}
+
+@article{geng2025meanflow,
+  title   = {Mean Flows for One-step Generative Modeling},
+  author  = {Geng, Zhengyang and Deng, Mingyang and Bai, Xingjian
+             and Kolter, J. Zico and He, Kaiming},
+  journal = {arXiv preprint arXiv:2505.13447},
+  year    = {2025},
+  eprint  = {2505.13447},
+  archivePrefix = {arXiv},
+  note    = {Title and author list from search index; verify before citing specifics},
+}
+
+@article{sabour2025alignyourflow,
+  title   = {Align Your Flow: Scaling Continuous-Time Flow Map Distillation},
+  author  = {Sabour, Amirmojtaba},
+  journal = {arXiv preprint arXiv:2506.14603},
+  year    = {2025},
+  eprint  = {2506.14603},
+  archivePrefix = {arXiv},
+  note    = {AUTHOR LIST NOT VERIFIED},
+}
+
+@inproceedings{song2024plugandplay,
+  title     = {Plug-and-Play Diffusion Distillation},
+  author    = {Song, Yi-Ting and Yin, Tianwei},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  eprint    = {2406.01954},
+  archivePrefix = {arXiv},
+  note      = {AUTHOR LIST NOT VERIFIED. Guidance distillation, not step distillation},
+}
+
+@article{arcflow2026,
+  title   = {{ArcFlow}},
+  author  = {Anonymous},
+  journal = {arXiv preprint arXiv:2602.09014},
+  year    = {2026},
+  eprint  = {2602.09014},
+  archivePrefix = {arXiv},
+  note    = {TITLE AND AUTHOR LIST NOT VERIFIED. Lightweight adapters on a frozen base},
+}
+
+@article{mwm2026,
+  title   = {{MWM}: Action-Conditioned Consistency Post-Training for World Models},
+  author  = {Yan and Xiang and Zhang and Tang},
+  journal = {arXiv preprint arXiv:2603.07799},
+  year    = {2026},
+  eprint  = {2603.07799},
+  archivePrefix = {arXiv},
+  note    = {TITLE AND AUTHOR LIST NOT VERIFIED. Nearest adjacent risk to D3; read before citing},
 }
